@@ -846,6 +846,7 @@ var zerobase uintptr
 // nextFreeFast returns the next free object if one is quickly available.
 // Otherwise it returns 0.
 func nextFreeFast(s *mspan) gclinkptr {
+	//count trail zero 如果都是0 返回64表示全都分配了，
 	theBit := sys.Ctz64(s.allocCache) // Is there a free object in the allocCache?
 	if theBit < 64 {
 		result := s.freeindex + uintptr(theBit)
@@ -854,9 +855,12 @@ func nextFreeFast(s *mspan) gclinkptr {
 			if freeidx%64 == 0 && freeidx != s.nelems {
 				return 0
 			}
+			//右移表示占用
 			s.allocCache >>= uint(theBit + 1)
+			//更新 空闲对象起始地址
 			s.freeindex = freeidx
 			s.allocCount++
+			//result表示第几个, elumsize 元素占用字节，s.base() 基址偏移
 			return gclinkptr(result*s.elemsize + s.base())
 		}
 	}
@@ -905,7 +909,7 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 // Allocate an object of size bytes.
 // Small objects are allocated from the per-P cache's free lists.
 // Large objects (> 32 kB) are allocated straight from the heap.
-// 分配对象的入口 new = newobject(typ) = mallocgc(typ.size, typ, true)
+// 分配对象的入口 new(T) = newobject(typ) = mallocgc(typ.size, typ, true)
 func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	if gcphase == _GCmarktermination {
 		throw("mallocgc called with gcphase == _GCmarktermination")
@@ -925,6 +929,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			// This causes 64-bit atomic accesses to panic.
 			// Hence, we use stricter alignment that matches
 			// the normal allocator better.
+			// 根据size%2^k 进行对齐
 			if size&7 == 0 {
 				align = 8
 			} else if size&3 == 0 {
@@ -935,36 +940,43 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 				align = 1
 			}
 		}
+		//使用sbrk 类似的直接分配内存
 		return persistentalloc(size, align, &memstats.other_sys)
 	}
 
-	// assistG is the G to charge for负责 this allocation, or nil if
+	// assistG is the G to charge for负责此次分配的g this allocation, or nil if
 	// GC is not currently active.
 	var assistG *g
+	//gc的标记阶段已开始
 	if gcBlackenEnabled != 0 {
 		// Charge the current user G for this allocation.
 		assistG = getg()
 		if assistG.m.curg != nil {
 			assistG = assistG.m.curg
 		}
-		// Charge the allocation against the G. We'll account
-		// for internal fragmentation at the end of mallocgc.
+		// Charge付费 the allocation against the G. We'll account
+		// for internal fragmentation 对内部碎片负责 at the end of mallocgc.
 		assistG.gcAssistBytes -= int64(size)
 
 		if assistG.gcAssistBytes < 0 {
 			// This G is in debt. Assist the GC to correct
 			// this before allocating. This must happen
 			// before disabling preemption.
-			// g欠债，需要帮助执行gc，以偿还，直到可以分配内存，
+			// g欠债，需要帮助执行gc，以偿还，直到为正， 不欠帐，才可以分配内存，
 			gcAssistAlloc(assistG)
 		}
 	}
 
 	// Set mp.mallocing to keep from being preempted by GC.
+	//lockm
 	mp := acquirem()
+
+	//防单m重入
 	if mp.mallocing != 0 {
 		throw("malloc deadlock")
 	}
+
+	//信号处理g进行malloc
 	if mp.gsignal == getg() {
 		throw("malloc during signal")
 	}
@@ -978,21 +990,22 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	if mp.p != 0 {
 		c = mp.p.ptr().mcache
 	} else {
-		// We will be called without a P while bootstrapping,
+		// We will be called without a P while bootstrapping自举,
 		// in which case we use mcache0, which is set in mallocinit.
 		// mcache0 is cleared when bootstrapping is complete,
 		// by procresize.
+		// m0没有p0对应，但是有分配的mcache0
 		c = mcache0
 		if c == nil {
 			throw("malloc called with no P")
 		}
 	}
 
-
 	var x unsafe.Pointer
 	noscan := typ == nil || typ.ptrdata == 0
 	if size <= maxSmallSize {
 		if noscan && size < maxTinySize {
+			//noscan表示非包含指针类型的数据类型
 			// 微对象（不可以是指针类型的对象） 先尝试tiny分配器，再mcache，mcenttral,mheap
 			// Tiny allocator.
 			//
@@ -1044,10 +1057,10 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			}
 			// mcache Allocate a new maxTinySize block.
 			span := c.alloc[tinySpanClass]
-			//快速找下一个空闲对象地址
+			//从mspan快速找下一个空闲对象地址
 			v := nextFreeFast(span)
 			if v == 0 {
-				//找下一个地址
+				//失败，找下一个地址
 				v, _, shouldhelpgc = c.nextFree(tinySpanClass)
 			}
 			x = unsafe.Pointer(v)
@@ -1145,6 +1158,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 		msanmalloc(x, size)
 	}
 
+	//leave reset status
 	mp.mallocing = 0
 	releasem(mp)
 
@@ -1157,7 +1171,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			c.next_sample -= size
 		} else {
 			mp := acquirem()
-			//剖析分配
+			//剖析内存分配
 			profilealloc(mp, x, size)
 			releasem(mp)
 		}
@@ -1342,10 +1356,10 @@ const persistentChunkSize = 256 << 10
 var persistentChunks *notInHeap
 
 // Wrapper around sysAlloc that can allocate small chunks.
-// There is no associated free operation.
-// Intended for things like function/type/debug-related persistent data.
-// If align is 0, uses default align (currently 8).
-// The returned memory will be zeroed.
+// There is no associated free operation. 没有相关联的 free函数
+// Intended for things like function/type/debug-related persistent data持久性的数据.
+// If align is 0, uses default align (currently 8).  0 即是8
+// The returned memory will be zeroed. 用0初始化
 //
 // Consider marking persistentalloc'd types go:notinheap.
 func persistentalloc(size, align uintptr, sysStat *uint64) unsafe.Pointer {

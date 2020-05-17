@@ -6,6 +6,7 @@
 
 package runtime
 
+//linux下才有，最好不用
 var Futexwakeup = futexwakeup
 
 //go:nosplit

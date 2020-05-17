@@ -10,8 +10,8 @@ import (
 )
 
 // GOMAXPROCS sets the maximum number of CPUs that can be executing
-// simultaneously and returns the previous setting. If n < 1, it does not
-// change the current setting.
+// 同时simultaneously and returns the previous setting 返回之前设置的数量. If n < 1, it does not
+// change the current setting. 如果 n < 1 返回以前设置的数量
 // The number of logical CPUs on the local machine can be queried with NumCPU.
 // This call will go away when the scheduler improves.
 func GOMAXPROCS(n int) int {
@@ -44,6 +44,7 @@ func NumCPU() int {
 	return int(ncpu)
 }
 
+//返回cgo调用次数
 // NumCgoCall returns the number of cgo calls made by the current process.
 func NumCgoCall() int64 {
 	var n int64
@@ -53,6 +54,7 @@ func NumCgoCall() int64 {
 	return n
 }
 
+//返回当前创建的协程数量 用于 metrics
 // NumGoroutine returns the number of goroutines that currently exist.
 func NumGoroutine() int {
 	return int(gcount())

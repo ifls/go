@@ -118,7 +118,7 @@ func freemcache(c *mcache) {
 	})
 }
 
-// refill acquires a new span of span class spc for c. This span will
+// refill acquires a new span of span class spc for c from mcentral. This span will
 // have at least one free object. The current span in c must be full.
 //
 // Must run in a non-preemptible context since otherwise the owner of

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Malloc profiling.
+// 内存分配剖析 Malloc profiling.
 // Patterned after tcmalloc's algorithms; shorter code.
 
 package runtime

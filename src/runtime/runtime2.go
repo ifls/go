@@ -419,7 +419,7 @@ type g struct {
 	// stackguard1 is the stack pointer compared in the C stack growth prologue.
 	// It is stack.lo+StackGuard on g0 and gsignal stacks.
 	// It is ~0 on other goroutine stacks, to trigger a call to morestackc (and crash).
-	stack       stack   // offset known to runtime/cgo
+	stack       stack   // 独立栈空间 offset known to runtime/cgo
 	stackguard0 uintptr // offset known to liblink
 	stackguard1 uintptr // offset known to liblink
 
@@ -472,7 +472,7 @@ type g struct {
 	sigcode1       uintptr
 	sigpc          uintptr
 	gopc           uintptr         // 创建此协程的go语句的代码地址 pc of go statement that created this goroutine
-	ancestors      *[]ancestorInfo // 创建协程信息 ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)
+	ancestors      *[]ancestorInfo // 创建此g的g信息 ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)
 	startpc        uintptr         // 函数起始执行地址 pc of goroutine function
 	racectx        uintptr
 	waiting        *sudog         // 执行等待链表里的sudug，相互反指 sudog structures this g is waiting on (that have a valid elem ptr); in lock order
@@ -541,7 +541,7 @@ type m struct {
 	lockedInt     uint32      // tracking for internal lockOSThread
 
 	nextwaitm     muintptr    // next m waiting for lock
-	waitunlockf   func(*g, unsafe.Pointer) bool
+	waitunlockf   func(*g, unsafe.Pointer) bool	//gopark()相关
 	waitlock      unsafe.Pointer
 	waittraceev   byte
 	waittraceskip int
@@ -732,7 +732,7 @@ type schedt struct {
 
 	pidle      puintptr // 空闲p列表 idle p's
 	npidle     uint32
-	nmspinning uint32 // See "Worker thread parking/unparking" comment in proc.go.
+	nmspinning uint32 // 记录自旋线程数量 See "Worker thread parking/unparking" comment in proc.go.
 
 	// Global runnable queue.
 	runq     gQueue	//全局运行g队列
@@ -769,9 +769,9 @@ type schedt struct {
 
 	// freem is the list of m's waiting to be freed when their
 	// m.exited is set. Linked through m.freelink.
-	freem *m
+	freem *m	//等待被释放的m的列表
 
-	gcwaiting  uint32 // gc is waiting to run
+	gcwaiting  uint32 // 要执行一个gc gc is waiting to run
 	stopwait   int32
 	stopnote   note		//wake/sleep
 	sysmonwait uint32

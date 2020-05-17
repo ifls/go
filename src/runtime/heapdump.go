@@ -662,6 +662,7 @@ func mdump() {
 
 func writeheapdump_m(fd uintptr) {
 	_g_ := getg()
+	//进入打印
 	casgstatus(_g_.m.curg, _Grunning, _Gwaiting)
 	_g_.waitreason = waitReasonDumpingHeap
 
@@ -682,7 +683,7 @@ func writeheapdump_m(fd uintptr) {
 		sysFree(unsafe.Pointer(&tmpbuf[0]), uintptr(len(tmpbuf)), &memstats.other_sys)
 		tmpbuf = nil
 	}
-
+	//退出打印
 	casgstatus(_g_.m.curg, _Gwaiting, _Grunning)
 }
 

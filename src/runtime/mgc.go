@@ -246,7 +246,7 @@ func setGCPercent(in int32) (out int32) {
 	return out
 }
 
-// Garbage collector phase.
+// Garbage collector phase 阶段.
 // Indicates to write barrier and synchronization task to perform.
 var gcphase uint32
 
@@ -275,7 +275,9 @@ const (
 
 //go:nosplit
 func setGCPhase(x uint32) {
+	//直接赋值
 	atomic.Store(&gcphase, x)
+	//标记和标记终止阶段需要写屏障
 	writeBarrier.needed = gcphase == _GCmark || gcphase == _GCmarktermination
 	writeBarrier.enabled = writeBarrier.needed || writeBarrier.cgo
 }
@@ -725,6 +727,7 @@ func (c *gcControllerState) findRunnableGCWorker(_p_ *p) *g {
 
 	// Run the background mark worker
 	gp := _p_.gcBgMarkWorker.ptr()
+	//允许执行 标记g
 	casgstatus(gp, _Gwaiting, _Grunnable)
 	if trace.enabled {
 		traceGoUnpark(gp, 0)
@@ -943,6 +946,7 @@ const gcAssistTimeSlack = 5000
 // assist by pre-paying for this many bytes of future allocations.
 const gcOverAssistWork = 64 << 10
 
+// gc 任务 全局数据
 var work struct {
 	full  lfstack          // lock-free list of full blocks workbuf
 	empty lfstack          // lock-free list of empty blocks workbuf
@@ -1045,7 +1049,7 @@ var work struct {
 	// cycle is sweep termination, mark, mark termination, and
 	// sweep. This differs from memstats.numgc, which is
 	// incremented at mark termination.
-	cycles uint32
+	cycles uint32	//gc完成的次数
 
 	// Timing/utilization stats for this cycle.
 	stwprocs, maxprocs                 int32
@@ -1060,7 +1064,7 @@ var work struct {
 
 // GC runs a garbage collection and blocks the caller until the
 // garbage collection is complete. It may also block the entire
-// program.
+// program. 阻塞调用者直到完成
 func GC() {
 	// We consider a cycle to be: sweep termination, mark, mark
 	// termination, and sweep. This function shouldn't return
@@ -1088,6 +1092,7 @@ func GC() {
 
 	// Wait until the current sweep termination, mark, and mark
 	// termination complete.
+	// 等待上一个gc周期完成
 	n := atomic.Load(&work.cycles)
 	gcWaitOnMark(n)
 
@@ -1097,14 +1102,17 @@ func GC() {
 	gcStart(gcTrigger{kind: gcTriggerCycle, n: n + 1})
 
 	// Wait for mark termination N+1 to complete.
+	// wait n + 1 too.
 	gcWaitOnMark(n + 1)
 
 	// Finish sweep N+1 before returning. We do this both to
 	// complete the cycle and because runtime.GC() is often used
 	// as part of tests and benchmarks to get the system into a
 	// relatively stable and isolated state.
+	//sweepone 扫描mspan，并返回扫描完的页数
 	for atomic.Load(&work.cycles) == n+1 && sweepone() != ^uintptr(0) {
 		sweep.nbgsweep++
+		//让出cpu 等待gc完成
 		Gosched()
 	}
 
@@ -1119,12 +1127,13 @@ func GC() {
 	// First, wait for sweeping to finish. (We know there are no
 	// more spans on the sweep queue, but we may be concurrently
 	// sweeping spans, so we have to wait.)
+	//等待sweeper 都退出 sweepone函数 进行 加1，减1
 	for atomic.Load(&work.cycles) == n+1 && atomic.Load(&mheap_.sweepers) != 0 {
 		Gosched()
 	}
 
 	// Now we're really done with sweeping, so we can publish the
-	// stable heap profile. Only do this if we haven't already hit
+	// stable heap profile 堆剖析. Only do this if we haven't already hit
 	// another mark termination.
 	mp := acquirem()
 	cycle := atomic.Load(&work.cycles)
@@ -1203,18 +1212,21 @@ func (t gcTrigger) test() bool {
 	}
 	switch t.kind {
 	case gcTriggerHeap:
+		//分配内存结束后条件触发
 		// Non-atomic access to heap_live for performance. If
 		// we are going to trigger on this, this thread just
 		// atomically wrote heap_live anyway and we'll see our
 		// own write.
 		return memstats.heap_live >= memstats.gc_trigger
 	case gcTriggerTime:
+		//sysmon forcegchelper 循环定时触发
 		if gcpercent < 0 {
 			return false
 		}
 		lastgc := int64(atomic.Load64(&memstats.last_gc_nanotime))
 		return lastgc != 0 && t.now-lastgc > forcegcperiod
 	case gcTriggerCycle:
+		// 用户调用 GC() 主动触发
 		// t.n > work.cycles, but accounting for wraparound.
 		return int32(t.n-work.cycles) > 0
 	}
@@ -1328,7 +1340,7 @@ func gcStart(trigger gcTrigger) {
 	gcController.startCycle()
 	work.heapGoal = memstats.next_gc
 
-	// In STW mode, disable scheduling of user Gs. This may also
+	// In STW mode, 禁止调度用户g执行 disable scheduling of user Gs. This may also
 	// disable scheduling of this goroutine, so it may block as
 	// soon as we start the world again.
 	if mode != gcBackgroundMode {
@@ -1349,6 +1361,7 @@ func gcStart(trigger gcTrigger) {
 	// allocations are blocked until assists can
 	// happen, we want enable assists as early as
 	// possible.
+	// gcStart 进入标记阶段
 	setGCPhase(_GCmark)
 
 	gcBgMarkPrepare() // Must happen before assist enable.
@@ -1363,9 +1376,10 @@ func gcStart(trigger gcTrigger) {
 
 	// At this point all Ps have enabled the write
 	// barrier, thus maintaining the no white to
-	// black invariant. Enable mutator assists to
+	// black invariant不变量. Enable mutator assists to
 	// put back-pressure on fast allocating
 	// mutators.
+	//新分配对象直接标记为黑色
 	atomic.Store(&gcBlackenEnabled, 1)
 
 	// Assists and workers can start the moment we start
@@ -1470,6 +1484,7 @@ top:
 		// Otherwise, our attempt to force all P's to a safepoint could
 		// result in a deadlock as we attempt to preempt a worker that's
 		// trying to preempt us (e.g. for a stack scan).
+		// gaMarkDone()
 		casgstatus(gp, _Grunning, _Gwaiting)
 		forEachP(func(_p_ *p) {
 			// Flush the write barrier buffer, since this may add
@@ -1509,6 +1524,7 @@ top:
 				callers(1, _p_.gcw.pauseStack[:])
 			}
 		})
+		//恢复执行
 		casgstatus(gp, _Gwaiting, _Grunning)
 	})
 
@@ -1644,6 +1660,7 @@ func gcMarkTermination(nextTriggerRatio float64) {
 	_g_ := getg()
 	_g_.m.traceback = 2
 	gp := _g_.m.curg
+	//标记终止
 	casgstatus(gp, _Grunning, _Gwaiting)
 	gp.waitreason = waitReasonGarbageCollection
 
@@ -1680,11 +1697,13 @@ func gcMarkTermination(nextTriggerRatio float64) {
 		}
 
 		// marking is complete so we can turn the write barrier off
+		//标记完成 关闭写屏障
 		setGCPhase(_GCoff)
 		gcSweep(work.mode)
 	})
 
 	_g_.m.traceback = 0
+	//sweep开始执行，恢复运行
 	casgstatus(gp, _Gwaiting, _Grunning)
 
 	if trace.enabled {
@@ -1950,6 +1969,7 @@ func gcBgMarkWorker(_p_ *p) {
 			// the G stack. However, stack shrinking is
 			// disabled for mark workers, so it is safe to
 			// read from the G stack.
+			//gcBgMarkWorker
 			casgstatus(gp, _Grunning, _Gwaiting)
 			switch _p_.gcMarkWorkerMode {
 			default:
@@ -1980,6 +2000,7 @@ func gcBgMarkWorker(_p_ *p) {
 			case gcMarkWorkerIdleMode:
 				gcDrain(&_p_.gcw, gcDrainIdle|gcDrainUntilPreempt|gcDrainFlushBgCredit)
 			}
+			//gcDrain之后恢复运行
 			casgstatus(gp, _Gwaiting, _Grunning)
 		})
 

@@ -44,7 +44,7 @@ type cpuProfile struct {
 
 var cpuprof cpuProfile
 
-// SetCPUProfileRate sets the CPU profiling rate to hz samples per second.
+// SetCPUProfileRate sets the CPU profiling rate to hz samples per second. 每秒取样次数
 // If hz <= 0, SetCPUProfileRate turns off profiling.
 // If the profiler is on, the rate cannot be changed without first turning it off.
 //
@@ -182,7 +182,7 @@ func (p *cpuProfile) addExtra() {
 // The details of generating that format have changed,
 // so this functionality has been removed.
 //
-// Deprecated: Use the runtime/pprof package,
+// Deprecated: Use the runtime/pprof package, 已被弃用
 // or the handlers in the net/http/pprof package,
 // or the testing package's -test.cpuprofile flag instead.
 func CPUProfile() []byte {

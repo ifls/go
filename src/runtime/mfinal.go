@@ -244,7 +244,7 @@ func runfinq() {
 // SetFinalizer sets the finalizer associated with obj to the provided
 // finalizer function. When the garbage collector finds an unreachable block
 // with an associated finalizer, it clears the association and runs
-// finalizer(obj) in a separate goroutine. This makes obj reachable again,
+// finalizer(obj) in a separate goroutine清除关联，执行析构器. This makes obj reachable again,
 // but now without an associated finalizer. Assuming that SetFinalizer
 // is not called again, the next time the garbage collector sees
 // that obj is unreachable, it will free obj.
@@ -302,7 +302,7 @@ func runfinq() {
 // to an entirely different file descriptor opened by a different goroutine).
 // To avoid this problem, call runtime.KeepAlive(p) after the call to
 // syscall.Write.
-//
+// 执行析构器，在一个独立的协程
 // A single goroutine runs all finalizers for a program, sequentially.
 // If a finalizer must run for a long time, it should do so by starting
 // a new goroutine.
@@ -421,10 +421,10 @@ okarg:
 	})
 }
 
-// Mark KeepAlive as noinline so that it is easily detectable as an intrinsic.
+// Mark KeepAlive as noinline so that it is easily detectable as an intrinsic固有的.
 //go:noinline
 
-// KeepAlive marks its argument as currently reachable.
+// KeepAlive marks its argument as currently reachable. 标记数据当前可达，不会被释放掉
 // This ensures that the object is not freed, and its finalizer is not run,
 // before the point in the program where KeepAlive is called.
 //

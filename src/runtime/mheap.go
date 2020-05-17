@@ -488,7 +488,7 @@ type mspan struct {
 	needzero    uint8         // needs to be zeroed before allocation
 	divShift    uint8         // for divide by elemsize - divMagic.shift
 	divShift2   uint8         // for divide by elemsize - divMagic.shift2
-	elemsize    uintptr       // computed from sizeclass or from npages
+	elemsize    uintptr       // 此mspan储存元素的大小B computed from sizeclass or from npages
 	limit       uintptr       // end of data in span
 	speciallock mutex         // guards specials list
 	specials    *special      // linked list of special records sorted by offset.
@@ -1174,7 +1174,7 @@ func (h *mheap) allocSpan(npages uintptr, manual bool, spanclass spanClass, sysS
 		// 页分配器分配页面
 		base, scav = h.pages.alloc(npages)
 		if base == 0 {
-			//扩容
+			//向os要内存，扩容
 			if !h.grow(npages) {
 				unlock(&h.lock)
 				return nil

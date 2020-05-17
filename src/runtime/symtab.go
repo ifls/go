@@ -22,6 +22,7 @@ type Frames struct {
 }
 
 // Frame is the information returned by Frames for each call frame.
+// 调用栈帧
 type Frame struct {
 	// PC is the program counter for the location in this frame.
 	// For a frame that calls another frame, this will be the

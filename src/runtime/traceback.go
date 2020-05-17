@@ -1020,13 +1020,16 @@ func topofstack(f funcInfo, g0 bool) bool {
 // goroutine.
 func isSystemGoroutine(gp *g, fixed bool) bool {
 	// Keep this in sync with cmd/trace/trace.go:isSystemGoroutine.
+	// 根据pc获得函数信息
 	f := findfunc(gp.startpc)
 	if !f.valid() {
 		return false
 	}
+	//runtime.main只是启动g，不是系统g
 	if f.funcID == funcID_runtime_main || f.funcID == funcID_handleAsyncEvent {
 		return false
 	}
+	//执行析构操作的函数
 	if f.funcID == funcID_runfinq {
 		// We include the finalizer goroutine if it's calling
 		// back into user code.
@@ -1037,6 +1040,7 @@ func isSystemGoroutine(gp *g, fixed bool) bool {
 		}
 		return !fingRunning
 	}
+	//runtime包内函数作为入口的g是系统g
 	return hasPrefix(funcname(f), "runtime.")
 }
 

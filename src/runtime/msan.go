@@ -10,7 +10,7 @@ import (
 	"unsafe"
 )
 
-// Public memory sanitizer API.
+// Public memory sanitizer清理 API.
 
 func MSanRead(addr unsafe.Pointer, len int) {
 	msanread(addr, uintptr(len))

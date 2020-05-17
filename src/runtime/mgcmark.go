@@ -223,6 +223,7 @@ func markroot(gcw *gcWork, i uint32) {
 			userG := getg().m.curg
 			selfScan := gp == userG && readgstatus(userG) == _Grunning
 			if selfScan {
+				//自我扫描，进入等待状态
 				casgstatus(userG, _Grunning, _Gwaiting)
 				userG.waitreason = waitReasonGarbageCollectionScan
 			}
@@ -247,6 +248,7 @@ func markroot(gcw *gcWork, i uint32) {
 			resumeG(stopped)
 
 			if selfScan {
+				//扫描完成恢复运行状态
 				casgstatus(userG, _Gwaiting, _Grunning)
 			}
 		})
@@ -282,7 +284,7 @@ func markrootBlock(b0, n0 uintptr, ptrmask0 *uint8, gcw *gcWork, shard int) {
 }
 
 // markrootFreeGStacks frees stacks of dead Gs.
-//
+// 释放deadG的栈空间
 // This does not free stacks of dead Gs cached on Ps, but having a few
 // cached stacks around isn't a problem.
 func markrootFreeGStacks() {
@@ -298,6 +300,7 @@ func markrootFreeGStacks() {
 	// Free stacks.
 	q := gQueue{list.head, list.head}
 	for gp := list.head.ptr(); gp != nil; gp = gp.schedlink.ptr() {
+		//g is dead 释放栈空间
 		stackfree(gp.stack)
 		gp.stack.lo = 0
 		gp.stack.hi = 0
@@ -589,10 +592,10 @@ retry:
 	}
 }
 
-// gcAssistAlloc1 is the part of gcAssistAlloc that runs on the system
-// stack. This is a separate function to make it easier to see that
+// gcAssistAlloc1 is the part of一部分 gcAssistAlloc that runs on the system
+// stack. This is a separate单独地 function to make it easier to see that
 // we're not capturing anything from the user stack, since the user
-// stack may move while we're in this function.
+// stack用户栈 may move会被移动 while we're in this function.
 //
 // gcAssistAlloc1 indicates whether this assist completed the mark
 // phase by setting gp.param to non-nil. This can't be communicated on
@@ -627,6 +630,7 @@ func gcAssistAlloc1(gp *g, scanWork int64) {
 	}
 
 	// gcDrainN requires the caller to be preemptible.
+	// 进入等待状态执行gcBrainN
 	casgstatus(gp, _Grunning, _Gwaiting)
 	gp.waitreason = waitReasonGCAssistMarking
 
@@ -634,7 +638,7 @@ func gcAssistAlloc1(gp *g, scanWork int64) {
 	// will be more cache friendly.
 	gcw := &getg().m.p.ptr().gcw
 	workDone := gcDrainN(gcw, scanWork)
-
+	//执行完退出
 	casgstatus(gp, _Gwaiting, _Grunning)
 
 	// Record that we did this much scan work.
@@ -1173,6 +1177,7 @@ done:
 	}
 }
 
+// 将黑色对象变为灰色
 // gcDrainN blackens grey objects until it has performed roughly
 // scanWork units of scan work or the G is preempted. This is
 // best-effort, so it may perform less work if it fails to get a work

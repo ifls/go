@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Go execution tracer.
+// Go execution tracer. 执行跟踪
 // The tracer captures a wide range of execution events like goroutine
 // creation/blocking/unblocking, syscall enter/exit/block, GC-related events,
 // changes of heap size, processor start/stop, etc and writes them to a buffer
@@ -174,7 +174,7 @@ func traceBufPtrOf(b *traceBuf) traceBufPtr {
 	return traceBufPtr(unsafe.Pointer(b))
 }
 
-// StartTrace enables tracing for the current process.
+// 开启跟踪StartTrace enables tracing for the current process.
 // While tracing, the data will be buffered and available via ReadTrace.
 // StartTrace returns an error if tracing is already enabled.
 // Most clients should use the runtime/trace package or the testing package's

@@ -572,7 +572,7 @@ func deferreturn(arg0 uintptr) {
 	jmpdefer(fn, uintptr(unsafe.Pointer(&arg0)))
 }
 
-// Goexit terminates the goroutine that calls it. No other goroutine is affected.
+// 主动终止协程Goexit terminates the goroutine that calls it. No other goroutine is affected.
 // Goexit runs all deferred calls before terminating the goroutine. Because Goexit
 // is not a panic, any recover calls in those deferred functions will return nil.
 //

@@ -9,5 +9,5 @@ package runtime
 //
 //	gc      Also known as cmd/compile.
 //	gccgo   The gccgo front end, part of the GCC compiler suite.
-//
+// 执行go源码编译器
 const Compiler = "gc"

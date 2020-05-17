@@ -213,21 +213,21 @@ ok:
 	MOVQ	24(SP), AX		// copy argv
 	MOVQ	AX, 8(SP)
 	CALL	runtime·args(SB)	//解析命令行参数
-	CALL	runtime·osinit(SB)
-	CALL	runtime·schedinit(SB)
+	CALL	runtime·osinit(SB)	//ncpu 赋值
+	CALL	runtime·schedinit(SB) //初始化 内存分配器、栈，P，垃圾回收
 
 	// create a new goroutine to start program
-	MOVQ	$runtime·mainPC(SB), AX		// entry
-	PUSHQ	AX
-	PUSHQ	$0			// arg size
-	CALL	runtime·newproc(SB)
+	MOVQ	$runtime·mainPC(SB), AX		// entry 就是runtime.main 参考下方DATA
+	PUSHQ	AX			// 参数fn 表示的函数指针，结构体地址也是函数第一个字段的地址
+	PUSHQ	$0			// 参数siz arg size 0表示 没有参数
+	CALL	runtime·newproc(SB)		//启动新的g来执行runtime.main
 	POPQ	AX
 	POPQ	AX
 
 	// start this M
-	CALL	runtime·mstart(SB)
+	CALL	runtime·mstart(SB)		//mstart是每个m或者说线程的入口函数
 
-	CALL	runtime·abort(SB)	// mstart should never return
+	CALL	runtime·abort(SB)	// 执行系统调用SYS_CLOSE = 3 mstart should never return
 	RET
 
 	// Prevent dead-code elimination of debugCallV1, which is
@@ -858,7 +858,7 @@ TEXT setg_gcc<>(SB),NOSPLIT,$0
 	RET
 
 TEXT runtime·abort(SB),NOSPLIT,$0-0
-	INT	$3
+	INT	$3		// 系统调用3 SYS_CLOSE = 3
 loop:
 	JMP	loop
 

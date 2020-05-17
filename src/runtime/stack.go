@@ -16,12 +16,12 @@ Stack layout parameters.
 Included both by runtime (compiled via 6c) and linkers (compiled via gcc).
 
 The per-goroutine g->stackguard is set to point StackGuard bytes
-above the bottom of the stack.  Each function compares its stack
-pointer against g->stackguard to check for overflow.  To cut one
-instruction from the check sequence for functions with tiny frames,
-the stack is allowed to protrude StackSmall bytes below the stack
-guard.  Functions with large frames don't bother with the check and
-always call morestack.  The sequences are (for amd64, others are
+above the bottom of the stack.  栈底
+Each function compares its stack pointer against g->stackguard to check for overflow. 比较栈底，检查溢出
+To cut one instruction from the check sequence for functions with tiny frames,
+the stack is allowed to protrude突出 StackSmall bytes below the stack
+guard.  Functions with large frames大栈帧 don't bother with the check 麻烦做此检查 and
+always call morestack 总是调用扩展栈函数.  The sequences are (for amd64, others are
 similar):
 
 	guard = g->stackguard
@@ -46,9 +46,9 @@ similar):
 		CALL morestack(SB)
 
 The bottom StackGuard - StackSmall bytes are important: there has
-to be enough room to execute functions that refuse to check for
-stack overflow, either because they need to be adjacent to the
-actual caller's frame (deferproc) or because they handle the imminent
+to be enough room空间 to execute functions that refuse to check for
+stack overflow, either because they need to be adjacent临近的 to the
+actual caller's frame (deferproc) or because they handle the imminent即将到来的
 stack overflow (morestack).
 
 For example, deferproc might call malloc, which does one of the
@@ -329,6 +329,7 @@ func stackalloc(n uint32) stack {
 	// never try to grow the stack during the code that stackalloc runs.
 	// Doing so would cause a deadlock (issue 1547).
 	thisg := getg()
+	//必须是当前线程的g0
 	if thisg != thisg.m.g0 {
 		throw("stackalloc not on scheduler stack")
 	}
@@ -341,10 +342,12 @@ func stackalloc(n uint32) stack {
 
 	if debug.efence != 0 || stackFromSystem != 0 {
 		n = uint32(alignUp(uintptr(n), physPageSize))
+		//系统调用分配一块内存，不进入堆管理之中
 		v := sysAlloc(uintptr(n), &memstats.stacks_sys)
 		if v == nil {
 			throw("out of memory (stackalloc)")
 		}
+		//v 是低地址
 		return stack{uintptr(v), uintptr(v) + uintptr(n)}
 	}
 
@@ -366,10 +369,12 @@ func stackalloc(n uint32) stack {
 			// Also don't touch stackcache during gc
 			// as it's flushed concurrently.
 			lock(&stackpool[order].item.mu)
+			//free poll 里分配栈空间
 			x = stackpoolalloc(order)
 			unlock(&stackpool[order].item.mu)
 		} else {
 			c := thisg.m.p.ptr().mcache
+			// mcache的栈缓存
 			x = c.stackcache[order].list
 			if x.ptr() == nil {
 				stackcacherefill(c, order)
@@ -396,6 +401,7 @@ func stackalloc(n uint32) stack {
 
 		if s == nil {
 			// Allocate a new stack from the heap.
+			//从堆上分配栈
 			s = mheap_.allocManual(npage, &memstats.stacks_inuse)
 			if s == nil {
 				throw("out of memory")
@@ -422,7 +428,7 @@ func stackalloc(n uint32) stack {
 //
 // stackfree must run on the system stack because it uses per-P
 // resources and must not split the stack.
-//
+// 释放栈空间，与栈分配的逻辑是反向的
 //go:systemstack
 func stackfree(stk stack) {
 	gp := getg()
@@ -439,6 +445,7 @@ func stackfree(stk stack) {
 		memclrNoHeapPointers(v, n) // for testing, clobber stack data
 	}
 	if debug.efence != 0 || stackFromSystem != 0 {
+		//释放
 		if debug.efence != 0 || stackFaultOnFree != 0 {
 			sysFault(v, n)
 		} else {
@@ -905,6 +912,7 @@ func copystack(gp *g, newsize uintptr) {
 	if stackPoisonCopy != 0 {
 		fillstack(old, 0xfc)
 	}
+	//栈拷贝完成后 释放旧的栈空间
 	stackfree(old)
 }
 
@@ -918,8 +926,8 @@ func round2(x int32) int32 {
 }
 
 // Called from runtime·morestack when more stack is needed.
-// Allocate larger stack and relocate to new stack.
-// Stack growth is multiplicative, for constant amortized cost.
+// Allocate larger stack and relocate迁移 to new stack.
+// Stack growth is multiplicative乘法, for constant一致的 amortized cost 均摊成本.
 //
 // g->atomicstatus will be Grunning or Gscanrunning upon entry.
 // If the scheduler is trying to stop this g, then it will set preemptStop.
@@ -927,7 +935,7 @@ func round2(x int32) int32 {
 // This must be nowritebarrierrec because it can be called as part of
 // stack growth from other nowritebarrierrec functions, but the
 // compiler doesn't check this.
-//
+// 汇编函数morestack 会调用此函数扩展
 //go:nowritebarrierrec
 func newstack() {
 	thisg := getg()
@@ -1061,6 +1069,7 @@ func newstack() {
 
 	// The goroutine must be executing in order to call newstack,
 	// so it must be Grunning (or Gscanrunning).
+	// newstack() 进入栈拷贝阶段
 	casgstatus(gp, _Grunning, _Gcopystack)
 
 	// The concurrent GC will not scan the stack while we are doing the copy since
@@ -1069,6 +1078,7 @@ func newstack() {
 	if stackDebug >= 1 {
 		print("stack grow done\n")
 	}
+	//退出栈拷贝
 	casgstatus(gp, _Gcopystack, _Grunning)
 	gogo(&gp.sched)
 }
