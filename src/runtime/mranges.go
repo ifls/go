@@ -52,18 +52,25 @@ func (a addrRange) contains(addr uintptr) bool {
 	return a.base.lessEqual(offAddr{addr}) && (offAddr{addr}).lessThan(a.limit)
 }
 
-// subtract takes the addrRange toPrune and cuts out any overlap with
+// subtract takes the addrRange toPrune修剪 and cuts out any overlap with
 // from, then returns the new range. subtract assumes that a and b
 // either don't overlap at all, only overlap on one side, or are equal.
 // If b is strictly contained in a, thus forcing a split, it will throw.
+// a - b
 func (a addrRange) subtract(b addrRange) addrRange {
 	if b.base.lessEqual(a.base) && a.limit.lessEqual(b.limit) {
+		// bl al ar bl (,)
 		return addrRange{}
 	} else if a.base.lessThan(b.base) && b.limit.lessThan(a.limit) {
+		// al bl br ar  切割成两段
 		throw("bad prune")
 	} else if b.limit.lessThan(a.limit) && a.base.lessThan(b.limit) {
+		// al, bl, br, ar 属于上面的第2条
+		// bl, al, br, ar  [br, ar)
 		a.base = b.limit
 	} else if a.base.lessThan(b.base) && b.base.lessThan(a.limit) {
+		// al bl ar br [al, br)
+		// al bl br ar //属于上面的第2条
 		a.limit = b.base
 	}
 	return a

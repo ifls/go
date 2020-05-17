@@ -323,6 +323,7 @@ func sigpipe() {
 }
 
 // doSigPreempt handles a preemption signal on gp.
+//注册信号处理 抢占函数
 func doSigPreempt(gp *g, ctxt *sigctxt) {
 	// Check if this G wants to be preempted and is safe to
 	// preempt.
@@ -346,6 +347,7 @@ const preemptMSupported = true
 // marked for preemption and the goroutine is at an asynchronous
 // safe-point, it will preempt the goroutine. It always atomically
 // increments mp.preemptGen after handling a preemption request.
+//发出异步抢占信号
 func preemptM(mp *m) {
 	if GOOS == "darwin" && GOARCH == "arm64" && !iscgo {
 		// On darwin, we use libc calls, and cgo is required on ARM64
@@ -363,6 +365,7 @@ func preemptM(mp *m) {
 		// live-lock problem. Apparently this could happen on darwin. See
 		// issue #37741.
 		// Only send a signal if there isn't already one pending.
+		// 对线程发 SIGURG
 		signalM(mp, sigPreempt)
 	}
 }

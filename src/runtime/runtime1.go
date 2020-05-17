@@ -57,9 +57,11 @@ func argv_index(argv **byte, i int32) *byte {
 	return *(**byte)(add(unsafe.Pointer(argv), uintptr(i)*sys.PtrSize))
 }
 
+//保持处理进程参数
 func args(c int32, v **byte) {
 	argc = c
 	argv = v
+	//os_linux.go
 	sysargs(c, v)
 }
 

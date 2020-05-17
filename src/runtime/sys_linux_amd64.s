@@ -15,6 +15,7 @@
 #define SYS_read		0
 #define SYS_write		1
 #define SYS_close		3
+//mmap 分配内存的系统调用号
 #define SYS_mmap		9
 #define SYS_munmap		11
 #define SYS_brk 		12
@@ -482,6 +483,7 @@ TEXT runtime·sigreturn(SB),NOSPLIT,$0
 	SYSCALL
 	INT $3	// not reached
 
+//系统分配内存
 TEXT runtime·sysMmap(SB),NOSPLIT,$0
 	MOVQ	addr+0(FP), DI
 	MOVQ	n+8(FP), SI

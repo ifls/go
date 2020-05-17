@@ -135,7 +135,7 @@ const (
 //go:noescape
 func clone(flags int32, stk, mp, gp, fn unsafe.Pointer) int32
 
-// May run with m.p==nil, so write barriers are not allowed.
+// create sys thread May run with m.p==nil, so write barriers are not allowed.
 //go:nowritebarrier
 func newosproc(mp *m) {
 	stk := unsafe.Pointer(mp.g0.stack.hi)
@@ -150,6 +150,7 @@ func newosproc(mp *m) {
 	// with signals disabled. It will enable them in minit.
 	var oset sigset
 	sigprocmask(_SIG_SETMASK, &sigset_all, &oset)
+	//new sys thread
 	ret := clone(cloneFlags, stk, unsafe.Pointer(mp), unsafe.Pointer(mp.g0), unsafe.Pointer(funcPC(mstart)))
 	sigprocmask(_SIG_SETMASK, &oset, nil)
 
@@ -296,8 +297,11 @@ func getHugePageSize() uintptr {
 }
 
 func osinit() {
+	//cpu核心数
 	ncpu = getproccount()
+	//物理页大小
 	physHugePageSize = getHugePageSize()
+	//uts 主机名 版本号等信息
 	osArchInit()
 }
 
@@ -478,6 +482,7 @@ func sysSigaction(sig uint32, new, old *sigactiont) {
 //go:noescape
 func rt_sigaction(sig uintptr, new, old *sigactiont, size uintptr) int32
 
+//进程id
 func getpid() int
 func tgkill(tgid, tid, sig int)
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Memory allocator.
+// Memory allocator. 内存分配器
 //
 // This was originally based on tcmalloc, but has diverged quite a bit.
 // http://goog-perftools.sourceforge.net/doc/tcmalloc.html
@@ -344,17 +344,17 @@ var (
 )
 
 // OS memory management abstraction layer
-//
+// 系统内存管理抽象层
 // Regions of the address space managed by the runtime may be in one of four
-// states at any given time:
-// 1) None - Unreserved and unmapped, the default state of any region.
-// 2) Reserved - Owned by the runtime, but accessing it would cause a fault.
-//               Does not count against the process' memory footprint.
-// 3) Prepared - Reserved, intended not to be backed by physical memory (though
+// states at any given time: 内存区域4中状态
+// 1) None - Unreserved and unmapped, the default state of any region. 初始状态，什么都没有
+// 2) Reserved - Owned by the runtime, but accessing it would cause a fault. 持有但是无法访问，还未分配物理内存
+//               Does not count against the process' memory footprint足迹.
+// 3) Prepared - Reserved, intended not to be backed by physical memory (though 不确定是否有物理地址，但是应该有，中间状态
 //               an OS may implement this lazily). Can transition efficiently to
 //               Ready. Accessing memory in such a region is undefined (may
 //               fault, may give back unexpected zeroes, etc.).
-// 4) Ready - may be accessed safely.
+// 4) Ready - may be accessed safely.  内存可以使用
 //
 // This set of states is more than is strictly necessary to support all the
 // currently supported platforms. One could get by with just None, Reserved, and
@@ -369,19 +369,19 @@ var (
 //
 // For each OS there is a common set of helpers defined that transition
 // memory regions between these states. The helpers are as follows:
-//
+// ->ready
 // sysAlloc transitions an OS-chosen region of memory from None to Ready.
 // More specifically, it obtains a large chunk of zeroed memory from the
 // operating system, typically on the order of a hundred kilobytes
 // or a megabyte. This memory is always immediately available for use.
-//
+// ->node
 // sysFree transitions a memory region from any state to None. Therefore, it
 // returns memory unconditionally. It is used if an out-of-memory error has been
 // detected midway through an allocation or to carve out an aligned section of
 // the address space. It is okay if sysFree is a no-op only if sysReserve always
 // returns a memory region aligned to the heap allocator's alignment
 // restrictions.
-//
+// ->reserverd
 // sysReserve transitions a memory region from None to Reserved. It reserves
 // address space in such a way that it would cause a fatal fault upon access
 // (either via permissions or not committing the memory). Such a reservation is
@@ -392,33 +392,35 @@ var (
 // NOTE: sysReserve returns OS-aligned memory, but the heap allocator
 // may use larger alignment, so the caller must be careful to realign the
 // memory obtained by sysReserve.
-//
+// ->prepared
 // sysMap transitions a memory region from Reserved to Prepared. It ensures the
 // memory region can be efficiently transitioned to Ready.
-//
+// ->ready
 // sysUsed transitions a memory region from Prepared to Ready. It notifies the
 // operating system that the memory region is needed and ensures that the region
 // may be safely accessed. This is typically a no-op on systems that don't have
 // an explicit commit step and hard over-commit limits, but is critical on
 // Windows, for example.
-//
+// ->prepared
 // sysUnused transitions a memory region from Ready to Prepared. It notifies the
 // operating system that the physical pages backing this memory region are no
 // longer needed and can be reused for other purposes. The contents of a
 // sysUnused memory region are considered forfeit and the region must not be
 // accessed again until sysUsed is called.
-//
+// ->reserverd
 // sysFault transitions a memory region from Ready or Prepared to Reserved. It
 // marks a region such that it will always fault if accessed. Used only for
 // debugging the runtime.
-
+//schedinit() 中调用
 func mallocinit() {
+	// 2  是16B
 	if class_to_size[_TinySizeClass] != _TinySize {
 		throw("bad TinySizeClass")
 	}
 
 	testdefersizes()
 
+	//必须是2的幂次
 	if heapArenaBitmapBytes&(heapArenaBitmapBytes-1) != 0 {
 		// heapBits expects modular arithmetic on bitmap
 		// addresses to work.
@@ -476,6 +478,8 @@ func mallocinit() {
 
 	// Initialize the heap.
 	mheap_.init()
+
+	//分配第一个mcaahe
 	mcache0 = allocmcache()
 	lockInit(&gcBitsArenas.lock, lockRankGcBitsArenas)
 	lockInit(&proflock, lockRankProf)
@@ -734,6 +738,7 @@ mapped:
 			if l2 == nil {
 				throw("out of memory allocating heap arena map")
 			}
+			//加入 mheap.arenas
 			atomic.StorepNoWB(unsafe.Pointer(&h.arenas[ri.l1()]), unsafe.Pointer(l2))
 		}
 
@@ -741,8 +746,10 @@ mapped:
 			throw("arena already initialized")
 		}
 		var r *heapArena
+		//分配arena结构体
 		r = (*heapArena)(h.heapArenaAlloc.alloc(unsafe.Sizeof(*r), sys.PtrSize, &memstats.gc_sys))
 		if r == nil {
+			//包装 sysAlloc
 			r = (*heapArena)(persistentalloc(unsafe.Sizeof(*r), sys.PtrSize, &memstats.gc_sys))
 			if r == nil {
 				throw("out of memory allocating heap arena metadata")
@@ -898,6 +905,7 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 // Allocate an object of size bytes.
 // Small objects are allocated from the per-P cache's free lists.
 // Large objects (> 32 kB) are allocated straight from the heap.
+// 分配对象的入口 new = newobject(typ) = mallocgc(typ.size, typ, true)
 func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	if gcphase == _GCmarktermination {
 		throw("mallocgc called with gcphase == _GCmarktermination")
@@ -930,7 +938,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 		return persistentalloc(size, align, &memstats.other_sys)
 	}
 
-	// assistG is the G to charge for this allocation, or nil if
+	// assistG is the G to charge for负责 this allocation, or nil if
 	// GC is not currently active.
 	var assistG *g
 	if gcBlackenEnabled != 0 {
@@ -947,6 +955,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			// This G is in debt. Assist the GC to correct
 			// this before allocating. This must happen
 			// before disabling preemption.
+			// g欠债，需要帮助执行gc，以偿还，直到可以分配内存，
 			gcAssistAlloc(assistG)
 		}
 	}
@@ -963,6 +972,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 
 	shouldhelpgc := false
 	dataSize := size
+
+	//拿到当前p的mcache
 	var c *mcache
 	if mp.p != 0 {
 		c = mp.p.ptr().mcache
@@ -976,10 +987,13 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			throw("malloc called with no P")
 		}
 	}
+
+
 	var x unsafe.Pointer
 	noscan := typ == nil || typ.ptrdata == 0
 	if size <= maxSmallSize {
 		if noscan && size < maxTinySize {
+			// 微对象（不可以是指针类型的对象） 先尝试tiny分配器，再mcache，mcenttral,mheap
 			// Tiny allocator.
 			//
 			// Tiny allocator combines several tiny allocation requests
@@ -1020,6 +1034,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			}
 			if off+size <= maxTinySize && c.tiny != 0 {
 				// The object fits into existing tiny block.
+				//拿到小对象指针
 				x = unsafe.Pointer(c.tiny + off)
 				c.tinyoffset = off + size
 				c.local_tinyallocs++
@@ -1027,10 +1042,12 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 				releasem(mp)
 				return x
 			}
-			// Allocate a new maxTinySize block.
+			// mcache Allocate a new maxTinySize block.
 			span := c.alloc[tinySpanClass]
+			//快速找下一个空闲对象地址
 			v := nextFreeFast(span)
 			if v == 0 {
+				//找下一个地址
 				v, _, shouldhelpgc = c.nextFree(tinySpanClass)
 			}
 			x = unsafe.Pointer(v)
@@ -1044,6 +1061,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			}
 			size = maxTinySize
 		} else {
+			//小对象 mcache,mcentral,mheap
 			var sizeclass uint8
 			if size <= smallSizeMax-8 {
 				sizeclass = size_to_class8[divRoundUp(size, smallSizeDiv)]
@@ -1052,6 +1070,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			}
 			size = uintptr(class_to_size[sizeclass])
 			spc := makeSpanClass(sizeclass, noscan)
+			//mcache中找mspan
+			//mcache.alloc
 			span := c.alloc[spc]
 			v := nextFreeFast(span)
 			if v == 0 {
@@ -1063,9 +1083,11 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			}
 		}
 	} else {
+		//大对象
 		var s *mspan
 		shouldhelpgc = true
 		systemstack(func() {
+			//大对象分配
 			s = largeAlloc(size, needzero, noscan)
 		})
 		s.freeindex = 1
@@ -1107,7 +1129,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	// but see uninitialized memory or stale heap bits.
 	publicationBarrier()
 
-	// Allocate black during GC.
+	// Allocate black during GC. gc期间分配黑色对象
 	// All slots hold nil so no scanning is needed.
 	// This may be racing with GC so do it atomically if there can be
 	// a race marking the bit.
@@ -1135,17 +1157,19 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			c.next_sample -= size
 		} else {
 			mp := acquirem()
+			//剖析分配
 			profilealloc(mp, x, size)
 			releasem(mp)
 		}
 	}
 
 	if assistG != nil {
-		// Account for internal fragmentation in the assist
+		// Account账户 for internal fragmentation in the assist
 		// debt now that we know it.
 		assistG.gcAssistBytes -= int64(size - dataSize)
 	}
 
+	//每次分配内存都要判断是否开gc
 	if shouldhelpgc {
 		if t := (gcTrigger{kind: gcTriggerHeap}); t.test() {
 			gcStart(t)
@@ -1155,6 +1179,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	return x
 }
 
+//大对象分配 >32KB
 func largeAlloc(size uintptr, needzero bool, noscan bool) *mspan {
 	// print("largeAlloc size=", size, "\n")
 
@@ -1189,6 +1214,7 @@ func largeAlloc(size uintptr, needzero bool, noscan bool) *mspan {
 // implementation of new builtin
 // compiler (both frontend and SSA backend) knows the signature
 // of this function
+// 实现内置的new，堆上所有对象分配都在这里
 func newobject(typ *_type) unsafe.Pointer {
 	return mallocgc(typ.size, typ, true)
 }
@@ -1252,8 +1278,8 @@ func nextSample() uintptr {
 	return uintptr(fastexprand(MemProfileRate))
 }
 
-// fastexprand returns a random number from an exponential distribution with
-// the specified mean.
+// fastexprand returns a random number from an exponential指数 distribution with
+// the specified mean 均值.
 func fastexprand(mean int) int32 {
 	// Avoid overflow. Maximum possible step is
 	// -ln(1/(1<<randomBitCount)) * mean, approximately 20 * mean.
@@ -1332,7 +1358,7 @@ func persistentalloc(size, align uintptr, sysStat *uint64) unsafe.Pointer {
 
 // Must run on system stack because stack growth can (re)invoke it.
 // See issue 9174.
-//go:systemstack
+//go:systemstack sysAlloc()
 func persistentalloc1(size, align uintptr, sysStat *uint64) *notInHeap {
 	const (
 		maxBlock = 64 << 10 // VM reservation granularity is 64K on windows
@@ -1415,11 +1441,11 @@ func inPersistentAlloc(p uintptr) bool {
 
 // linearAlloc is a simple linear allocator that pre-reserves a region
 // of memory and then maps that region into the Ready state as needed. The
-// caller is responsible for locking.
+// caller is responsible for locking. 调用方负责锁
 type linearAlloc struct {
-	next   uintptr // next free byte
-	mapped uintptr // one byte past end of mapped space
-	end    uintptr // end of reserved space
+	next   uintptr // 下一个空闲字节的位置 next free byte
+	mapped uintptr // 上一个被占用的空间的结尾one byte past end of mapped space
+	end    uintptr // 结尾 end of reserved space
 }
 
 func (l *linearAlloc) init(base, size uintptr) {
@@ -1449,11 +1475,10 @@ func (l *linearAlloc) alloc(size, align uintptr, sysStat *uint64) unsafe.Pointer
 	return unsafe.Pointer(p)
 }
 
-// notInHeap is off-heap memory allocated by a lower-level allocator
-// like sysAlloc or persistentAlloc.
-//
-// In general, it's better to use real types marked as go:notinheap,
-// but this serves as a generic type for situations where that isn't
+// notInHeap is off-heap memory allocated by a lower-level allocator like sysAlloc or persistentAlloc.
+// 不受 mheap 分配管理的内存
+// In general, it's better to use real types marked as go:notinheap, 一般使用 go:notinheap就可以达到非堆分配的目的
+// but this serves as a generic type for situations where that isn't 这作用于通用类型的场景,
 // possible (like in the allocators).
 //
 // TODO: Use this as the return type of sysAlloc, persistentAlloc, etc?

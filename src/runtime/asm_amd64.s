@@ -184,6 +184,7 @@ needtls:
 	CALL	runtime·settls(SB)
 
 	// store through it, to make sure it works
+	//验证tls
 	get_tls(BX)
 	MOVQ	$0x123, g(BX)
 	MOVQ	runtime·m0+m_tls(SB), AX
@@ -191,25 +192,27 @@ needtls:
 	JEQ 2(PC)
 	CALL	runtime·abort(SB)
 ok:
-	// set the per-goroutine and per-mach "registers"
-	get_tls(BX)
+	// set the per-goroutine and per-mach机器 "registers"
+	get_tls(BX)		//g0放到tls里
 	LEAQ	runtime·g0(SB), CX
 	MOVQ	CX, g(BX)
 	LEAQ	runtime·m0(SB), AX
 
+
+	//g0与m0绑定
 	// save m->g0 = g0
 	MOVQ	CX, m_g0(AX)
 	// save m0 to g0->m
 	MOVQ	AX, g_m(CX)
 
-	CLD				// convention is D is always left cleared
+	CLD				// convention惯例 is D is always left cleared
 	CALL	runtime·check(SB)
 
 	MOVL	16(SP), AX		// copy argc
 	MOVL	AX, 0(SP)
 	MOVQ	24(SP), AX		// copy argv
 	MOVQ	AX, 8(SP)
-	CALL	runtime·args(SB)
+	CALL	runtime·args(SB)	//解析命令行参数
 	CALL	runtime·osinit(SB)
 	CALL	runtime·schedinit(SB)
 

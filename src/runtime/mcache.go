@@ -10,7 +10,7 @@ import (
 )
 
 // Per-thread (in Go, per-P) cache for small objects.
-// No locking needed because it is per-thread (per-P).
+// No locking needed because it is per-thread (per-P). 单线程访问，无并行，有并发？
 //
 // mcaches are allocated from non-GC'd memory, so any heap pointers
 // must be specially handled.
@@ -23,20 +23,21 @@ type mcache struct {
 	local_scan  uintptr // bytes of scannable heap allocated
 
 	// Allocator cache for tiny objects w/o pointers.
-	// See "Tiny allocator" comment in malloc.go.
+	// See "Tiny allocator" comment描述 in malloc.go.
 
 	// tiny points to the beginning of the current tiny block, or
 	// nil if there is no current tiny block.
 	//
-	// tiny is a heap pointer. Since mcache is in non-GC'd memory,
+	// tiny is a heap pointer堆指针. Since mcache is in non-GC'd memory,
 	// we handle it by clearing it in releaseAll during mark
 	// termination.
 	tiny             uintptr
-	tinyoffset       uintptr
-	local_tinyallocs uintptr // number of tiny allocs not counted in other stats
+	tinyoffset       uintptr	//下一个空闲内存的偏移量
+	local_tinyallocs uintptr 	// 分配对象个数 number of tiny allocs not counted in other stats
 
 	// The rest is not accessed on every malloc.
-
+	// 67 * 2 种不同size的mspan列表
+	// 刚初始化mcache，无mspan，第一次申请内存发现没有时，向上一级申请
 	alloc [numSpanClasses]*mspan // spans to allocate from, indexed by spanClass
 
 	stackcache [_NumStackOrders]stackfreelist
@@ -82,14 +83,17 @@ type stackfreelist struct {
 // dummy mspan that contains no free objects.
 var emptymspan mspan
 
+//初始化分配mcache
 func allocmcache() *mcache {
 	var c *mcache
 	systemstack(func() {
 		lock(&mheap_.lock)
+		//分配切片空间
 		c = (*mcache)(mheap_.cachealloc.alloc())
 		c.flushGen = mheap_.sweepgen
 		unlock(&mheap_.lock)
 	})
+	//默认初始化
 	for i := range c.alloc {
 		c.alloc[i] = &emptymspan
 	}
@@ -139,6 +143,7 @@ func (c *mcache) refill(spc spanClass) {
 	}
 
 	// Get a new cached span from the central lists.
+	//从中心缓存拿一个mspan
 	s = mheap_.central[spc].mcentral.cacheSpan()
 	if s == nil {
 		throw("out of memory")

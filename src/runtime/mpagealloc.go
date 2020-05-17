@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Page allocator.
+// Page allocator. 页分配器
 //
 // The page allocator manages mapped pages (defined by pageSize, NOT
 // physPageSize) for allocation and re-use. It is embedded into mheap.

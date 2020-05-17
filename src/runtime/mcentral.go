@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Central free lists.
+// Central free lists. 中心mspan 空闲列表
 //
 // See malloc.go for an overview.
 //
@@ -19,11 +19,11 @@ import "runtime/internal/atomic"
 //go:notinheap
 type mcentral struct {
 	lock      mutex
-	spanclass spanClass
+	spanclass spanClass		//uint8
 
 	// For !go115NewMCentralImpl.
-	nonempty mSpanList // list of spans with a free object, ie a nonempty free list
-	empty    mSpanList // list of spans with no free objects (or cached in an mcache)
+	nonempty mSpanList // 非空闲span列表 list of spans with a free object, ie a nonempty free list
+	empty    mSpanList // 非空闲span列表 list of spans with no free objects (or cached in an mcache)
 
 	// partial and full contain two mspan sets: one of swept in-use
 	// spans, and one of unswept in-use spans. These two trade
@@ -46,9 +46,10 @@ type mcentral struct {
 	partial [2]spanSet // list of spans with a free object
 	full    [2]spanSet // list of spans with no free objects
 
-	// nmalloc is the cumulative count of objects allocated from
+	// nmalloc is the cumulative累积 count of objects allocated from
 	// this mcentral, assuming all spans in mcaches are
 	// fully-allocated. Written atomically, read under STW.
+	// 记录所有分配的对象数，以分配的mspan满载算max分配数
 	nmalloc uint64
 }
 
@@ -91,6 +92,7 @@ func (c *mcentral) fullSwept(sweepgen uint32) *spanSet {
 	return &c.full[sweepgen/2%2]
 }
 
+//分配到mcache
 // Allocate a span to use in an mcache.
 func (c *mcentral) cacheSpan() *mspan {
 	if !go115NewMCentralImpl {
@@ -174,6 +176,7 @@ func (c *mcentral) cacheSpan() *mspan {
 	}
 
 	// We failed to get a span from the mcentral so get one from mheap.
+	//从堆申请新的一块span
 	s = c.grow()
 	if s == nil {
 		return nil
@@ -208,6 +211,7 @@ havespan:
 
 	// Adjust the allocCache so that s.freeindex corresponds to the low bit in
 	// s.allocCache.
+	//更新占用信息
 	s.allocCache >>= s.freeindex % 64
 
 	return s
@@ -503,6 +507,7 @@ func (c *mcentral) grow() *mspan {
 	npages := uintptr(class_to_allocnpages[c.spanclass.sizeclass()])
 	size := uintptr(class_to_size[c.spanclass.sizeclass()])
 
+	//堆中申请mspan
 	s := mheap_.alloc(npages, c.spanclass, true)
 	if s == nil {
 		return nil

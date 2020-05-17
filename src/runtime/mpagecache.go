@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//pageCache  alloc
+
 package runtime
 
 import (
@@ -15,6 +17,7 @@ const pageCachePages = 8 * unsafe.Sizeof(pageCache{}.cache)
 // allocate from without a lock. More specifically, it represents
 // a pageCachePages*pageSize chunk of memory with 0 or more free
 // pages in it.
+// 只在 p 结构体内被使用， 分配器能无锁分配
 type pageCache struct {
 	base  uintptr // base address of the chunk
 	cache uint64  // 64-bit bitmap representing free pages (1 means free)

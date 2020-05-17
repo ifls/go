@@ -106,6 +106,7 @@ type suspendGState struct {
 // directly schedule the waiter. The context switch is unavoidable in
 // the signal case.
 //
+//暂停执行goroutine 目前只在垃圾扫描时触发
 //go:systemstack
 func suspendG(gp *g) suspendGState {
 	if mp := getg().m; mp.curg != nil && readgstatus(mp.curg) == _Grunning {
@@ -260,6 +261,7 @@ func suspendG(gp *g) suspendGState {
 
 // resumeG undoes the effects of suspendG, allowing the suspended
 // goroutine to continue from its current safe-point.
+//恢复协程执行
 func resumeG(state suspendGState) {
 	if state.dead {
 		// We didn't actually stop anything.
@@ -301,6 +303,7 @@ func canPreemptM(mp *m) bool {
 // frame and its parent frame conservatively.
 //
 // asyncPreempt is implemented in assembly.
+//两个异步抢占函数
 func asyncPreempt()
 
 //go:nosplit

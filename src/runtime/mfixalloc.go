@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Fixed-size object allocator. Returned memory is not zeroed.
+// Fixed-size object allocator. Returned memory is not zeroed未初始化.
 //
 // See malloc.go for overview.
 
@@ -24,6 +24,7 @@ import "unsafe"
 // smashed by freeing and reallocating.
 //
 // Consider marking fixalloc'd types go:notinheap.
+// 简单空闲链表分配器 for 固定大小的对象
 type fixalloc struct {
 	size   uintptr
 	first  func(arg, p unsafe.Pointer) // called first time p is returned
@@ -49,6 +50,7 @@ type mlink struct {
 
 // Initialize f to allocate objects of the given size,
 // using the allocator to obtain chunks of memory.
+// 初始化
 func (f *fixalloc) init(size uintptr, first func(arg, p unsafe.Pointer), arg unsafe.Pointer, stat *uint64) {
 	f.size = size
 	f.first = first
@@ -61,6 +63,7 @@ func (f *fixalloc) init(size uintptr, first func(arg, p unsafe.Pointer), arg uns
 	f.zero = true
 }
 
+//获取下一个空闲内存空间
 func (f *fixalloc) alloc() unsafe.Pointer {
 	if f.size == 0 {
 		print("runtime: use of FixAlloc_Alloc before FixAlloc_Init\n")
@@ -91,6 +94,7 @@ func (f *fixalloc) alloc() unsafe.Pointer {
 	return v
 }
 
+//释放指针指向的内存空间
 func (f *fixalloc) free(p unsafe.Pointer) {
 	f.inuse -= f.size
 	v := (*mlink)(p)

@@ -209,8 +209,8 @@ func readgogc() int32 {
 
 // gcenable is called after the bulk of the runtime initialization,
 // just before we're about to start letting user code run.
-// It kicks off the background sweeper goroutine, the background
-// scavenger goroutine, and enables GC.
+// It kicks off独立执行 the background sweeper goroutine, the background
+// scavenger清道夫 goroutine, and enables GC.
 func gcenable() {
 	// Kick off sweeping and scavenging.
 	c := make(chan int, 2)
