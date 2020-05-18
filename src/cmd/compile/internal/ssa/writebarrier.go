@@ -76,7 +76,7 @@ func needwb(v *Value, zeroes map[ID]ZeroRegion) bool {
 // writebarrier pass inserts write barriers for store ops (Store, Move, Zero)
 // when necessary (the condition above). It rewrites store ops to branches
 // and runtime calls, like
-//
+// 写屏障
 // if writeBarrier.enabled {
 //   gcWriteBarrier(ptr, val)	// Not a regular Go call
 // } else {

@@ -9,6 +9,7 @@
 
 // NOTE: Windows externalthreadhandler expects memclr to preserve DX.
 
+//非堆指针内存清0
 // func memclrNoHeapPointers(ptr unsafe.Pointer, n uintptr)
 TEXT runtime·memclrNoHeapPointers(SB), NOSPLIT, $0-16
 	MOVQ	ptr+0(FP), DI

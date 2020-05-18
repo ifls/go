@@ -387,7 +387,7 @@ TEXT NAME(SB), WRAPPER, $MAXSIZE-32; \
 
 // callRet copies return values back at the end of call*. This is a
 // separate function so it can allocate stack space for the arguments
-// to reflectcallmove. It does not follow the Go ABI; it expects its
+// to reflectcallmove. It does not follow the Go ABI 不遵循Go ABI; it expects its
 // arguments in registers.
 TEXT callRet<>(SB), NOSPLIT, $32-0
 	NO_LOCAL_POINTERS

@@ -29,7 +29,7 @@
 #include "textflag.h"
 
 // See memmove Go doc for important implementation constraints.
-
+// 内存移动，考虑 区间有覆盖的情况，最好是从后复制，这汇编函数好复杂
 // func memmove(to, from unsafe.Pointer, n uintptr)
 TEXT runtime·memmove(SB), NOSPLIT, $0-24
 

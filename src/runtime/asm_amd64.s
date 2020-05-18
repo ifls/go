@@ -3,26 +3,28 @@
 // license that can be found in the LICENSE file.
 
 #include "go_asm.h"
+//引入get_tls(r) 宏
 #include "go_tls.h"
+//定义宏常量
 #include "funcdata.h"
+//定义宏常量
 #include "textflag.h"
 
-// _rt0_amd64 is common startup code for most amd64 systems when using
-// internal linking. This is the entry point for the program from the
-// kernel for an ordinary -buildmode=exe program. The stack holds the
-// number of arguments and the C-style argv.
+// _rt0_amd64 is common startup code for most amd64 systems when using internal linking内部连接.
+// This is the entry point for the program from the kernel for an ordinary -buildmode=exe program. 普通可执行程序的内核跳转入口
+// The stack holds the number of arguments and the C-style argv. //栈上已经有c风格的输入参数
 TEXT _rt0_amd64(SB),NOSPLIT,$-8
-	MOVQ	0(SP), DI	// argc
-	LEAQ	8(SP), SI	// argv
+	MOVQ	0(SP), DI	// argc 8B大小 DI = sp
+	LEAQ	8(SP), SI	// argv DI = sp + 8
 	JMP	runtime·rt0_go(SB)
 
-// main is common startup code for most amd64 systems when using
+// main is common startup code for most amd64 systems when using 外部链接入口
 // external linking. The C startup code will call the symbol "main"
 // passing argc and argv in the usual C ABI registers DI and SI.
 TEXT main(SB),NOSPLIT,$-8
 	JMP	runtime·rt0_go(SB)
 
-// _rt0_amd64_lib is common startup code for most amd64 systems when
+// _rt0_amd64_lib is common startup code for most amd64 systems when 库代码入口
 // using -buildmode=c-archive or -buildmode=c-shared. The linker will
 // arrange to invoke this function as a global constructor (for
 // c-archive) or when the shared library is loaded (for c-shared).
@@ -84,23 +86,24 @@ GLOBL _rt0_amd64_lib_argc<>(SB),NOPTR, $8
 DATA _rt0_amd64_lib_argv<>(SB)/8, $0
 GLOBL _rt0_amd64_lib_argv<>(SB),NOPTR, $8
 
+//启动代码
 TEXT runtime·rt0_go(SB),NOSPLIT,$0
-	// copy arguments forward on an even stack
+	// copy arguments forward on an even stack 拷贝输入参数到 even stack 偶数对齐栈
 	MOVQ	DI, AX		// argc
 	MOVQ	SI, BX		// argv
-	SUBQ	$(4*8+7), SP		// 2args 2auto
-	ANDQ	$~15, SP
+	SUBQ	$(4*8+7), SP // 栈 2args 2auto
+	ANDQ	$~15, SP	//再减 清除后4位b，对齐8字节
 	MOVQ	AX, 16(SP)
 	MOVQ	BX, 24(SP)
 
 	// create istack out of the given (operating system) stack.
 	// _cgo_init may update stackguard.
 	MOVQ	$runtime·g0(SB), DI
-	LEAQ	(-64*1024+104)(SP), BX
+	LEAQ	(-64*1024+104)(SP), BX	//将地址放在BX
 	MOVQ	BX, g_stackguard0(DI)
 	MOVQ	BX, g_stackguard1(DI)
-	MOVQ	BX, (g_stack+stack_lo)(DI)
-	MOVQ	SP, (g_stack+stack_hi)(DI)
+	MOVQ	BX, (g_stack+stack_lo)(DI)	//栈顶 < 栈底
+	MOVQ	SP, (g_stack+stack_hi)(DI)  //栈底
 
 	// find out information about the processor we're on
 	MOVL	$0, AX
@@ -238,10 +241,11 @@ ok:
 DATA	runtime·mainPC+0(SB)/8,$runtime·main(SB)
 GLOBL	runtime·mainPC(SB),RODATA,$8
 
+//recover会用到
 TEXT runtime·breakpoint(SB),NOSPLIT,$0-0
 	BYTE	$0xcc
 	RET
-
+//proc.go 初始化线程 linux不需要
 TEXT runtime·asminit(SB),NOSPLIT,$0-0
 	// No per-thread init.
 	RET
@@ -251,7 +255,8 @@ TEXT runtime·asminit(SB),NOSPLIT,$0-0
  */
 
 // func gosave(buf *gobuf)
-// save state in Gobuf; setjmp
+// save state in Gobuf; 相当于 setjmp
+// 8B params&ret 0B局部变量
 TEXT runtime·gosave(SB), NOSPLIT, $0-8
 	MOVQ	buf+0(FP), AX		// gobuf
 	LEAQ	buf+0(FP), BX		// caller's SP
@@ -271,12 +276,12 @@ TEXT runtime·gosave(SB), NOSPLIT, $0-8
 	RET
 
 // func gogo(buf *gobuf)
-// restore state from Gobuf; longjmp
+// restore state from Gobuf; 相当于 longjmp
 TEXT runtime·gogo(SB), NOSPLIT, $16-8
-	MOVQ	buf+0(FP), BX		// gobuf
-	MOVQ	gobuf_g(BX), DX
+	MOVQ	buf+0(FP), BX		// gobuf -> BX
+	MOVQ	gobuf_g(BX), DX		//gobuf.g -> DX
 	MOVQ	0(DX), CX		// make sure g != nil
-	get_tls(CX)
+	get_tls(CX)			// MOVQ TLS CX
 	MOVQ	DX, g(CX)
 	MOVQ	gobuf_sp(BX), SP	// restore SP
 	MOVQ	gobuf_ret(BX), AX
@@ -293,6 +298,7 @@ TEXT runtime·gogo(SB), NOSPLIT, $16-8
 // Switch to m->g0's stack, call fn(g).
 // Fn must never return. It should gogo(&g->sched)
 // to keep running g.
+// 切换到 g0栈 执行g切换函数，此函数应该切换执行其他g，不应该返回继续执行， 也就是mcall不返回
 TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	MOVQ	fn+0(FP), DI
 
@@ -311,7 +317,7 @@ TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	MOVQ	m_g0(BX), SI
 	CMPQ	SI, AX	// if g == m->g0 call badmcall
 	JNE	3(PC)
-	MOVQ	$runtime·badmcall(SB), AX
+	MOVQ	$runtime·badmcall(SB), AX	//throw 异常
 	JMP	AX
 	MOVQ	SI, g(CX)	// g = m->g0
 	MOVQ	(g_sched+gobuf_sp)(SI), SP	// sp = m->g0->sched.sp
@@ -320,11 +326,11 @@ TEXT runtime·mcall(SB), NOSPLIT, $0-8
 	MOVQ	0(DI), DI
 	CALL	DI
 	POPQ	AX
-	MOVQ	$runtime·badmcall2(SB), AX
+	MOVQ	$runtime·badmcall2(SB), AX	//抛出异常信息
 	JMP	AX
 	RET
 
-// systemstack_switch is a dummy routine that systemstack leaves at the bottom
+// systemstack_switch is a dummy routine例程 that systemstack leaves at the bottom
 // of the G stack. We need to distinguish the routine that
 // lives at the bottom of the G stack from the one that lives
 // at the top of the system stack because the one at the top of
@@ -350,7 +356,7 @@ TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 	JNE	bad
 
 	// switch stacks
-	// save our state in g->sched. Pretend to
+	// save our state in g->sched 保存上下文. Pretend to
 	// be systemstack_switch if the G stack is scanned.
 	MOVQ	$runtime·systemstack_switch(SB), SI
 	MOVQ	SI, (g_sched+gobuf_pc)(AX)
@@ -358,21 +364,21 @@ TEXT runtime·systemstack(SB), NOSPLIT, $0-8
 	MOVQ	AX, (g_sched+gobuf_g)(AX)
 	MOVQ	BP, (g_sched+gobuf_bp)(AX)
 
-	// switch to g0
+	// switch to g0 切换到g0
 	MOVQ	DX, g(CX)
 	MOVQ	(g_sched+gobuf_sp)(DX), BX
 	// make it look like mstart called systemstack on g0, to stop traceback
 	SUBQ	$8, BX
-	MOVQ	$runtime·mstart(SB), DX
+	MOVQ	$runtime·mstart(SB), DX		// 造帧，看起来像mstart在g0上调用了此函数
 	MOVQ	DX, 0(BX)
 	MOVQ	BX, SP
 
 	// call target function
-	MOVQ	DI, DX
+	MOVQ	DI, DX		//最开始保存的fn
 	MOVQ	0(DI), DI
 	CALL	DI
 
-	// switch back to g
+	// switch back to g 再切换回原来的g
 	get_tls(CX)
 	MOVQ	g(CX), AX
 	MOVQ	g_m(AX), BX
@@ -386,29 +392,30 @@ noswitch:
 	// already on m stack; tail call the function
 	// Using a tail call here cleans up tracebacks since we won't stop
 	// at an intermediate systemstack.
+	//已经在m栈上，无需切换
 	MOVQ	DI, DX
 	MOVQ	0(DI), DI
 	JMP	DI
 
 bad:
 	// Bad: g is not gsignal, not g0, not curg. What is it?
-	MOVQ	$runtime·badsystemstack(SB), AX
+	MOVQ	$runtime·badsystemstack(SB), AX		//输出错误信息到标准错误
 	CALL	AX
 	INT	$3
 
 
 /*
- * support for morestack
+ * support for morestack 扩栈
  */
 
-// Called during function prolog when more stack is needed.
+// Called during function prolog 从函数开头的地方调用 when more stack is needed.
 //
 // The traceback routines see morestack on a g0 as being
 // the top of a stack (for example, morestack calling newstack
 // calling the scheduler calling newm calling gc), so we must
 // record an argument size. For that purpose, it has no arguments.
 TEXT runtime·morestack(SB),NOSPLIT,$0-0
-	// Cannot grow scheduler stack (m->g0).
+	// Cannot grow scheduler stack (m->g0).		//g0栈不能扩容
 	get_tls(CX)
 	MOVQ	g(CX), BX
 	MOVQ	g_m(BX), BX
@@ -418,7 +425,7 @@ TEXT runtime·morestack(SB),NOSPLIT,$0-0
 	CALL	runtime·badmorestackg0(SB)
 	CALL	runtime·abort(SB)
 
-	// Cannot grow signal stack (m->gsignal).
+	// Cannot grow signal stack (m->gsignal).	//信号g的栈也不能扩容
 	MOVQ	m_gsignal(BX), SI
 	CMPQ	g(CX), SI
 	JNE	3(PC)
@@ -426,7 +433,7 @@ TEXT runtime·morestack(SB),NOSPLIT,$0-0
 	CALL	runtime·abort(SB)
 
 	// Called from f.
-	// Set m->morebuf to f's caller.
+	// Set m->morebuf to f's caller. 保存调用上下文 到 m.morebuf
 	NOP	SP	// tell vet SP changed - stop checking offsets
 	MOVQ	8(SP), AX	// f's caller's PC
 	MOVQ	AX, (m_morebuf+gobuf_pc)(BX)
@@ -436,7 +443,7 @@ TEXT runtime·morestack(SB),NOSPLIT,$0-0
 	MOVQ	g(CX), SI
 	MOVQ	SI, (m_morebuf+gobuf_g)(BX)
 
-	// Set g->sched to context in f.
+	// Set g->sched to context in f. 保存调用上下文到 m.morebuf
 	MOVQ	0(SP), AX // f's PC
 	MOVQ	AX, (g_sched+gobuf_pc)(SI)
 	MOVQ	SI, (g_sched+gobuf_g)(SI)
@@ -445,7 +452,7 @@ TEXT runtime·morestack(SB),NOSPLIT,$0-0
 	MOVQ	BP, (g_sched+gobuf_bp)(SI)
 	MOVQ	DX, (g_sched+gobuf_ctxt)(SI)
 
-	// Call newstack on m->g0's stack.
+	// Call newstack on m->g0's stack.	//在g0栈上 调用newstack函数
 	MOVQ	m_g0(BX), BX
 	MOVQ	BX, g(CX)
 	MOVQ	(g_sched+gobuf_sp)(BX), SP
@@ -471,6 +478,7 @@ TEXT runtime·morestack_noctxt(SB),NOSPLIT,$0
 	JMP	AX
 // Note: can't just "JMP NAME(SB)" - bad inlining results.
 
+//分发入口
 TEXT ·reflectcall(SB), NOSPLIT, $0-32
 	MOVLQZX argsize+24(FP), CX
 	DISPATCH(runtime·call32, 32)
@@ -502,6 +510,7 @@ TEXT ·reflectcall(SB), NOSPLIT, $0-32
 	MOVQ	$runtime·badreflectcall(SB), AX
 	JMP	AX
 
+//实现反射调用函数
 #define CALLFN(NAME,MAXSIZE)			\
 TEXT NAME(SB), WRAPPER, $MAXSIZE-32;		\
 	NO_LOCAL_POINTERS;			\
@@ -529,7 +538,7 @@ TEXT NAME(SB), WRAPPER, $MAXSIZE-32;		\
 
 // callRet copies return values back at the end of call*. This is a
 // separate function so it can allocate stack space for the arguments
-// to reflectcallmove. It does not follow the Go ABI; it expects its
+// to reflectcallmove. It does not follow the Go ABI 不遵循go 二进制编程接口 或者叫做汇编调用接口; it expects its
 // arguments in registers.
 TEXT callRet<>(SB), NOSPLIT, $32-0
 	NO_LOCAL_POINTERS
@@ -540,6 +549,7 @@ TEXT callRet<>(SB), NOSPLIT, $32-0
 	CALL	runtime·reflectcallmove(SB)
 	RET
 
+//宏批量定义函数
 CALLFN(·call32, 32)
 CALLFN(·call64, 64)
 CALLFN(·call128, 128)
@@ -567,6 +577,7 @@ CALLFN(·call268435456, 268435456)
 CALLFN(·call536870912, 536870912)
 CALLFN(·call1073741824, 1073741824)
 
+//自旋等待
 TEXT runtime·procyield(SB),NOSPLIT,$0-0
 	MOVL	cycles+0(FP), AX
 again:
@@ -587,6 +598,7 @@ TEXT ·publicationBarrier(SB),NOSPLIT,$0-0
 // 1. pop the caller
 // 2. sub 5 bytes from the callers return
 // 3. jmp to the argument
+// 执行defer
 TEXT runtime·jmpdefer(SB), NOSPLIT, $0-16
 	MOVQ	fv+0(FP), DX	// fn
 	MOVQ	argp+8(FP), BX	// caller sp
@@ -596,7 +608,7 @@ TEXT runtime·jmpdefer(SB), NOSPLIT, $0-16
 	MOVQ	0(DX), BX
 	JMP	BX	// but first run the deferred function
 
-// Save state of caller into g->sched. Smashes R8, R9.
+// Save state of caller into g->sched. Smashes破坏r8,r9 R8, R9.
 TEXT gosave<>(SB),NOSPLIT,$0
 	get_tls(R8)
 	MOVQ	g(R8), R8
@@ -615,7 +627,7 @@ TEXT gosave<>(SB),NOSPLIT,$0
 
 // func asmcgocall(fn, arg unsafe.Pointer) int32
 // Call fn(arg) on the scheduler stack,
-// aligned appropriately for the gcc ABI.
+// aligned appropriately合适地对齐 for the gcc ABI.
 // See cgocall.go for more details.
 TEXT ·asmcgocall(SB),NOSPLIT,$0-20
 	MOVQ	fn+0(FP), AX
@@ -834,7 +846,7 @@ havem:
 	RET
 
 // func setg(gg *g)
-// set g. for use by needm.
+// set g. for use by needm. ???
 TEXT runtime·setg(SB), NOSPLIT, $0-8
 	MOVQ	gg+0(FP), BX
 #ifdef GOOS_windows
@@ -857,12 +869,15 @@ TEXT setg_gcc<>(SB),NOSPLIT,$0
 	MOVQ	DI, g(AX)
 	RET
 
+//结束程序
 TEXT runtime·abort(SB),NOSPLIT,$0-0
 	INT	$3		// 系统调用3 SYS_CLOSE = 3
 loop:
 	JMP	loop
 
+// 检查 栈指针 在栈范围内
 // check that SP is in range [g->stack.lo, g->stack.hi)
+// runtime·clone 调用
 TEXT runtime·stackcheck(SB), NOSPLIT, $0-0
 	get_tls(CX)
 	MOVQ	g(CX), AX
@@ -890,7 +905,7 @@ done:
 	RET
 
 // func memhash(p unsafe.Pointer, h, s uintptr) uintptr
-// hash function using AES hardware instructions
+// hash function using AES hardware instructions 使用aes硬件指令
 TEXT runtime·memhash(SB),NOSPLIT,$0-32
 	CMPB	runtime·useAeshash(SB), $0
 	JEQ	noaes
@@ -1274,7 +1289,7 @@ TEXT runtime·memhash64(SB),NOSPLIT,$0-24
 noaes:
 	JMP	runtime·memhash64Fallback(SB)
 
-// simple mask to get rid of data in the high part of the register.
+// simple mask to get rid of data in the high part of the register. 掩码，用于获得寄存器低位
 DATA masks<>+0x00(SB)/8, $0x0000000000000000
 DATA masks<>+0x08(SB)/8, $0x0000000000000000
 DATA masks<>+0x10(SB)/8, $0x00000000000000ff
@@ -1309,6 +1324,7 @@ DATA masks<>+0xf0(SB)/8, $0xffffffffffffffff
 DATA masks<>+0xf8(SB)/8, $0x00ffffffffffffff
 GLOBL masks<>(SB),RODATA,$256
 
+//检查汇编
 // func checkASM() bool
 TEXT ·checkASM(SB),NOSPLIT,$0-1
 	// check that masks<>(SB) and shifts<>(SB) are aligned to 16-byte
@@ -1319,8 +1335,8 @@ TEXT ·checkASM(SB),NOSPLIT,$0-1
 	SETEQ	ret+0(FP)
 	RET
 
-// these are arguments to pshufb. They move data down from
-// the high bytes of the register to the low bytes of the register.
+// these are arguments to pshufb. 位移掩码
+// They move data down from the high bytes of the register to the low bytes of the register.
 // index is how many bytes to move.
 DATA shifts<>+0x00(SB)/8, $0x0000000000000000
 DATA shifts<>+0x08(SB)/8, $0x0000000000000000
@@ -1356,6 +1372,7 @@ DATA shifts<>+0xf0(SB)/8, $0x0807060504030201
 DATA shifts<>+0xf8(SB)/8, $0xff0f0e0d0c0b0a09
 GLOBL shifts<>(SB),RODATA,$256
 
+//return 0
 TEXT runtime·return0(SB), NOSPLIT, $0
 	MOVL	$0, AX
 	RET
@@ -1388,13 +1405,14 @@ TEXT runtime·addmoduledata(SB),NOSPLIT,$0-0
 	POPQ	R15
 	RET
 
-// gcWriteBarrier performs a heap pointer write and informs the GC.
-//
+// gcWriteBarrier performs a heap pointer write and informs通知 the GC.
+// 写屏障
 // gcWriteBarrier does NOT follow the Go ABI. It takes two arguments:
 // - DI is the destination of the write
 // - AX is the value being written at DI
-// It clobbers FLAGS. It does not clobber any general-purpose registers,
+// It clobbers击倒 FLAGS. It does not clobber any general-purpose registers,
 // but may clobber others (e.g., SSE registers).
+// 从生成的汇编里调用，而不是go代码里
 TEXT runtime·gcWriteBarrier(SB),NOSPLIT,$120
 	// Save the registers clobbered by the fast path. This is slightly
 	// faster than having the caller spill these.
@@ -1718,7 +1736,7 @@ TEXT runtime·debugCallPanicked(SB),NOSPLIT,$16-16
 	BYTE	$0xcc
 	RET
 
-// Note: these functions use a special calling convention to save generated code space.
+// Note: these functions use a special calling convention特殊的调用约定 to save generated code space.
 // Arguments are passed in registers, but the space for those arguments are allocated
 // in the caller's stack frame. These stubs write the args into that stack space and
 // then tail call to the corresponding runtime handler.
@@ -1726,7 +1744,7 @@ TEXT runtime·debugCallPanicked(SB),NOSPLIT,$16-16
 TEXT runtime·panicIndex(SB),NOSPLIT,$0-16
 	MOVQ	AX, x+0(FP)
 	MOVQ	CX, y+8(FP)
-	JMP	runtime·goPanicIndex(SB)
+	JMP	runtime·goPanicIndex(SB)		//调用index相关异常
 TEXT runtime·panicIndexU(SB),NOSPLIT,$0-16
 	MOVQ	AX, x+0(FP)
 	MOVQ	CX, y+8(FP)
@@ -1795,7 +1813,7 @@ DATA runtime·tls_g+0(SB)/8, $16
 GLOBL runtime·tls_g+0(SB), NOPTR, $8
 #endif
 
-// The compiler and assembler's -spectre=ret mode rewrites
+// The compiler and assembler's -spectre(频谱)=ret mode rewrites
 // all indirect CALL AX / JMP AX instructions to be
 // CALL retpolineAX / JMP retpolineAX.
 // See https://support.google.com/faqs/answer/7625886.

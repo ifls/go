@@ -4,6 +4,7 @@
 
 #include "textflag.h"
 
+//直接进入通用的amd64启动代码
 TEXT _rt0_amd64_linux(SB),NOSPLIT,$-8
 	JMP	_rt0_amd64(SB)
 

@@ -2,9 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// This file defines the IDs for PCDATA and FUNCDATA instructions
-// in Go binaries. It is included by assembly sources, so it must
-// be written using #defines.
+// This file defines the IDs for PCDATA and FUNCDATA instructions in Go binaries.
+// It is included by assembly sources, so it must be written using #defines.
 //
 // These must agree with symtab.go and ../cmd/internal/objabi/funcdata.go.
 

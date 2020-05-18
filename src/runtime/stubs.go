@@ -55,6 +55,7 @@ func systemstack(fn func())
 
 var badsystemstackMsg = "fatal: systemstack called from unexpected goroutine"
 
+//call from 汇编
 //go:nosplit
 //go:nowritebarrierrec
 func badsystemstack() {
@@ -155,7 +156,7 @@ func asminit()
 func setg(gg *g)
 func breakpoint()
 
-// reflectcall calls fn with a copy of the n argument bytes pointed at by arg.
+// 反射调用函数 reflectcall calls fn with a copy of the n argument bytes pointed at by arg.
 // After fn returns, reflectcall copies n-retoffset result bytes
 // back into arg+retoffset before returning. If copying result bytes back,
 // the caller should pass the argument frame type as argtype, so that
@@ -167,7 +168,7 @@ func breakpoint()
 //
 // Package reflect accesses this symbol through a linkname.
 func reflectcall(argtype *_type, fn, arg unsafe.Pointer, argsize uint32, retoffset uint32)
-
+//自旋 PAUSE
 func procyield(cycles uint32)
 
 type neverCallThisFunction struct{}
@@ -270,7 +271,7 @@ func rt0_go()
 func return0()
 
 // in asm_*.s
-// not called directly; definitions here supply type information for traceback.
+// not called directly; called by relectcall definitions here supply type information for traceback.
 func call32(typ, fn, arg unsafe.Pointer, n, retoffset uint32)
 func call64(typ, fn, arg unsafe.Pointer, n, retoffset uint32)
 func call128(typ, fn, arg unsafe.Pointer, n, retoffset uint32)

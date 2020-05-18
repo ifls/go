@@ -12,6 +12,7 @@
 
 #define AT_FDCWD -100
 
+//优化实现的系统调用
 #define SYS_read		0
 #define SYS_write		1
 #define SYS_close		3
@@ -52,6 +53,8 @@
 #define SYS_epoll_create1	291
 #define SYS_pipe2		293
 
+//退出进程
+//func exit(code int32)
 TEXT runtime·exit(SB),NOSPLIT,$0-4
 	MOVL	code+0(FP), DI
 	MOVL	$SYS_exit_group, AX
@@ -70,6 +73,7 @@ TEXT runtime·exitThread(SB),NOSPLIT,$0-8
 	INT	$3
 	JMP	0(PC)
 
+// func open(name *byte, mode, perm int32) int32
 TEXT runtime·open(SB),NOSPLIT,$0-20
 	// This uses openat instead of open, because Android O blocks open.
 	MOVL	$AT_FDCWD, DI // AT_FDCWD, so this acts like open
@@ -84,6 +88,8 @@ TEXT runtime·open(SB),NOSPLIT,$0-20
 	MOVL	AX, ret+16(FP)
 	RET
 
+//为什么参数大小是12B？
+//func closefd(fd int32) int32
 TEXT runtime·closefd(SB),NOSPLIT,$0-12
 	MOVL	fd+0(FP), DI
 	MOVL	$SYS_close, AX
@@ -94,6 +100,7 @@ TEXT runtime·closefd(SB),NOSPLIT,$0-12
 	MOVL	AX, ret+8(FP)
 	RET
 
+// func write1(fd uintptr, p unsafe.Pointer, n int32) int32
 TEXT runtime·write1(SB),NOSPLIT,$0-28
 	MOVQ	fd+0(FP), DI
 	MOVQ	p+8(FP), SI
@@ -103,6 +110,7 @@ TEXT runtime·write1(SB),NOSPLIT,$0-28
 	MOVL	AX, ret+24(FP)
 	RET
 
+//func read(fd int32, p unsafe.Pointer, n int32) int32
 TEXT runtime·read(SB),NOSPLIT,$0-28
 	MOVL	fd+0(FP), DI
 	MOVQ	p+8(FP), SI
@@ -112,6 +120,7 @@ TEXT runtime·read(SB),NOSPLIT,$0-28
 	MOVL	AX, ret+24(FP)
 	RET
 
+//os_linux.go
 // func pipe() (r, w int32, errno int32)
 TEXT runtime·pipe(SB),NOSPLIT,$0-12
 	LEAQ	r+0(FP), DI
@@ -129,6 +138,7 @@ TEXT runtime·pipe2(SB),NOSPLIT,$0-20
 	MOVL	AX, errno+16(FP)
 	RET
 
+//func usleep(usec uint32)
 TEXT runtime·usleep(SB),NOSPLIT,$16
 	MOVL	$0, DX
 	MOVL	usec+0(FP), AX
@@ -146,12 +156,15 @@ TEXT runtime·usleep(SB),NOSPLIT,$16
 	SYSCALL
 	RET
 
+//linux.go
+//func gettid() uint32
 TEXT runtime·gettid(SB),NOSPLIT,$0-4
 	MOVL	$SYS_gettid, AX
 	SYSCALL
 	MOVL	AX, ret+0(FP)
 	RET
 
+// func raise(sig uint32)
 TEXT runtime·raise(SB),NOSPLIT,$0
 	MOVL	$SYS_getpid, AX
 	SYSCALL
@@ -165,6 +178,7 @@ TEXT runtime·raise(SB),NOSPLIT,$0
 	SYSCALL
 	RET
 
+//func raiseproc(sig uint32)
 TEXT runtime·raiseproc(SB),NOSPLIT,$0
 	MOVL	$SYS_getpid, AX
 	SYSCALL
@@ -174,12 +188,14 @@ TEXT runtime·raiseproc(SB),NOSPLIT,$0
 	SYSCALL
 	RET
 
+//func getpid() int
 TEXT ·getpid(SB),NOSPLIT,$0-8
 	MOVL	$SYS_getpid, AX
 	SYSCALL
 	MOVQ	AX, ret+0(FP)
 	RET
 
+// func tgkill(tgid, tid, sig int)
 TEXT ·tgkill(SB),NOSPLIT,$0
 	MOVQ	tgid+0(FP), DI
 	MOVQ	tid+8(FP), SI
@@ -188,6 +204,7 @@ TEXT ·tgkill(SB),NOSPLIT,$0
 	SYSCALL
 	RET
 
+//func setitimer(mode int32, new, old *itimerval)
 TEXT runtime·setitimer(SB),NOSPLIT,$0-24
 	MOVL	mode+0(FP), DI
 	MOVQ	new+8(FP), SI
@@ -196,6 +213,7 @@ TEXT runtime·setitimer(SB),NOSPLIT,$0-24
 	SYSCALL
 	RET
 
+//func mincore(addr unsafe.Pointer, n uintptr, dst *byte) int32
 TEXT runtime·mincore(SB),NOSPLIT,$0-28
 	MOVQ	addr+0(FP), DI
 	MOVQ	n+8(FP), SI
@@ -324,6 +342,7 @@ fallback:
 	MOVQ	AX, ret+0(FP)
 	RET
 
+//func rtsigprocmask(how int32, new, old *sigset, size int32)
 TEXT runtime·rtsigprocmask(SB),NOSPLIT,$0-28
 	MOVL	how+0(FP), DI
 	MOVQ	new+8(FP), SI
@@ -336,6 +355,7 @@ TEXT runtime·rtsigprocmask(SB),NOSPLIT,$0-28
 	MOVL	$0xf1, 0xf1  // crash
 	RET
 
+// func rt_sigaction(sig uintptr, new, old *sigactiont, size uintptr) int32
 TEXT runtime·rt_sigaction(SB),NOSPLIT,$0-36
 	MOVQ	sig+0(FP), DI
 	MOVQ	new+8(FP), SI
@@ -346,6 +366,8 @@ TEXT runtime·rt_sigaction(SB),NOSPLIT,$0-36
 	MOVL	AX, ret+32(FP)
 	RET
 
+//func callCgoSigaction(sig uintptr, new, old *sigactiont) int32
+// cgo_sigaction.go
 // Call the function stored in _cgo_sigaction using the GCC calling convention.
 TEXT runtime·callCgoSigaction(SB),NOSPLIT,$16
 	MOVQ	sig+0(FP), DI
@@ -359,6 +381,8 @@ TEXT runtime·callCgoSigaction(SB),NOSPLIT,$16
 	MOVL	AX, ret+24(FP)
 	RET
 
+// func sigfwd(fn uintptr, sig uint32, info *siginfo, ctx unsafe.Pointer)
+// signal_unix.go
 TEXT runtime·sigfwd(SB),NOSPLIT,$0-32
 	MOVQ	fn+0(FP),    AX
 	MOVL	sig+8(FP),   DI
@@ -372,6 +396,8 @@ TEXT runtime·sigfwd(SB),NOSPLIT,$0-32
 	POPQ	BP
 	RET
 
+//func sigtramp(sig uint32, info *siginfo, ctx unsafe.Pointer)
+//os_linux.go
 TEXT runtime·sigtramp(SB),NOSPLIT,$72
 	// Save callee-saved C registers, since the caller may be a C signal handler.
 	MOVQ	BX,  bx-8(SP)
@@ -478,12 +504,15 @@ sigtrampnog:
 // https://sourceware.org/git/?p=glibc.git;a=blob;f=sysdeps/unix/sysv/linux/x86_64/sigaction.c
 // The code that cares about the precise instructions used is:
 // https://gcc.gnu.org/viewcvs/gcc/trunk/libgcc/config/i386/linux-unwind.h?revision=219188&view=markup
+// func sigreturn()
 TEXT runtime·sigreturn(SB),NOSPLIT,$0
 	MOVQ	$SYS_rt_sigreturn, AX
 	SYSCALL
 	INT $3	// not reached
 
+//cgo_mmap.go
 //系统分配内存
+// func sysMmap(addr unsafe.Pointer, n uintptr, prot, flags, fd int32, off uint32) (p unsafe.Pointer, err int)
 TEXT runtime·sysMmap(SB),NOSPLIT,$0
 	MOVQ	addr+0(FP), DI
 	MOVQ	n+8(FP), SI
@@ -524,6 +553,7 @@ TEXT runtime·callCgoMmap(SB),NOSPLIT,$16
 	MOVQ	AX, ret+32(FP)
 	RET
 
+//func sysMunmap(addr unsafe.Pointer, n uintptr)
 TEXT runtime·sysMunmap(SB),NOSPLIT,$0
 	MOVQ	addr+0(FP), DI
 	MOVQ	n+8(FP), SI
@@ -547,6 +577,7 @@ TEXT runtime·callCgoMunmap(SB),NOSPLIT,$16-16
 	MOVQ	0(SP), SP
 	RET
 
+//func madvise(addr unsafe.Pointer, n uintptr, flags int32) int32
 TEXT runtime·madvise(SB),NOSPLIT,$0
 	MOVQ	addr+0(FP), DI
 	MOVQ	n+8(FP), SI
@@ -556,8 +587,9 @@ TEXT runtime·madvise(SB),NOSPLIT,$0
 	MOVL	AX, ret+24(FP)
 	RET
 
+// os_linux.go
 // int64 futex(int32 *uaddr, int32 op, int32 val,
-//	struct timespec *timeout, int32 *uaddr2, int32 val2);
+// struct timespec *timeout, int32 *uaddr2, int32 val2);
 TEXT runtime·futex(SB),NOSPLIT,$0
 	MOVQ	addr+0(FP), DI
 	MOVL	op+8(FP), SI
@@ -614,7 +646,7 @@ TEXT runtime·clone(SB),NOSPLIT,$0
 	get_tls(CX)
 	MOVQ	R8, g_m(R9)
 	MOVQ	R9, g(CX)
-	CALL	runtime·stackcheck(SB)
+	CALL	runtime·stackcheck(SB)		//检查sp指针指向栈范围内
 
 nog:
 	// Call fn
@@ -626,6 +658,8 @@ nog:
 	SYSCALL
 	JMP	-3(PC)	// keep exiting
 
+//func sigaltstack(new, old *stackt)
+//os_linux.go
 TEXT runtime·sigaltstack(SB),NOSPLIT,$-8
 	MOVQ	new+0(FP), DI
 	MOVQ	old+8(FP), SI
@@ -637,6 +671,7 @@ TEXT runtime·sigaltstack(SB),NOSPLIT,$-8
 	RET
 
 // set tls base to DI
+// func settls() stubs_amd64.go
 TEXT runtime·settls(SB),NOSPLIT,$32
 #ifdef GOOS_android
 	// Android stores the TLS offset in runtime·tls_g.
@@ -653,11 +688,14 @@ TEXT runtime·settls(SB),NOSPLIT,$32
 	MOVL	$0xf1, 0xf1  // crash
 	RET
 
+//os_linux.go func osyield()
 TEXT runtime·osyield(SB),NOSPLIT,$0
 	MOVL	$SYS_sched_yield, AX
 	SYSCALL
 	RET
 
+//os_linux.go
+//func sched_getaffinity(pid, len uintptr, buf *byte) int32
 TEXT runtime·sched_getaffinity(SB),NOSPLIT,$0
 	MOVQ	pid+0(FP), DI
 	MOVQ	len+8(FP), SI
@@ -667,6 +705,7 @@ TEXT runtime·sched_getaffinity(SB),NOSPLIT,$0
 	MOVL	AX, ret+24(FP)
 	RET
 
+//netpoll_epoll.go
 // int32 runtime·epollcreate(int32 size);
 TEXT runtime·epollcreate(SB),NOSPLIT,$0
 	MOVL    size+0(FP), DI
@@ -707,6 +746,7 @@ TEXT runtime·epollwait(SB),NOSPLIT,$0
 	MOVL	AX, ret+24(FP)
 	RET
 
+//  func closeonexec(fd int32) netpoll_epoll.go
 // void runtime·closeonexec(int32 fd);
 TEXT runtime·closeonexec(SB),NOSPLIT,$0
 	MOVL    fd+0(FP), DI  // fd
@@ -716,6 +756,7 @@ TEXT runtime·closeonexec(SB),NOSPLIT,$0
 	SYSCALL
 	RET
 
+// os_linux.go
 // func runtime·setNonblock(int32 fd)
 TEXT runtime·setNonblock(SB),NOSPLIT,$0-4
 	MOVL    fd+0(FP), DI  // fd
@@ -731,6 +772,7 @@ TEXT runtime·setNonblock(SB),NOSPLIT,$0-4
 	SYSCALL
 	RET
 
+//stubs_linux.go
 // int access(const char *name, int mode)
 TEXT runtime·access(SB),NOSPLIT,$0
 	// This uses faccessat instead of access, because Android O blocks access.
@@ -772,6 +814,7 @@ TEXT runtime·sbrk0(SB),NOSPLIT,$0-8
 	MOVQ	AX, ret+0(FP)
 	RET
 
+//os_linux_x86.go
 // func uname(utsname *new_utsname) int
 TEXT ·uname(SB),NOSPLIT,$0-16
 	MOVQ    utsname+0(FP), DI
@@ -780,6 +823,7 @@ TEXT ·uname(SB),NOSPLIT,$0-16
 	MOVQ	AX, ret+8(FP)
 	RET
 
+//os_linux_x86.go
 // func mlock(addr, len uintptr) int
 TEXT ·mlock(SB),NOSPLIT,$0-24
 	MOVQ    addr+0(FP), DI

@@ -18,7 +18,7 @@ import "unsafe"
 func read(fd int32, p unsafe.Pointer, n int32) int32
 
 func closefd(fd int32) int32
-
+// 汇编实现
 func exit(code int32)
 func usleep(usec uint32)
 

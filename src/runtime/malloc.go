@@ -1140,6 +1140,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	// collector. Otherwise, on weakly ordered machines,
 	// the garbage collector could follow a pointer to x,
 	// but see uninitialized memory or stale heap bits.
+	//空函数 实现是直接ret
 	publicationBarrier()
 
 	// Allocate black during GC. gc期间分配黑色对象

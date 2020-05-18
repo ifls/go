@@ -4,7 +4,7 @@ Go is an open source project.
 
 It is the work of hundreds of contributors. We appreciate your help!
 
-## Before filing an issue
+## Before filing申请 an issue
 
 If you are unsure whether you have found a bug, please consider asking in the [golang-nuts mailing
 list](https://groups.google.com/forum/#!forum/golang-nuts) or [other forums](https://golang.org/help/) first. If
@@ -18,13 +18,13 @@ See the [security policy](https://golang.org/security) for details.
 The recommended way to file an issue is by running `go bug`.
 Otherwise, when filing an issue, make sure to answer these five questions:
 
-1. What version of Go are you using (`go version`)?
+1. What version of Go are you using (`go version`)? 
 2. What operating system and processor architecture are you using?
-3. What did you do?
-4. What did you expect to see?
-5. What did you see instead?
+3. What did you do? 
+4. What did you expect to see? 
+5. What did you see instead? 
 
-For change proposals, see [Proposing Changes To Go](https://github.com/golang/proposal/).
+For change proposals 修改题案, see [Proposing Changes To Go](https://github.com/golang/proposal/).
 
 ## Contributing code
 

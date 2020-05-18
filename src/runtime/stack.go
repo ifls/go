@@ -935,7 +935,7 @@ func round2(x int32) int32 {
 // This must be nowritebarrierrec because it can be called as part of
 // stack growth from other nowritebarrierrec functions, but the
 // compiler doesn't check this.
-// 汇编函数morestack 会调用此函数扩展
+// 汇编函数morestack 会调用此函数 栈扩容
 //go:nowritebarrierrec
 func newstack() {
 	thisg := getg()

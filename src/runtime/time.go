@@ -605,7 +605,7 @@ func cleantimers(pp *p) {
 // from a different P.
 // This is currently called when the world is stopped, but the caller
 // is expected to have locked the timers for pp.
-//移动一部分定时器到其他P
+// 移动一部分定时器到 pp
 func moveTimers(pp *p, timers []*timer) {
 	for _, t := range timers {
 	loop:

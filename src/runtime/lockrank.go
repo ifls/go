@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// 锁排名，锁偏序，避免死锁
 // This file records the static ranks of the locks in the runtime. If a lock
 // is not given a rank, then it is assumed to be a leaf lock, which means no other
 // lock can be acquired while it is held. Therefore, leaf locks do not need to be

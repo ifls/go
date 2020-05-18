@@ -544,7 +544,7 @@ TEXT runtime·clone(SB),NOSPLIT,$0
 	MOVL	DX, g(AX)
 	MOVL	BX, g_m(DX)
 
-	CALL	runtime·stackcheck(SB)	// smashes AX, CX
+	CALL	runtime·stackcheck(SB)	// 检查sp指向栈范围内 smashes AX, CX
 	MOVL	0(DX), DX	// paranoia; check they are not nil
 	MOVL	0(BX), BX
 

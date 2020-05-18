@@ -297,7 +297,8 @@ func canPreemptM(mp *m) bool {
 
 //go:generate go run mkpreempt.go
 
-// asyncPreempt saves all user registers and calls asyncPreempt2.
+//汇编实现 preempt_amd64.s
+// asyncPreempt saves all user registers 保存所有用户寄存器 and calls asyncPreempt2 and restore all user registers.
 //
 // When stack scanning encounters an asyncPreempt frame, it scans that
 // frame and its parent frame conservatively.

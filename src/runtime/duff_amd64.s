@@ -3,7 +3,7 @@
 // See mkduff.go for comments.
 
 #include "textflag.h"
-
+//没看到有调用 duff设备？
 TEXT runtime·duffzero(SB), NOSPLIT, $0-0
 	MOVUPS	X0,(DI)
 	MOVUPS	X0,16(DI)

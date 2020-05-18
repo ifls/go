@@ -8,7 +8,7 @@
 #include "go_tls.h"
 #include "textflag.h"
 
-// Based on race_amd64.s; see commentary there.
+// Based on race_amd64.s; see commentary评论 there.
 
 #ifdef GOOS_windows
 #define RARG0 CX

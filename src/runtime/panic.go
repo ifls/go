@@ -10,14 +10,16 @@ import (
 	"unsafe"
 )
 
-// We have two different ways of doing defers. The older way involves creating a
-// defer record at the time that a defer statement is executing and adding it to a
+// We have two different ways of doing defers. 两种方式达到defer的目的
+// The older way involves creating a defer record at the time that a defer statement is executing and adding it to a
 // defer chain. This chain is inspected by the deferreturn call at all function
-// exits in order to run the appropriate defer calls. A cheaper way (which we call
-// open-coded defers) is used for functions in which no defer statements occur in
-// loops. In that case, we simply store the defer function/arg information into
+// exits in order to run the appropriate defer calls.
+// A cheaper way (which we call open-coded defers) is used for functions in which no defer statements occur in
+// loops. 当没有defer发生在循环内，可以采用这种方式
+// In that case, we simply store the defer function/arg information into
 // specific stack slots at the point of each defer statement, as well as setting a
-// bit in a bitmask. At each function exit, we add inline code to directly make
+// bit in a bitmask.
+// At each function exit, we add inline code to directly make
 // the appropriate defer calls based on the bitmask and fn/arg information stored
 // on the stack. During panic/Goexit processing, the appropriate defer calls are
 // made using extra funcdata info that indicates the exact stack slots that
@@ -25,9 +27,9 @@ import (
 
 // Check to make sure we can really generate a panic. If the panic
 // was generated from the runtime, or from inside malloc, then convert
-// to a throw of msg.
+// to a throw of msg. 内部panic直接转化为异常，退出
 // pc should be the program counter of the compiler-generated code that
-// triggered this panic.
+// triggered this panic. pc 是panic语句所在地址
 func panicCheck1(pc uintptr, msg string) {
 	if sys.GoarchWasm == 0 && hasPrefix(funcname(findfunc(pc)), "runtime.") {
 		// Note: wasm can't tail call, so we can't get the original caller's pc.
@@ -521,9 +523,10 @@ func freedeferfn() {
 // Declared as nosplit, because the function should not be preempted once we start
 // modifying the caller's frame in order to reuse the frame to call the deferred
 // function.
-//
+// 有编译器生成对此函数的调用
 // The single argument isn't actually used - it just has its address
 // taken so it can be matched against pending defers.
+// 如果遍历执行defer链表？
 //go:nosplit
 func deferreturn(arg0 uintptr) {
 	gp := getg()
