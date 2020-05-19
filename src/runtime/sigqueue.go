@@ -33,7 +33,7 @@ import (
 	_ "unsafe" // for go:linkname
 )
 
-// sig handles communication between the signal handler and os/signal.
+// sig handles communication between the signal handler and os/signal包. 相当于中间逻辑
 // Other than the inuse and recv fields, the fields are accessed atomically.
 //
 // The wanted and ignored fields are only written by one goroutine at
@@ -61,6 +61,7 @@ const (
 	sigSending
 )
 
+// 将信号从sighandler函数 发到内部信号交付队列
 // sigsend delivers a signal from sighandler to the internal signal delivery queue.
 // It reports whether the signal was sent. If not, the caller typically crashes the program.
 // It runs from the signal handler, so it's limited in what it can do.

@@ -4,7 +4,7 @@
 
 // +build aix darwin,amd64 dragonfly freebsd linux,!android netbsd openbsd solaris
 
-// Parse "zoneinfo" time zone file.
+// 初始化本地时区，位置信息 Parse "zoneinfo" time zone file.
 // This is a fairly standard file format used on OS X, Linux, BSD, Sun, and others.
 // See tzfile(5), https://en.wikipedia.org/wiki/Zoneinfo,
 // and ftp://munnari.oz.au/pub/oldtz/

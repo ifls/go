@@ -307,6 +307,7 @@ func canPreemptM(mp *m) bool {
 //两个异步抢占函数
 func asyncPreempt()
 
+//异步抢占实现函数
 //go:nosplit
 func asyncPreempt2() {
 	gp := getg()

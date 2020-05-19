@@ -341,7 +341,7 @@ var gsignalInitQuirk func(gsignal *g)
 // Called to initialize a new m (including the bootstrap m).
 // Called on the parent thread (main thread in case of bootstrap), can allocate memory.
 func mpreinit(mp *m) {
-	//32KB
+	//32KB 信号处理栈
 	mp.gsignal = malg(32 * 1024) // Linux wants >= 2K
 	mp.gsignal.m = mp
 	if gsignalInitQuirk != nil {
@@ -402,6 +402,7 @@ func pipe() (r, w int32, errno int32)
 func pipe2(flags int32) (r, w int32, errno int32)
 func setNonblock(fd int32)
 
+//设置信号处理函数
 //go:nosplit
 //go:nowritebarrierrec
 func setsig(i uint32, fn uintptr) {

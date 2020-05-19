@@ -447,6 +447,7 @@ func formatNano(b []byte, nanosec uint, n int, trim bool) []byte {
 // The returned string is meant for debugging; for a stable serialized
 // representation, use t.MarshalText, t.MarshalBinary, or t.Format
 // with an explicit format string.
+//返回固定格式化字符串
 func (t Time) String() string {
 	s := t.Format("2006-01-02 15:04:05.999999999 -0700 MST")
 
@@ -492,6 +493,7 @@ func (t Time) String() string {
 // and convenient representations of the reference time. For more information
 // about the formats and the definition of the reference time, see the
 // documentation for ANSIC and the other constants defined by this package.
+//返回指定格式化字符串
 func (t Time) Format(layout string) string {
 	const bufSize = 64
 	var b []byte
@@ -508,6 +510,7 @@ func (t Time) Format(layout string) string {
 
 // AppendFormat is like Format but appends the textual
 // representation to b and returns the extended buffer.
+// 追加格式
 func (t Time) AppendFormat(b []byte, layout string) []byte {
 	var (
 		name, offset, abs = t.locabs()
@@ -811,6 +814,7 @@ func skip(value, prefix string) (string, error) {
 // same layout losslessly, but the exact instant used in the representation will
 // differ by the actual zone offset. To avoid such problems, prefer time layouts
 // that use a numeric zone offset, or use ParseInLocation.
+//解析时间点
 func Parse(layout, value string) (Time, error) {
 	return parse(layout, value, UTC, Local)
 }
@@ -1366,7 +1370,7 @@ var unitMap = map[string]int64{
 	"h":  int64(Hour),
 }
 
-// ParseDuration parses a duration string.
+// ParseDuration parses a duration string. 解析时间跨度
 // A duration string is a possibly signed sequence of
 // decimal numbers, each with optional fraction and a unit suffix,
 // such as "300ms", "-1.5h" or "2h45m".

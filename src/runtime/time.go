@@ -18,7 +18,7 @@ type timer struct {
 	// If this timer is on a heap, which P's heap it is on.
 	// puintptr rather than *p to match uintptr in the versions
 	// of this struct defined in other packages.
-	pp puintptr
+	pp puintptr		//避免包引用
 
 	// Timer wakes up at when, and then at when+period, ... (period > 0 only)
 	// each time calling f(arg, now) in the timer goroutine, so f must be
@@ -33,7 +33,7 @@ type timer struct {
 	nextwhen int64
 
 	// The status field holds one of the values below.
-	status uint32
+	status uint32	//
 }
 
 // Code outside this file has to be careful in using a timer value.
@@ -284,6 +284,7 @@ func doaddtimer(pp *p, t *timer) {
 	}
 	t.pp.set(pp)
 	i := len(pp.timers)
+	//添加定时器
 	pp.timers = append(pp.timers, t)
 	//维护堆
 	siftupTimer(pp.timers, i)

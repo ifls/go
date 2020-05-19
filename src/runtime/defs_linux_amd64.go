@@ -205,6 +205,7 @@ type fpreg1 struct {
 	exponent    uint16
 }
 
+//信号栈
 type stackt struct {
 	ss_sp     *byte
 	ss_flags  int32

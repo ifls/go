@@ -4,18 +4,18 @@
 
 package time
 
-// Sleep pauses the current goroutine for at least the duration d.
-// A negative or zero duration causes Sleep to return immediately.
+// Sleep pauses the current goroutine for at least至少 the duration d.
+// A negative or zero duration causes Sleep to return immediately. <=0 立即退出
 func Sleep(d Duration)
 
-// Interface to timers implemented in package runtime.
+// Interface to timers implemented in package runtime. 和内部的timer是一个结构，
 // Must be in sync with ../runtime/time.go:/^type timer
 type runtimeTimer struct {
 	pp       uintptr
 	when     int64
 	period   int64
 	f        func(interface{}, uintptr) // NOTE: must not be closure
-	arg      interface{}
+	arg      interface{}				// f的第一个参数
 	seq      uintptr
 	nextwhen int64
 	status   uint32
@@ -27,9 +27,11 @@ type runtimeTimer struct {
 // zero because of an overflow, MaxInt64 is returned.
 func when(d Duration) int64 {
 	if d <= 0 {
+		//runtime.nanotime()
 		return runtimeNano()
 	}
 	t := runtimeNano() + int64(d)
+	//溢出
 	if t < 0 {
 		t = 1<<63 - 1 // math.MaxInt64
 	}
@@ -42,17 +44,16 @@ func resetTimer(*runtimeTimer, int64) bool
 func modTimer(t *runtimeTimer, when, period int64, f func(interface{}, uintptr), arg interface{}, seq uintptr)
 
 // The Timer type represents a single event.
-// When the Timer expires, the current time will be sent on C,
-// unless the Timer was created by AfterFunc.
+// When the Timer expires, the current time will be sent on C, unless the Timer was created by AfterFunc.
 // A Timer must be created with NewTimer or AfterFunc.
 type Timer struct {
 	C <-chan Time
 	r runtimeTimer
 }
 
-// Stop prevents the Timer from firing.
+// Stop prevents the Timer from firing触发.
 // It returns true if the call stops the timer, false if the timer has already
-// expired or been stopped.
+// expired or been stopped. false表示无需停止
 // Stop does not close the channel, to prevent a read from the channel succeeding
 // incorrectly.
 //
@@ -74,6 +75,7 @@ type Timer struct {
 // with f explicitly.
 func (t *Timer) Stop() bool {
 	if t.r.f == nil {
+		//没有回调函数
 		panic("time: Stop called on uninitialized Timer")
 	}
 	return stopTimer(&t.r)
@@ -87,7 +89,7 @@ func NewTimer(d Duration) *Timer {
 		C: c,
 		r: runtimeTimer{
 			when: when(d),
-			f:    sendTime,
+			f:    sendTime,		//回调函数
 			arg:  c,
 		},
 	}
@@ -118,6 +120,7 @@ func NewTimer(d Duration) *Timer {
 // is a race condition between draining the channel and the new timer expiring.
 // Reset should always be invoked on stopped or expired channels, as described above.
 // The return value exists to preserve compatibility with existing programs.
+// 重设时间
 func (t *Timer) Reset(d Duration) bool {
 	if t.r.f == nil {
 		panic("time: Reset called on uninitialized Timer")
@@ -126,6 +129,7 @@ func (t *Timer) Reset(d Duration) bool {
 	return resetTimer(&t.r, w)
 }
 
+//默认的回调时间
 func sendTime(c interface{}, seq uintptr) {
 	// Non-blocking send of time on c.
 	// Used in NewTimer, it cannot block anyway (buffer).
@@ -144,6 +148,7 @@ func sendTime(c interface{}, seq uintptr) {
 // The underlying Timer is not recovered by the garbage collector
 // until the timer fires. If efficiency is a concern, use NewTimer
 // instead and call Timer.Stop if the timer is no longer needed.
+// 直接timer.c 免去多一层引用
 func After(d Duration) <-chan Time {
 	return NewTimer(d).C
 }
@@ -163,6 +168,7 @@ func AfterFunc(d Duration, f func()) *Timer {
 	return t
 }
 
+//异步执行函数
 func goFunc(arg interface{}, seq uintptr) {
 	go arg.(func())()
 }

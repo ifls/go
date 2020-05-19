@@ -71,7 +71,7 @@ var UTC *Location = &utcLoc
 // even if a badly behaved client has changed UTC.
 var utcLoc = Location{name: "UTC"}
 
-// Local represents the system's local time zone.
+// Local represents the system's local time zone. 系统本地时区
 // On Unix systems, Local consults the TZ environment
 // variable to find the time zone to use. No TZ means
 // use the system default /etc/localtime.
@@ -613,7 +613,7 @@ var zoneinfo *string
 var zoneinfoOnce sync.Once
 
 // LoadLocation returns the Location with the given name.
-//
+// 根据名字获得给定时区
 // If the name is "" or "UTC", LoadLocation returns UTC.
 // If the name is "Local", LoadLocation returns Local.
 //

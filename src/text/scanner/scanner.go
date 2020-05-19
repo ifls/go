@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package scanner provides a scanner and tokenizer for UTF-8-encoded text.
+// Package scanner provides a scanner and tokenizer分词器 for UTF-8-encoded text.
 // It takes an io.Reader providing the source, which then can be tokenized
 // through repeated calls to the Scan function. For compatibility with
 // existing tools, the NUL character is not allowed. If the first character

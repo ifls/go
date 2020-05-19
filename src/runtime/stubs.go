@@ -7,40 +7,44 @@ package runtime
 import "unsafe"
 
 // Should be a built-in for unsafe.Pointer?
+//封装指针运算
 //go:nosplit
 func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
 	return unsafe.Pointer(uintptr(p) + x)
 }
 
 // getg returns the pointer to the current g.
-// The compiler rewrites calls to this function into instructions
-// that fetch the g directly (from TLS or from the dedicated register).
+// The compiler rewrites calls to this function into instructions 将此函数的调用重写为指令，就是内联
+// that fetch the g directly (from TLS or from the dedicated专门的 register).
 func getg() *g
 
-// mcall switches from the g to the g0 stack and invokes fn(g),
+// mcall switches from the g to the g0 stack and invokes fn(g), 切换到g0栈执行，不应该返回，而是要调度其他协程运行
 // where g is the goroutine that made the call.
-// mcall saves g's current PC/SP in g->sched so that it can be restored later.
+// mcall saves g's current PC/SP in g->sched so that it can be restored later. 保存g的上下文
+
 // It is up to fn to arrange for that later execution, typically by recording
 // g in a data structure, causing something to call ready(g) later.
+
 // mcall returns to the original goroutine g later, when g has been rescheduled.
-// fn must not return at all; typically it ends by calling schedule, to let the m
+
+// fn must not return at all 一定不能返回; typically it ends by calling schedule, to let the m
 // run other goroutines.
 //
-// mcall can only be called from g stacks (not g0, not gsignal).
+// mcall can only be called from g stacks (not g0, not gsignal). 只能从用户g调用
 //
-// This must NOT be go:noescape: if fn is a stack-allocated closure,
+// This must NOT be go:noescape 不能是不允许逃逸: if fn is a stack-allocated栈上分配的闭包 closure,
 // fn puts g on a run queue, and g executes before fn returns, the
-// closure will be invalidated while it is still executing.
+// closure will be invalidated失效 while it is still executing.
 func mcall(fn func(*g))
 
 // systemstack runs fn on a system stack. 在系统栈上运行fn
 // If systemstack is called from the per-OS-thread (g0) stack, or
 // if systemstack is called from the signal handling (gsignal) stack,
-// systemstack calls fn directly and returns.
-// Otherwise, systemstack is being called from the limited stack
-// of an ordinary goroutine. In this case, systemstack switches
-// to the per-OS-thread stack, calls fn, and switches back. 切换回去
-// It is common to use a func literal as the argument, in order
+// systemstack calls fn directly and returns. g0栈和信号栈不切栈
+
+// Otherwise, systemstack is being called from the limited stack of an ordinary goroutine.
+// In this case, systemstack switches to the per-OS-thread stack, calls fn, and switches back. 切换回去
+// It is common to use a func literal as the argument 通常使用函数字面值，这样可以共享输入输出, in order
 // to share inputs and outputs with the code around the call
 // to system stack:
 //
@@ -60,19 +64,19 @@ var badsystemstackMsg = "fatal: systemstack called from unexpected goroutine"
 //go:nowritebarrierrec
 func badsystemstack() {
 	sp := stringStructOf(&badsystemstackMsg)
-	write(2, sp.str, int32(sp.len))
+	write(2, sp.str, int32(sp.len))		//输出错误
 }
 
 // memclrNoHeapPointers clears n bytes starting at ptr.
 //
-// Usually you should use typedmemclr. memclrNoHeapPointers should be
-// used only when the caller knows that *ptr contains no heap pointers
+// Usually you should use typedmemclr.
+// memclrNoHeapPointers should be used only when the caller knows that *ptr contains no heap pointers 包含非堆指针
 // because either:
 //
 // *ptr is initialized memory and its type is pointer-free, or
 //
 // *ptr is uninitialized memory (e.g., memory that's being reused
-// for a new allocation) and hence contains only "junk".
+// for a new allocation) and hence因此 contains only "junk"垃圾.
 //
 // The (CPU-specific) implementations of this function are in memclr_*.s.
 //go:noescape
@@ -83,15 +87,15 @@ func reflect_memclrNoHeapPointers(ptr unsafe.Pointer, n uintptr) {
 	memclrNoHeapPointers(ptr, n)
 }
 
-// memmove copies n bytes from "from" to "to".
+// memmove copies拷贝 n bytes from "from" to "to".
 //
-// memmove ensures that any pointer in "from" is written to "to" with
-// an indivisible write, so that racy reads cannot observe a
-// half-written pointer. This is necessary to prevent the garbage
-// collector from observing invalid pointers, and differs from memmove
-// in unmanaged languages. However, memmove is only required to do
-// this if "from" and "to" may contain pointers, which can only be the
-// case if "from", "to", and "n" are all be word-aligned.
+// memmove ensures保证 that any pointer in "from" is written to "to" with
+// an indivisible不可分割 write, so that racy reads竞争读 cannot observe a
+// half-written pointer 观察不到写一半.
+// This is necessary to prevent the garbage collector from observing invalid pointers, and differs from memmove
+// in unmanaged languages.
+// However, memmove is only required to do this if "from" and "to" may contain pointers, which can only be the
+// case if "from", "to", and "n" are all be word-aligned 字对齐.
 //
 // Implementations are in memmove_*.s.
 //
@@ -104,11 +108,14 @@ func reflect_memmove(to, from unsafe.Pointer, n uintptr) {
 }
 
 // exported value for testing
+//hash 负载因子
 var hashLoad = float32(loadFactorNum) / float32(loadFactorDen)
 
+//拿到线程随机种子
 //go:nosplit
 func fastrand() uint32 {
 	mp := getg().m
+	//
 	// Implement xorshift64+: 2 32-bit xorshift sequences added together.
 	// Shift triplet [17,7,16] was calculated as indicated in Marsaglia's
 	// Xorshift paper: https://www.jstatsoft.org/article/view/v008i14/xorshift.pdf
@@ -121,6 +128,7 @@ func fastrand() uint32 {
 	return s0 + s1
 }
 
+// 更快的取模，避免除法，但是测试下来，没提现更快
 //go:nosplit
 func fastrandn(n uint32) uint32 {
 	// This is similar to fastrand() % n, but faster.
@@ -132,6 +140,7 @@ func fastrandn(n uint32) uint32 {
 func sync_fastrand() uint32 { return fastrand() }
 
 // in asm_*.s
+// internal/bytealg/equal_asm.s
 //go:noescape
 func memequal(a, b unsafe.Pointer, size uintptr) bool
 

@@ -1123,10 +1123,12 @@ func throw(s string) {
 // runningPanicDefers is non-zero while running deferred functions for panic.
 // runningPanicDefers is incremented and decremented atomically.
 // This is used to try hard to get a panic stack trace out when exiting.
+// 表示正在执行的defer数量
 var runningPanicDefers uint32
 
 // panicking is non-zero when crashing the program for an unrecovered panic.
 // panicking is incremented and decremented atomically.
+// 不可恢复的panic发生了
 var panicking uint32
 
 // paniclk is held while printing the panic information and stack trace,

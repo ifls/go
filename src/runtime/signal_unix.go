@@ -104,7 +104,7 @@ func init() {
 
 var signalsOK bool
 
-// Initialize signals.
+// Initialize signals. 初始化信号
 // Called by libpreinit so runtime may not be initialized.
 //go:nosplit
 //go:nowritebarrierrec
@@ -142,6 +142,7 @@ func initsig(preinit bool) {
 		}
 
 		handlingSig[i] = 1
+		//设置信号处理函数
 		setsig(i, funcPC(sighandler))
 	}
 }
@@ -330,6 +331,7 @@ func doSigPreempt(gp *g, ctxt *sigctxt) {
 	if wantAsyncPreempt(gp) {
 		if ok, newpc := isAsyncSafePoint(gp, ctxt.sigpc(), ctxt.sigsp(), ctxt.siglr()); ok {
 			// Adjust the PC and inject a call to asyncPreempt.
+			//修改ip和sp，执行异步抢占
 			ctxt.pushCall(funcPC(asyncPreempt), newpc)
 		}
 	}
@@ -517,7 +519,7 @@ var testSigusr1 func(gp *g) bool
 // when the signal occurred. The sig, info, and ctxt parameters are
 // from the system signal handler: they are the parameters passed when
 // the SA is passed to the sigaction system call.
-//
+// 提供的信号处理函数
 // The garbage collector may have stopped the world, so write barriers
 // are not allowed.
 //
@@ -526,6 +528,7 @@ func sighandler(sig uint32, info *siginfo, ctxt unsafe.Pointer, gp *g) {
 	_g_ := getg()
 	c := &sigctxt{info, ctxt}
 
+	//profile时钟超时
 	if sig == _SIGPROF {
 		sigprof(c.sigpc(), c.sigsp(), c.siglr(), gp, _g_.m)
 		return
@@ -534,11 +537,12 @@ func sighandler(sig uint32, info *siginfo, ctxt unsafe.Pointer, gp *g) {
 	if sig == _SIGTRAP && testSigtrap != nil && testSigtrap(info, (*sigctxt)(noescape(unsafe.Pointer(c))), gp) {
 		return
 	}
-
+	//用户信号
 	if sig == _SIGUSR1 && testSigusr1 != nil && testSigusr1(gp) {
 		return
 	}
 
+	//抢占信号
 	if sig == sigPreempt {
 		// Might be a preemption signal.
 		doSigPreempt(gp, c)
@@ -589,6 +593,7 @@ func sighandler(sig uint32, info *siginfo, ctxt unsafe.Pointer, gp *g) {
 		return
 	}
 
+	//kill信号
 	if flags&_SigKill != 0 {
 		dieFromSignal(sig)
 	}
@@ -748,6 +753,7 @@ func sigpanic() {
 // dieFromSignal kills the program with a signal.
 // This provides the expected exit status for the shell.
 // This is only called with fatal signals expected to kill the process.
+// 因为信号退出进程
 //go:nosplit
 //go:nowritebarrierrec
 func dieFromSignal(sig uint32) {
@@ -772,6 +778,7 @@ func dieFromSignal(sig uint32) {
 	osyield()
 	osyield()
 	osyield()
+
 
 	// If we are still somehow running, just exit with the wrong status.
 	exit(2)
@@ -1079,11 +1086,14 @@ func minitSignals() {
 func minitSignalStack() {
 	_g_ := getg()
 	var st stackt
+	//获取原有信号栈
 	sigaltstack(nil, &st)
 	if st.ss_flags&_SS_DISABLE != 0 || !iscgo {
+		//如果禁用了信号栈，将gsignal的栈设置为备用信号栈
 		signalstack(&_g_.m.gsignal.stack)
 		_g_.m.newSigstack = true
 	} else {
+		//否则将m.goSigStack设置为从sigaltstack返回的备用信号栈
 		setGsignalStack(&st, &_g_.m.goSigStack)
 		_g_.m.newSigstack = false
 	}
@@ -1097,6 +1107,7 @@ func minitSignalStack() {
 // removes all essential signals from the mask, thus causing those
 // signals to not be blocked. Then it sets the thread's signal mask.
 // After this is called the thread can receive signals.
+//初始化信号屏蔽字
 func minitSignalMask() {
 	nmask := getg().m.sigmask
 	for i := range sigtable {
@@ -1133,6 +1144,7 @@ func unminitSignals() {
 // for all running threads to block them and delay their delivery until
 // we start a new thread. When linked into a C program we let the C code
 // decide on the disposition of those signals.
+// 判定某个信号是否不可阻止
 func blockableSig(sig uint32) bool {
 	flags := sigtable[sig].flags
 	if flags&_SigUnblock != 0 {
@@ -1158,6 +1170,7 @@ type gsignalStack struct {
 // It saves the old values in *old for use by restoreGsignalStack.
 // This is used when handling a signal if non-Go code has set the
 // alternate signal stack.
+	//保存gsignal栈到当前线程
 //go:nosplit
 //go:nowritebarrierrec
 func setGsignalStack(st *stackt, old *gsignalStack) {
@@ -1187,7 +1200,7 @@ func restoreGsignalStack(st *gsignalStack) {
 	gp.stktopsp = st.stktopsp
 }
 
-// signalstack sets the current thread's alternate signal stack to s.
+// signalstack sets the current thread's alternate signal stack to s. 将s设置为当前线程的信号备用栈
 //go:nosplit
 func signalstack(s *stack) {
 	st := stackt{ss_size: s.hi - s.lo}

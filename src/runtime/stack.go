@@ -124,7 +124,7 @@ const (
 
 	// Goroutine preemption request.
 	// Stored into g->stackguard0 to cause split stack check failure.
-	// Must be greater than any real sp.
+	// Must be greater than any real sp. 比任何实际sp都大，必然进入morestack函数
 	// 0xfffffade in hex.
 	stackPreempt = uintptrMask & -1314
 
@@ -356,6 +356,7 @@ func stackalloc(n uint32) stack {
 	// a dedicated span.
 	var v unsafe.Pointer
 	if n < _FixedStack<<_NumStackOrders && n < _StackCacheSize {
+		//小栈分配
 		order := uint8(0)
 		n2 := n
 		for n2 > _FixedStack {
@@ -385,6 +386,7 @@ func stackalloc(n uint32) stack {
 		}
 		v = unsafe.Pointer(x)
 	} else {
+		//大栈分配
 		var s *mspan
 		npage := uintptr(n) >> _PageShift
 		log2npage := stacklog2(npage)
@@ -502,7 +504,8 @@ func stackfree(stk stack) {
 	}
 }
 
-var maxstacksize uintptr = 1 << 20 // enough until runtime.main sets it for real
+//1M
+var maxstacksize uintptr = 1 << 20 // enough until runtime.main sets it for real 实际
 
 var ptrnames = []string{
 	0: "scalar",
@@ -982,6 +985,7 @@ func newstack() {
 	// NOTE: stackguard0 may change underfoot, if another thread
 	// is about to try to preempt gp. Read it just once and use that same
 	// value now and below.
+	// 是抢占请求，而不是扩栈
 	preempt := atomic.Loaduintptr(&gp.stackguard0) == stackPreempt
 
 	// Be conservative about where we preempt.
@@ -997,10 +1001,13 @@ func newstack() {
 	// it needs a lock held by the goroutine), that small preemption turns
 	// into a real deadlock.
 	if preempt {
+		//不能抢占
 		if !canPreemptM(thisg.m) {
 			// Let the goroutine keep running for now.
 			// gp->preempt is set, so it will be preempted next time.
+			//恢复栈地址
 			gp.stackguard0 = gp.stack.lo + _StackGuard
+			//重新进入调度循环
 			gogo(&gp.sched) // never return
 		}
 	}
@@ -1044,6 +1051,7 @@ func newstack() {
 		}
 
 		// Act like goroutine called runtime.Gosched.
+		//抢占
 		gopreempt_m(gp) // never return
 	}
 
@@ -1090,6 +1098,7 @@ func nilfunc() {
 
 // adjust Gobuf as if it executed a call to fn
 // and then did an immediate gosave.
+//
 func gostartcallfn(gobuf *gobuf, fv *funcval) {
 	var fn unsafe.Pointer
 	if fv != nil {
@@ -1097,6 +1106,7 @@ func gostartcallfn(gobuf *gobuf, fv *funcval) {
 	} else {
 		fn = unsafe.Pointer(funcPC(nilfunc))
 	}
+	//sys_x86.go 伪造执行上下文
 	gostartcall(gobuf, fn, unsafe.Pointer(fv))
 }
 
@@ -1116,7 +1126,7 @@ func isShrinkStackSafe(gp *g) bool {
 }
 
 // Maybe shrink the stack being used by gp.
-//
+// 栈收缩 如果只使用了1/4 则收缩到一半
 // gp must be stopped and we must own its stack. It may be in
 // _Grunning, but only if this is our own user G.
 func shrinkstack(gp *g) {

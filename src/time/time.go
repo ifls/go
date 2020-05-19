@@ -2,25 +2,26 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package time provides functionality for measuring and displaying time.
+// Package time provides functionality功能 for measuring测量 and displaying time.
 //
-// The calendrical calculations always assume a Gregorian calendar, with
-// no leap seconds.
+// The calendrical calculations always assume a Gregorian calendar公历, with
+// no leap seconds 没有闰秒.
 //
-// Monotonic Clocks
+// Monotonic Clocks 单调递增时钟
 //
-// Operating systems provide both a “wall clock,” which is subject to
-// changes for clock synchronization, and a “monotonic clock,” which is
-// not. The general rule is that the wall clock is for telling time and
-// the monotonic clock is for measuring time. Rather than split the API,
-// in this package the Time returned by time.Now contains both a wall
-// clock reading and a monotonic clock reading; later time-telling
+// Operating systems provide both a “wall clock,” which is subject to用于 changes变化 for clock synchronization时钟同步,
+// and a “monotonic clock,” which is not.
+// The general rule is that the wall clock is for telling time and
+// the monotonic clock is for measuring测量 time.
+// Rather than split the API, in this package the Time returned by time.Now contains both a wall
+// clock reading and a monotonic clock reading; 不划分成两个api，time.Now() 用于读取墙上时间(可以被调，不单调)和单调递增时间
+// later time-telling
 // operations use the wall clock reading, but later time-measuring
 // operations, specifically comparisons and subtractions, use the
 // monotonic clock reading.
 //
 // For example, this code always computes a positive elapsed time of
-// approximately 20 milliseconds, even if the wall clock is changed during
+// approximately 20 milliseconds, even if the wall clock is changed即使强上时间被修改 during
 // the operation being timed:
 //
 //	start := time.Now()
@@ -28,9 +29,9 @@
 //	t := time.Now()
 //	elapsed := t.Sub(start)
 //
-// Other idioms, such as time.Since(start), time.Until(deadline), and
+// Other idioms惯用语, such as time.Since(start), time.Until(deadline), and
 // time.Now().Before(deadline), are similarly robust against wall clock
-// resets.
+// resets. 不担心墙上时间被修改
 //
 // The rest of this section gives the precise details of how operations
 // use monotonic clocks, but understanding those details is not required
@@ -40,10 +41,10 @@
 // If Time t has a monotonic clock reading, t.Add adds the same duration to
 // both the wall clock and monotonic clock readings to compute the result.
 // Because t.AddDate(y, m, d), t.Round(d), and t.Truncate(d) are wall time
-// computations, they always strip any monotonic clock reading from their results.
+// computations, they always strip去掉 any monotonic clock reading from their results.
 // Because t.In, t.Local, and t.UTC are used for their effect on the interpretation
 // of the wall time, they also strip any monotonic clock reading from their results.
-// The canonical way to strip a monotonic clock reading is to use t = t.Round(0).
+// The canonical规范化 way to strip a monotonic clock reading is to use t = t.Round(0).
 //
 // If Times t and u both contain monotonic clock readings, the operations
 // t.After(u), t.Before(u), t.Equal(u), and t.Sub(u) are carried out
@@ -125,17 +126,18 @@ import (
 // clock reading.
 //
 type Time struct {
-	// wall and ext encode the wall time seconds, wall time nanoseconds,
-	// and optional monotonic clock reading in nanoseconds.
+	// wall and ext encode the wall墙上 time seconds秒, wall time nanoseconds 强上时间纳秒,
+	// and optional monotonic clock单调时钟 reading in nanoseconds.
 	//
 	// From high to low bit position, wall encodes a 1-bit flag (hasMonotonic),
-	// a 33-bit seconds field, and a 30-bit wall time nanoseconds field.
+	// a 33-bit seconds field, and a 30-bit wall time nanoseconds field. 64b
 	// The nanoseconds field is in the range [0, 999999999].
 	// If the hasMonotonic bit is 0, then the 33-bit field must be zero
 	// and the full signed 64-bit wall seconds since Jan 1 year 1 is stored in ext.
+
 	// If the hasMonotonic bit is 1, then the 33-bit field holds a 33-bit
-	// unsigned wall seconds since Jan 1 year 1885, and ext holds a
-	// signed 64-bit monotonic clock reading, nanoseconds since process start.
+	// unsigned wall seconds since Jan 1 year 1885年, and ext holds a
+	// signed 64-bit monotonic clock reading, nanoseconds since process start 程序启动.
 	wall uint64
 	ext  int64
 
@@ -271,7 +273,7 @@ func (t Time) Equal(u Time) bool {
 
 // A Month specifies a month of the year (January = 1, ...).
 type Month int
-
+// 常量
 const (
 	January Month = 1 + iota
 	February
@@ -299,7 +301,7 @@ func (m Month) String() string {
 
 // A Weekday specifies a day of the week (Sunday = 0, ...).
 type Weekday int
-
+//周一，周末
 const (
 	Sunday Weekday = iota
 	Monday
@@ -578,12 +580,12 @@ func (t Time) YearDay() int {
 }
 
 // A Duration represents the elapsed time between two instants
-// as an int64 nanosecond count. The representation limits the
-// largest representable duration to approximately 290 years.
+// as an int64 nanosecond count 纳秒计数. The representation limits the
+// largest representable duration to approximately 290 years. 最多290年
 type Duration int64
 
 const (
-	minDuration Duration = -1 << 63
+	minDuration Duration = -1 << 63		//[math.MinInt32, math.MaxInt32]
 	maxDuration Duration = 1<<63 - 1
 )
 
@@ -764,8 +766,9 @@ func (d Duration) Hours() float64 {
 	return float64(hour) + float64(nsec)/(60*60*1e9)
 }
 
-// Truncate returns the result of rounding d toward zero to a multiple of m.
+// Truncate returns the result of rounding舍入 d toward zero到0 to a multiple of m.
 // If m <= 0, Truncate returns d unchanged.
+// 向下截取
 func (d Duration) Truncate(m Duration) Duration {
 	if m <= 0 {
 		return d
@@ -785,6 +788,7 @@ func lessThanHalf(x, y Duration) bool {
 // value that can be stored in a Duration,
 // Round returns the maximum (or minimum) duration.
 // If m <= 0, Round returns d unchanged.
+//四舍五入
 func (d Duration) Round(m Duration) Duration {
 	if m <= 0 {
 		return d
@@ -1048,6 +1052,7 @@ func daysSinceEpoch(year int) uint64 {
 }
 
 // Provided by package runtime.
+// sys_windows_amd64.s
 func now() (sec int64, nsec int32, mono int64)
 
 // runtimeNano returns the current value of the runtime clock in nanoseconds.
@@ -1060,16 +1065,17 @@ func runtimeNano() int64
 // which appears to have a default resolution of 15ms),
 // we avoid ever reporting a monotonic time of 0.
 // (Callers may want to use 0 as "time not set".)
-var startNano int64 = runtimeNano() - 1
+var startNano int64 = runtimeNano() - 1		//程序启动时间
 
 // Now returns the current local time.
 func Now() Time {
 	sec, nsec, mono := now()
 	mono -= startNano
-	sec += unixToInternal - minWall
+	sec += unixToInternal - minWall			//
 	if uint64(sec)>>33 != 0 {
 		return Time{uint64(nsec), sec + minWall, Local}
 	}
+	// 1|sec|nsec mono单调纳秒计时
 	return Time{hasMonotonic | uint64(sec)<<nsecShift | uint64(nsec), mono, Local}
 }
 

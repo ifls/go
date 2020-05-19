@@ -130,10 +130,9 @@ var S390X struct {
 	_         CacheLinePad
 }
 
-// Initialize examines the processor and sets the relevant variables above.
-// This is called by the runtime package early in program initialization,
-// before normal init functions are run. env is set by runtime if the OS supports
-// cpu feature options in GODEBUG.
+// Initialize examines the processor and sets the relevant variables above. 检查cpu，设置上面相关的变量
+// This is called by the runtime package early in program initialization, before normal init functions are run.
+// env is set by runtime if the OS supports cpu feature options in GODEBUG.
 func Initialize(env string) {
 	doinit()
 	processOptions(env)

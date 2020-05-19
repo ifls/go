@@ -201,7 +201,7 @@ type note struct {
 //闭包
 type funcval struct {
 	fn uintptr	//函数指针
-	//函数数据
+	//函数数据跟在下面，通过指针引用
 	// variable-size, fn-specific data here
 }
 
@@ -482,7 +482,7 @@ type g struct {
 	ancestors      *[]ancestorInfo // 创建此g的g信息 ancestor information goroutine(s) that created this goroutine (only used if debug.tracebackancestors)
 
 	startpc        uintptr         // 函数起始执行地址 pc of goroutine function
-	racectx        uintptr
+	racectx        uintptr			//race 竞争检测相关
 	waiting        *sudog         // 执行等待链表里的sudug，相互反指 sudog structures this g is waiting on (that have a valid elem ptr); in lock order
 	cgoCtxt        []uintptr      // cgo traceback context
 	labels         unsafe.Pointer // profiler labels
@@ -521,7 +521,7 @@ type m struct {
 	id            int64   //M id
 	mallocing     int32
 	throwing      int32
-	preemptoff    string // if != "", keep curg running on this m
+	preemptoff    string // 关闭抢占 if != "", keep curg running on this m
 	locks         int32
 	dying         int32
 	profilehz     int32
@@ -541,7 +541,7 @@ type m struct {
 	cgoCallers    *cgoCallers // cgo调用奔溃的回调 cgo traceback if crashing in cgo call
 
 	park          note		// 暂停线程，等待wake wake/sleep/clear
-	alllink       *m 		// 链接所有m on allm
+	alllink       *m 		// allm链表里 链接之后的m on allm
 	schedlink     muintptr	//连接schet的空闲链表里的上下节点
 	lockedg       guintptr		//锁定在此m运行的g
 	createstack   [32]uintptr // 线程栈stack that created this thread.
@@ -549,6 +549,7 @@ type m struct {
 	lockedInt     uint32      // runtime 内部锁住线程的数量 tracking for internal lockOSThread
 
 	nextwaitm     muintptr    // next m waiting for lock
+	//保存gopark调用参数
 	waitunlockf   func(*g, unsafe.Pointer) bool	//gopark()相关
 	waitlock      unsafe.Pointer
 	waittraceev   byte		//traceGoPark
@@ -591,7 +592,7 @@ type m struct {
 type p struct {
 	id          int32		//pid
 	status      uint32 // one of pidle/prunning/...
-	link        puintptr	//用于构建 runnable p 链表
+	link        puintptr	//用于链接 runnable p 链表
 	schedtick   uint32     // 调度次数 incremented on every scheduler call
 	syscalltick uint32     // 系统调用次数 incremented on every system call
 	sysmontick  sysmontick // 上一次被监控观察的计数 last tick observed by sysmon
@@ -1064,7 +1065,7 @@ var (
 	ncpu       int32	// 保存 核数
 	forcegc    forcegcstate
 	sched      schedt	//调度体
-	newprocs   int32 	//p的数量
+	newprocs   int32 	//新p的数量
 
 	// Information about what cpu features are available.
 	// Packages outside the runtime should not use these

@@ -788,7 +788,7 @@ func gcFlushBgCredit(scanWork int64) {
 //
 // scanstack is marked go:systemstack because it must not be preempted
 // while using a workbuf.
-//
+// 扫描，判断栈是否要收缩
 //go:nowritebarrier
 //go:systemstack
 func scanstack(gp *g, gcw *gcWork) {
