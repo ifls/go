@@ -33,25 +33,28 @@ type timer struct {
 	nextwhen int64
 
 	// The status field holds one of the values below.
-	status uint32	//
+	status uint32	//计时器的状态
 }
 
-// Code outside this file has to be careful in using a timer value.
+// Code outside this file has to be careful in using a timer value. 必须小心使用
 //
 // The pp, status, and nextwhen fields may only be used by code in this file.
 //
 // Code that creates a new timer value can set the when, period, f,
 // arg, and seq fields.
+//
 // A new timer value may be passed to addtimer (called by time.startTimer).
 // After doing that no fields may be touched.
 //
 // An active timer (one that has been passed to addtimer) may be
 // passed to deltimer (time.stopTimer), after which it is no longer an
 // active timer. It is an inactive timer.
-// In an inactive timer the period, f, arg, and seq fields may be modified,
-// but not the when field.
-// It's OK to just drop an inactive timer and let the GC collect it.
-// It's not OK to pass an inactive timer to addtimer.
+//
+// In an inactive timer the period, f, arg, and seq fields may be modified, 不活跃的计时器的 period,f,arg,seq是可以修改的
+// but not the when field. when不可以修改
+// It's OK to just drop扔掉 an inactive timer and let the GC collect it.
+//
+// It's not OK to pass an inactive timer to addtimer. 只有新分配的timer才能传递给addtimer
 // Only newly allocated timer values may be passed to addtimer.
 //
 // An active timer may be passed to modtimer. No fields may be touched.
@@ -64,11 +67,11 @@ type timer struct {
 // Timer operations are addtimer, deltimer, modtimer, resettimer,
 // cleantimers, adjusttimers, and runtimer.
 //
-// We don't permit calling addtimer/deltimer/modtimer/resettimer simultaneously,
-// but adjusttimers and runtimer can be called at the same time as any of those.
+// We don't permit calling addtimer/deltimer/modtimer/resettimer simultaneously同时,
+// but adjusttimers and runtimer can be called at the same time as any of those 他们中的任何一个.
 //
 // Active timers live in heaps attached to P, in the timers field.
-// Inactive timers live there too temporarily, until they are removed.
+// Inactive timers live there too也 temporarily暂时, until they are removed.
 //
 // addtimer:
 //   timerNoStatus   -> timerWaiting
@@ -115,7 +118,7 @@ type timer struct {
 
 // Values for the timer status field.
 const (
-	// Timer has no status set yet.
+	// Timer has no status set yet. 刚new
 	timerNoStatus = iota
 
 	// Waiting for timer to fire.触发
@@ -123,10 +126,10 @@ const (
 	timerWaiting
 
 	// Running the timer function.
-	// A timer will only have this status briefly.
+	// A timer will only have this status briefly暂时地.
 	timerRunning
 
-	// The timer is deleted and should be removed.
+	// The timer is deleted and should be removed. 已被删除
 	// It should not be run, but it is still in some P's heap.
 	timerDeleted
 
@@ -152,7 +155,7 @@ const (
 	// The timer is in some P's heap, possibly in the wrong place.
 	timerModifiedLater
 
-	// The timer has been modified and is being moved.
+	// The timer has been modified and is being moved. 移到其他p
 	// The timer will only have this status briefly.
 	timerMoving
 )
@@ -178,13 +181,18 @@ func timeSleep(ns int64) {
 	}
 
 	gp := getg()
+
+
 	t := gp.timer
 	if t == nil {
 		t = new(timer)
 		gp.timer = t
 	}
+
+	//回调函数
 	t.f = goroutineReady
-	t.arg = gp
+	t.arg = gp  //f的第一个参数是此g
+	//下次唤醒的时间
 	t.nextwhen = nanotime() + ns
 	//休眠
 	gopark(resetForSleep, unsafe.Pointer(t), waitReasonSleep, traceEvGoSleep, 1)
@@ -200,7 +208,7 @@ func resetForSleep(gp *g, ut unsafe.Pointer) bool {
 	return true
 }
 
-// startTimer adds t to the timer heap. time.NewTimer()会调用
+// startTimer adds t to the timer heap. time.NewTimer()会调用传入 runtimeTimer的地址
 //go:linkname startTimer time.startTimer
 func startTimer(t *timer) {
 	if raceenabled {
@@ -243,11 +251,12 @@ func goroutineReady(arg interface{}, seq uintptr) {
 // This should only be called with a newly created timer.
 // That avoids the risk of changing the when field of a timer in some P's heap,
 // which could cause the heap to become unsorted.
-//1
+// 1
 func addtimer(t *timer) {
 	// when must never be negative; otherwise runtimer will overflow
 	// during its delta calculation and never expire other runtime timers.
 	if t.when < 0 {
+		//math.MaxInt64
 		t.when = maxWhen
 	}
 	if t.status != timerNoStatus {
@@ -259,13 +268,13 @@ func addtimer(t *timer) {
 
 	pp := getg().m.p.ptr()
 	lock(&pp.timersLock)
-	//清除队列头的计时器，加速性能
+	//清理队列头的计时器，加速性能
 	cleantimers(pp)
 	//timer与p绑定，维护timers四叉堆
 	doaddtimer(pp, t)
 	unlock(&pp.timersLock)
 
-	//唤醒网络循环
+	//通过网络循环唤醒 when之后唤醒
 	wakeNetPoller(when)
 }
 
@@ -286,7 +295,7 @@ func doaddtimer(pp *p, t *timer) {
 	i := len(pp.timers)
 	//添加定时器
 	pp.timers = append(pp.timers, t)
-	//维护堆
+	//维护堆 上浮
 	siftupTimer(pp.timers, i)
 	if t == pp.timers[0] {
 		atomic.Store64(&pp.timer0When, uint64(t.when))
@@ -298,7 +307,7 @@ func doaddtimer(pp *p, t *timer) {
 // actually remove it from the timers heap. We can only mark it as deleted.
 // It will be removed in due course by the P whose heap it is on.
 // Reports whether the timer was removed before it was run.
-//2
+// 2
 func deltimer(t *timer) bool {
 	for {
 		switch s := atomic.Load(&t.status); s {
@@ -311,6 +320,7 @@ func deltimer(t *timer) bool {
 				// as cleantimers in another goroutine
 				// can clear t.pp of a timerDeleted timer.
 				tpp := t.pp.ptr()
+				//修改状态标记删除， adjusttimer 正式删除
 				if !atomic.Cas(&t.status, timerModifying, timerDeleted) {
 					badTimer()
 				}
@@ -353,7 +363,7 @@ func deltimer(t *timer) bool {
 			return false
 		case timerModifying:
 			// Simultaneous calls to deltimer and modtimer.
-			// Wait for the other call to complete.
+			// Wait for the other call to complete. 等待完成
 			osyield()
 		default:
 			badTimer()
@@ -365,13 +375,15 @@ func deltimer(t *timer) bool {
 // We are locked on the P when this is called.
 // It reports whether it saw no problems due to races.
 // The caller must have locked the timers for pp.
-//adjustTimer才调用此函数删除定时器
+// adjustTimer才调用此函数删除定时器
 func dodeltimer(pp *p, i int) {
 	if t := pp.timers[i]; t.pp.ptr() != pp {
 		throw("dodeltimer: wrong P")
 	} else {
 		t.pp = 0
 	}
+
+	//删除i定时器
 	last := len(pp.timers) - 1
 	if i != last {
 		pp.timers[i] = pp.timers[last]
@@ -385,6 +397,8 @@ func dodeltimer(pp *p, i int) {
 		siftupTimer(pp.timers, i)
 		siftdownTimer(pp.timers, i)
 	}
+
+	//0号timer变了
 	if i == 0 {
 		updateTimer0When(pp)
 	}
@@ -395,7 +409,7 @@ func dodeltimer(pp *p, i int) {
 // We are locked on the P when this is called.
 // It reports whether it saw no problems due to races.
 // The caller must have locked the timers for pp.
-//堆中删除0号timer
+// 堆中删除0号timer
 func dodeltimer0(pp *p) {
 	if t := pp.timers[0]; t.pp.ptr() != pp {
 		throw("dodeltimer0: wrong P")
@@ -404,13 +418,16 @@ func dodeltimer0(pp *p) {
 	}
 	last := len(pp.timers) - 1
 	if last > 0 {
+		//换到顶，删掉头
 		pp.timers[0] = pp.timers[last]
 	}
 	pp.timers[last] = nil
 	pp.timers = pp.timers[:last]
 	if last > 0 {
+		//在顶部，只需下沉
 		siftdownTimer(pp.timers, 0)
 	}
+	//
 	updateTimer0When(pp)
 	atomic.Xadd(&pp.numTimers, -1)
 }
@@ -428,6 +445,7 @@ func modtimer(t *timer, when, period int64, f func(interface{}, uintptr), arg in
 	wasRemoved := false
 	var pending bool
 	var mp *m
+//更新状态
 loop:
 	for {
 		switch status = atomic.Load(&t.status); status {
@@ -492,7 +510,7 @@ loop:
 			badTimer()
 		}
 		releasem(mp)
-		//唤醒netpoll
+		//唤醒netpoll阻塞的线程
 		wakeNetPoller(when)
 	} else {
 		// The timer is in some other P's heap, so we can't change
@@ -528,6 +546,7 @@ loop:
 		releasem(mp)
 
 		// If the new status is earlier, wake up the poller.
+		//提前唤醒
 		if newStatus == timerModifiedEarlier {
 			wakeNetPoller(when)
 		}
@@ -550,7 +569,7 @@ func resettimer(t *timer, when int64) bool {
 // programs that create and delete timers; leaving them in the heap
 // slows down addtimer. Reports whether no timer problems were found.
 // The caller must have locked the timers for pp.
-//5 清除队列头部
+// 5 清除队列头部定时器 deleted timemodified定时器
 func cleantimers(pp *p) {
 	gp := getg()
 	for {
@@ -558,7 +577,7 @@ func cleantimers(pp *p) {
 			return
 		}
 
-		// This loop can theoretically run for a while, and because
+		// This loop can theoretically理论上 run for a while, and because
 		// it is holding timersLock it cannot be preempted.
 		// If someone is trying to preempt us, just return.
 		// We can clean the timers later.
@@ -570,23 +589,27 @@ func cleantimers(pp *p) {
 		if t.pp.ptr() != pp {
 			throw("cleantimers: bad p")
 		}
+
 		switch s := atomic.Load(&t.status); s {
 		case timerDeleted:
 			if !atomic.Cas(&t.status, s, timerRemoving) {
 				continue
 			}
+			//清除0定时器
 			dodeltimer0(pp)
 			if !atomic.Cas(&t.status, timerRemoving, timerRemoved) {
 				badTimer()
 			}
 			atomic.Xadd(&pp.deletedTimers, -1)
 		case timerModifiedEarlier, timerModifiedLater:
+			//时间改了
 			if !atomic.Cas(&t.status, s, timerMoving) {
 				continue
 			}
 			// Now we can change the when field.
 			t.when = t.nextwhen
 			// Move t to the right position.
+			//先删再加
 			dodeltimer0(pp)
 			doaddtimer(pp, t)
 			if s == timerModifiedEarlier {
@@ -609,6 +632,7 @@ func cleantimers(pp *p) {
 // 移动一部分定时器到 pp
 func moveTimers(pp *p, timers []*timer) {
 	for _, t := range timers {
+	//处理单个定时器的循环
 	loop:
 		for {
 			switch s := atomic.Load(&t.status); s {
@@ -656,7 +680,7 @@ func moveTimers(pp *p, timers []*timer) {
 // the correct place in the heap.调整到堆的正确位置 While looking for those timers,
 // it also moves timers that have been modified to run later, 也移动更后的定时器
 // and removes deleted timers.移除已删除的定时器 The caller must have locked the timers for pp.加锁
-//6
+// 6
 func adjusttimers(pp *p) {
 	if len(pp.timers) == 0 {
 		return
@@ -677,6 +701,7 @@ loop:
 		switch s := atomic.Load(&t.status); s {
 		case timerDeleted:
 			if atomic.Cas(&t.status, s, timerRemoving) {
+				//删掉
 				dodeltimer(pp, i)
 				if !atomic.Cas(&t.status, timerRemoving, timerRemoved) {
 					badTimer()
@@ -693,8 +718,10 @@ loop:
 				// We don't add it back yet because the
 				// heap manipulation could cause our
 				// loop to skip some other timer.
+				//移动
 				dodeltimer(pp, i)
 				moved = append(moved, t)
+
 				if s == timerModifiedEarlier {
 					if n := atomic.Xadd(&pp.adjustTimers, -1); int32(n) <= 0 {
 						break loop
@@ -737,7 +764,7 @@ func addAdjustedTimers(pp *p, moved []*timer) {
 }
 
 // nobarrierWakeTime looks at P's timers and returns the time when we
-// should wake up the netpoller. It returns 0 if there are no timers.
+// should wake up the netpoller 查看定时器，看什么时候应该唤醒网络轮询器. It returns 0 if there are no timers.
 // This function is invoked when dropping a P, and must run without
 // any write barriers. Therefore, if there are any timers that needs
 // to be moved earlier, it conservatively returns the current time.
@@ -745,6 +772,7 @@ func addAdjustedTimers(pp *p, moved []*timer) {
 //go:nowritebarrierrec
 func nobarrierWakeTime(pp *p) int64 {
 	if atomic.Load(&pp.adjustTimers) > 0 {
+		//立即唤醒
 		return nanotime()
 	} else {
 		return int64(atomic.Load64(&pp.timer0When))
@@ -757,8 +785,8 @@ func nobarrierWakeTime(pp *p) int64 {
 // when the first timer should run.
 // The caller must have locked the timers for pp.
 // If a timer is run, this will temporarily unlock the timers.
-//go:systemstack
-//7
+// go:systemstack
+// 7 执行一个定时器
 func runtimer(pp *p, now int64) int64 {
 	for {
 		t := pp.timers[0]
@@ -776,7 +804,8 @@ func runtimer(pp *p, now int64) int64 {
 				continue
 			}
 			// Note that runOneTimer may temporarily unlock
-			// pp.timersLock. 执行一个定时器函数
+			// pp.timersLock.
+			// 执行一个定时器函数
 			runOneTimer(pp, t, now)
 			return 0
 
@@ -824,7 +853,7 @@ func runtimer(pp *p, now int64) int64 {
 	}
 }
 
-// runOneTimer runs a single timer.
+// runOneTimer runs a single timer. 只执行一个定时器
 // The caller must have locked the timers for pp.
 // This will temporarily unlock the timers while running the timer function.
 //go:systemstack
@@ -841,11 +870,12 @@ func runOneTimer(pp *p, t *timer, now int64) {
 	arg := t.arg
 	seq := t.seq
 
-	//多次触发
+	//多次触发的定时器
 	if t.period > 0 {
 		// Leave in heap but adjust next time to fire.
 		delta := t.when - now
 		t.when += t.period * (1 + -delta/t.period)
+		//把定时器改时间，移回去
 		siftdownTimer(pp.timers, 0)
 		if !atomic.Cas(&t.status, timerRunning, timerWaiting) {
 			badTimer()
@@ -886,9 +916,9 @@ func runOneTimer(pp *p, t *timer, now int64) {
 // starts a lot of long-running timers and then stops them.
 // For example, this can happen via context.WithTimeout.
 //
-// This is the only function that walks through the entire timer heap,
+// This is the only function that walks through the entire timer heap, 唯一遍历完整定时器堆
 // other than moveTimers which only runs when the world is stopped.
-//
+// checkTimers()
 // The caller must have locked the timers for pp.
 func clearDeletedTimers(pp *p) {
 	cdel := int32(0)
@@ -903,6 +933,7 @@ nextTimer:
 			case timerWaiting:
 				if changedHeap {
 					timers[to] = t
+					//上浮
 					siftupTimer(timers, to)
 				}
 				to++
@@ -911,6 +942,7 @@ nextTimer:
 				if atomic.Cas(&t.status, s, timerMoving) {
 					t.when = t.nextwhen
 					timers[to] = t
+					//上浮
 					siftupTimer(timers, to)
 					to++
 					changedHeap = true
@@ -967,7 +999,7 @@ nextTimer:
 	}
 }
 
-// verifyTimerHeap verifies that the timer heap is in a valid state.
+// verifyTimerHeap verifies that the timer heap is in a valid state. 四叉堆
 // This is only for debugging, and is only called if verifyTimers is true.
 // The caller must have locked the timers.
 func verifyTimerHeap(pp *p) {
@@ -1002,7 +1034,7 @@ func updateTimer0When(pp *p) {
 
 // timeSleepUntil returns the time when the next timer should fire,返回下一个要触发的定时器
 // and the P that holds the timer heap that that timer is on.
-// This is only called by sysmon and checkdead.
+// This is only called by sysmon and checkdead. 遍历所有pp的所有定时器
 //遍历所有p寻找下一个定时器
 func timeSleepUntil() (int64, *p) {
 	next := int64(maxWhen)
@@ -1019,8 +1051,10 @@ func timeSleepUntil() (int64, *p) {
 
 		c := atomic.Load(&pp.adjustTimers)
 		if c == 0 {
+			//只遍历0号定时器的时间
 			w := int64(atomic.Load64(&pp.timer0When))
 			if w != 0 && w < next {
+				//取时间最小者
 				next = w
 				pret = pp
 			}
@@ -1028,6 +1062,7 @@ func timeSleepUntil() (int64, *p) {
 		}
 
 		lock(&pp.timersLock)
+		//遍历所有定时器的时间
 		for _, t := range pp.timers {
 			switch s := atomic.Load(&t.status); s {
 			case timerWaiting:
@@ -1072,13 +1107,16 @@ func timeSleepUntil() (int64, *p) {
 // it will cause the program to crash with a mysterious
 // "panic holding locks" message. Instead, we panic while not
 // holding a lock.
-
+// 4叉堆 上浮
 func siftupTimer(t []*timer, i int) {
+	//超出数组范围
 	if i >= len(t) {
 		badTimer()
 	}
+
 	when := t[i].when
 	tmp := t[i]
+
 	for i > 0 {
 		p := (i - 1) / 4 // parent
 		if when >= t[p].when {
@@ -1087,11 +1125,13 @@ func siftupTimer(t []*timer, i int) {
 		t[i] = t[p]
 		i = p
 	}
+
 	if tmp != t[i] {
 		t[i] = tmp
 	}
 }
 
+//四叉堆 下沉
 func siftdownTimer(t []*timer, i int) {
 	n := len(t)
 	if i >= n {
@@ -1099,6 +1139,8 @@ func siftdownTimer(t []*timer, i int) {
 	}
 	when := t[i].when
 	tmp := t[i]
+
+	//
 	for {
 		c := i*4 + 1 // left child
 		c3 := c + 2  // mid child

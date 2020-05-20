@@ -118,7 +118,7 @@ type mheap struct {
 	// accounting for current progress. If we could only adjust
 	// the slope, it would create a discontinuity in debt if any
 	// progress has already been made.
-	pagesInUse         uint64  // pages of spans in stats mSpanInUse; updated atomically
+	pagesInUse         uint64  // 被使用的页数，pages of spans in stats mSpanInUse; updated atomically
 	pagesSwept         uint64  // pages swept this cycle; updated atomically
 	pagesSweptBasis    uint64  // pagesSwept to use as the origin of the sweep ratio; updated atomically
 	sweepHeapLiveBasis uint64  // value of heap_live to use as the origin of sweep ratio; written with lock, read without
@@ -179,7 +179,7 @@ type mheap struct {
 	// will never be nil.
 	//二维切片指针，分2层
 	// linux上第一维是1  第二维是0x400000 2^22
-	// 2^22 * 2^3 = 2^10 * 2^10 * 32 = 32MB
+	// 2^22 * 2^3() = 2^10 * 2^10 * 32 = 32MB  指针占8字节
 	//4M * 64M = 2^22 * 2^26 = 2^48 = 256 * 2^40 = 256TB
 	//48位虚拟内存地址
 	arenas [1 << arenaL1Bits]*[1 << arenaL2Bits]*heapArena
@@ -273,11 +273,11 @@ type heapArena struct {
 	// address is live and looking it up in the spans array.
 	spans [pagesPerArena]*mspan
 
-	// pageInUse is a bitmap that indicates which spans are in
+	// pageInUse is a bitmap位图 that indicates which spans are in
 	// state mSpanInUse. This bitmap is indexed by page number,
 	// but only the bit corresponding to the first page in each
 	// span is used.
-	//
+	// 指示哪些页正在被使用
 	// Reads and writes are atomic.
 	pageInUse [pagesPerArena / 8]uint8
 
@@ -574,8 +574,8 @@ func (sc spanClass) noscan() bool {
 }
 
 // arenaIndex returns the index into mheap_.arenas of the arena
-// containing metadata for p. This index combines of an index into the
-// L1 map and an index into the L2 map and should be used as
+// containing metadata for p.
+// This index combines of an index into the L1 map and an index into the L2 map and should be used as
 // mheap_.arenas[ai.l1()][ai.l2()].
 //
 // If p is outside the range of valid heap addresses, either l1() or
@@ -586,6 +586,7 @@ func (sc spanClass) noscan() bool {
 //
 //go:nosplit
 func arenaIndex(p uintptr) arenaIdx {
+	//arena区基址 / 64M linux 不是从0开始，因为基址是1<<47 从中间开始
 	return arenaIdx((p + arenaBaseOffset) / heapArenaBytes)
 }
 
@@ -725,6 +726,7 @@ func pageIndexOf(p uintptr) (arena *heapArena, pageIdx uintptr, pageMask uint8) 
 // Initialize the heap.
 //初始化堆
 func (h *mheap) init() {
+	//锁初始化
 	lockInit(&h.lock, lockRankMheap)
 	lockInit(&h.sweepSpans[0].spineLock, lockRankSpine)
 	lockInit(&h.sweepSpans[1].spineLock, lockRankSpine)
@@ -751,13 +753,13 @@ func (h *mheap) init() {
 	for i := range h.central {
 		h.central[i].mcentral.init(spanClass(i))
 	}
-
+	//页分配器初始化
 	h.pages.init(&h.lock, &memstats.gc_sys)
 }
 
-// reclaim sweeps and reclaims at least npage pages into the heap.
+// reclaim sweeps and reclaims扫描 at least npage pages into the heap.
 // It is called before allocating npage pages to keep growth in check.
-//
+// 参数是下限，不会无限扫描下去
 // reclaim implements the page-reclaimer half of the sweeper.
 //
 // h must NOT be locked.
@@ -905,7 +907,7 @@ func (h *mheap) reclaimChunk(arenas []arenaIdx, pageIdx, n uintptr) uintptr {
 // spanclass indicates the span's size class and scannability.
 //
 // If needzero is true, the memory for the returned span will be zeroed.
-//在系统栈执行中获取新的runtime.mspan
+// 在系统栈执行中 获取新的runtime.mspan
 func (h *mheap) alloc(npages uintptr, spanclass spanClass, needzero bool) *mspan {
 	// Don't do any operations that lock the heap on the G stack.
 	// It might trigger stack growth, and the stack growth code needs
@@ -924,6 +926,7 @@ func (h *mheap) alloc(npages uintptr, spanclass spanClass, needzero bool) *mspan
 
 	if s != nil {
 		if needzero && s.needzero != 0 {
+			//清空内存
 			memclrNoHeapPointers(unsafe.Pointer(s.base()), s.npages<<_PageShift)
 		}
 		s.needzero = 0
@@ -932,8 +935,8 @@ func (h *mheap) alloc(npages uintptr, spanclass spanClass, needzero bool) *mspan
 }
 
 // allocManual allocates a manually-managed span of npage pages.
-// allocManual returns nil if allocation fails.
-//
+// allocManual returns nil if allocation fails. fail is nil
+// 分配手动管理的多页span
 // allocManual adds the bytes used to *stat, which should be a
 // memstats in-use field. Unlike allocations in the GC'd heap, the
 // allocation does *not* count toward heap_inuse or heap_sys.
@@ -1130,20 +1133,24 @@ func (h *mheap) allocSpan(npages uintptr, manual bool, spanclass spanClass, sysS
 
 	// If the allocation is small enough, try the page cache!
 	pp := gp.m.p.ptr()
+
+	//页数少于16
 	if pp != nil && npages < pageCachePages/4 {
 		c := &pp.pcache
 
 		// If the cache is empty, refill it.
 		if c.empty() {
 			lock(&h.lock)
+			//分配页缓存
 			*c = h.pages.allocToCache()
 			unlock(&h.lock)
 		}
 
 		// Try to allocate from the cache.
-		//页缓存分配页
+		//从当前p的页缓存分配页
 		base, scav = c.alloc(npages)
 		if base != 0 {
+			//分配mspan
 			s = h.tryAllocMSpan()
 
 			if s != nil && gcBlackenEnabled == 0 && (manual || spanclass.sizeclass() != 0) {
@@ -1169,11 +1176,13 @@ func (h *mheap) allocSpan(npages uintptr, manual bool, spanclass spanClass, sysS
 	// whole job done without the heap lock.
 	lock(&h.lock)
 
+	//从pp的页缓存分配失败
 	if base == 0 {
 		// Try to acquire a base address.
-		// 页分配器分配页面
+		// 从堆的页分配器分配页面
 		base, scav = h.pages.alloc(npages)
 		if base == 0 {
+			//堆里也分配页失败
 			//向os要内存，扩容
 			if !h.grow(npages) {
 				unlock(&h.lock)
@@ -1186,11 +1195,15 @@ func (h *mheap) allocSpan(npages uintptr, manual bool, spanclass spanClass, sysS
 			}
 		}
 	}
+
+
 	if s == nil {
 		// We failed to get an mspan earlier, so grab
 		// one now that we have the heap lock.
+		//分配mspan
 		s = h.allocMSpanLocked()
 	}
+
 	if !manual {
 		// This is a heap span, so we should do some additional accounting
 		// which may only be done with the heap locked.
@@ -1231,11 +1244,13 @@ HaveSpan:
 	//拿到了页面
 	// At this point, both s != nil and base != 0, and the heap
 	// lock is no longer held. Initialize the span.
-	//初始化mspan
+	//初始化mspan，管理base开始的指定多个页面
 	s.init(base, npages)
 	if h.allocNeedsZero(base, npages) {
 		s.needzero = 1
 	}
+
+	//总字节数
 	nbytes := npages * pageSize
 	if manual {
 		s.manualFreeList = 0
@@ -1250,6 +1265,7 @@ HaveSpan:
 		s.spanclass = spanclass
 		if sizeclass := spanclass.sizeclass(); sizeclass == 0 {
 			s.elemsize = nbytes
+			//不分配尺寸
 			s.nelems = 1
 
 			s.divShift = 0
@@ -1258,6 +1274,7 @@ HaveSpan:
 			s.baseMask = 0
 		} else {
 			s.elemsize = uintptr(class_to_size[sizeclass])
+			//slot数量
 			s.nelems = nbytes / s.elemsize
 
 			m := &class_to_divmagic[sizeclass]
@@ -1269,7 +1286,7 @@ HaveSpan:
 
 		// Initialize mark and allocation structures.
 		s.freeindex = 0
-		s.allocCache = ^uint64(0) // all 1s indicating all free.
+		s.allocCache = ^uint64(0) // all 1s indicating all free. 1表示可用
 		s.gcmarkBits = newMarkBits(s.nelems)
 		s.allocBits = newAllocBits(s.nelems)
 
@@ -1295,6 +1312,7 @@ HaveSpan:
 	if scav != 0 {
 		// sysUsed all the pages that are actually available
 		// in the span since some of them might be scavenged.
+		//标记为被使用
 		sysUsed(unsafe.Pointer(base), nbytes)
 		mSysStatDec(&memstats.heap_released, scav)
 	}
@@ -1308,6 +1326,7 @@ HaveSpan:
 	// related to this span will only every be read or modified by
 	// this thread until pointers into the span are published or
 	// pageInUse is updated.
+	//记录到heapArena结构体
 	h.setSpans(s.base(), npages, s)
 
 	if !manual {
@@ -1326,6 +1345,7 @@ HaveSpan:
 		// This publishes the span to the page sweeper, so
 		// it's imperative that the span be completely initialized
 		// prior to this line.
+		//返回地址所在arena指针
 		arena, pageIdx, pageMask := pageIndexOf(s.base())
 		atomic.Or8(&arena.pageInUse[pageIdx], pageMask)
 

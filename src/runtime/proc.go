@@ -2962,8 +2962,9 @@ func dropg() {
 // If the time when the next timer should run is not 0,
 // it is always larger than the returned time.
 // We pass now in and out to avoid extra calls of nanotime.
+// findrunable() 或者 schedule()会调用此函数，获取
+
 //go:yeswritebarrierrec
-//findrunable() 或者 schedule()会调用此函数，获取
 func checkTimers(pp *p, now int64) (rnow, pollUntil int64, ran bool) {
 	// If there are no timers to adjust, and the first timer on
 	// the heap is not yet ready to run, then there is nothing to do.
@@ -3128,6 +3129,7 @@ func gopreempt_m(gp *g) {
 // preemptPark parks gp and puts it in _Gpreempted.
 // 因抢占 暂停协程
 // called from preempt.go or stack.go
+
 //go:systemstack
 func preemptPark(gp *g) {
 	if trace.enabled {

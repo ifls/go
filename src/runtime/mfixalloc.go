@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Fixed-size object allocator. Returned memory is not zeroed未初始化.
+// Fixed-size object固定大小对象分配器 allocator. Returned memory is not zeroed未初始化.
 //
 // See malloc.go for overview.
 
@@ -16,8 +16,8 @@ import "unsafe"
 //
 // Memory returned by fixalloc.alloc is zeroed by default, but the
 // caller may take responsibility for zeroing allocations by setting
-// the zero flag to false. This is only safe if the memory never
-// contains heap pointers.
+// the zero flag to false.
+// This is only safe if the memory never contains heap pointers.
 //
 // The caller is responsible for locking around FixAlloc calls.
 // Callers can keep state in the object but the first word is

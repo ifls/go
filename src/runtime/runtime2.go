@@ -486,7 +486,7 @@ type g struct {
 	waiting        *sudog         // 执行等待链表里的sudug，相互反指 sudog structures this g is waiting on (that have a valid elem ptr); in lock order
 	cgoCtxt        []uintptr      // cgo traceback context
 	labels         unsafe.Pointer // profiler labels
-	timer          *timer         // sleep 当前 协程， sleep时获取/创建 cached timer for time.Sleep
+	timer          *timer         // sleep 当前协程， sleep时 使用时才获取/创建 cached timer for time.Sleep
 	selectDone     uint32         // select语句结束后 置0 are we participating in a select and did someone win the race?
 
 	// Per-G GC state
@@ -661,7 +661,7 @@ type p struct {
 	// The when field of the first entry on the timer heap.
 	// This is updated using atomic functions.
 	// This is 0 if the timer heap is empty.
-	timer0When uint64
+	timer0When uint64		//timer0计时器的when
 
 	// Per-P GC state
 	gcAssistTime         int64    // 辅助gc回收时间 Nanoseconds in assistAlloc
@@ -702,7 +702,7 @@ type p struct {
 	// This should only be modified while holding timersLock,
 	// or while the timer status is in a transient state
 	// such as timerModifying.
-	adjustTimers uint32		//timerModifiedEarlier
+	adjustTimers uint32		// 要调整的定时器的数量
 
 	// Number of timerDeleted timers in P's heap.
 	// Modified using atomic instructions.

@@ -311,6 +311,7 @@ func call1073741824(typ, fn, arg unsafe.Pointer, n, retoffset uint32)
 func systemstack_switch()
 
 // alignUp rounds n up to a multiple of a. a must be a power of 2.
+// 向上取整到a的整数倍， a 必须是2^x
 func alignUp(n, a uintptr) uintptr {
 	return (n + a - 1) &^ (a - 1)
 }

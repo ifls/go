@@ -10,7 +10,7 @@ import (
 	"runtime/internal/sys"
 	"unsafe"
 )
-
+//64
 const pageCachePages = 8 * unsafe.Sizeof(pageCache{}.cache)
 
 // pageCache represents a per-p cache of pages the allocator can
@@ -56,7 +56,7 @@ func (c *pageCache) alloc(npages uintptr) (uintptr, uintptr) {
 // from the cache. It represents the general case for allocating from
 // the page cache.
 //
-// Returns a base address and the amount of scavenged memory in the
+// Returns a base address and the amount of scavenged打扫 memory in the
 // allocated region in bytes.
 func (c *pageCache) allocN(npages uintptr) (uintptr, uintptr) {
 	i := findBitRange64(c.cache, uint(npages))
