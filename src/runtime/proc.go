@@ -407,6 +407,7 @@ func acquireSudog() *sudog {
 	return s
 }
 
+// select.go chan.go
 //go:nosplit
 func releaseSudog(s *sudog) {
 	if s.elem != nil {

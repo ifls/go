@@ -35,10 +35,10 @@ var sweep sweepdata
 type sweepdata struct {
 	lock    mutex
 	g       *g
-	parked  bool
+	parked  bool	//sweep工作被暂停
 	started bool
 
-	nbgsweep    uint32
+	nbgsweep    uint32	//扫描到空闲页的次数
 	npausesweep uint32
 
 	// centralIndex is the current unswept span class.
@@ -159,10 +159,12 @@ func bgsweep(c chan int) {
 	lockInit(&sweep.lock, lockRankSweep)
 	lock(&sweep.lock)
 	sweep.parked = true
+	//初始化一下，然后解除阻塞
 	c <- 1
 	goparkunlock(&sweep.lock, waitReasonGCSweepWait, traceEvGoBlock, 1)
 
 	for {
+		//清扫了一些页，就让其他g运行
 		for sweepone() != ^uintptr(0) {
 			sweep.nbgsweep++
 			Gosched()
@@ -183,8 +185,8 @@ func bgsweep(c chan int) {
 	}
 }
 
-// sweepone sweeps some unswept heap span and returns the number of pages returned
-// to the heap, or ^uintptr(0) if there was nothing to sweep.
+// sweepone sweeps some一些 unswept heap span and returns the number of pages returned
+// to the heap, or ^uintptr(0) if there was nothing to sweep. 返回回到堆的页数量 全1表示nothing，
 func sweepone() uintptr {
 	_g_ := getg()
 	sweepRatio := mheap_.sweepPagesPerByte // For debugging

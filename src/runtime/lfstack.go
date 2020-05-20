@@ -11,7 +11,7 @@ import (
 	"unsafe"
 )
 
-// lfstack is the head of a lock-free stack.
+// lfstack is the head of a lock-free stack. 无锁队列头部
 //
 // The zero value of lfstack is an empty list.
 //

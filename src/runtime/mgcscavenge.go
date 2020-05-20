@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Scavenging free pages.
+// Scavenging free pages. 清理空闲页面
 //
 // This file implements scavenging (the release of physical pages backing mapped
 // memory) of free and unused pages in the heap as a way to deal with page-level
-// fragmentation and reduce the RSS of Go applications.
+// fragmentation 处理页级别的内存碎片 and reduce the RSS of Go applications. 减少RSS Resident Set Size 实际使用的物理内存
 //
 // Scavenging in Go happens on two fronts: there's the background
-// (asynchronous) scavenger and the heap-growth (synchronous) scavenger.
+// (asynchronous) scavenger and the heap-growth (synchronous)同步 scavenger.
 //
 // The former happens on a goroutine much like the background sweeper which is
 // soft-capped at using scavengePercent of the mutator's time, based on
@@ -258,10 +258,13 @@ func bgscavenge(c chan int) {
 
 	scavenge.timer = new(timer)
 	scavenge.timer.f = func(_ interface{}, _ uintptr) {
+		//定时唤醒 清道工作
 		wakeScavenger()
 	}
 
+	//进行上面的初始化，然后解除阻塞
 	c <- 1
+	//暂停，等其他地方需要的时候，唤醒
 	goparkunlock(&scavenge.lock, waitReasonGCScavengeWait, traceEvGoBlock, 1)
 
 	// Exponentially-weighted moving average of the fraction of time this
@@ -383,10 +386,10 @@ func bgscavenge(c chan int) {
 	}
 }
 
-// scavenge scavenges nbytes worth of free pages, starting with the
-// highest address first. Successive calls continue from where it left
-// off until the heap is exhausted. Call scavengeStartGen to bring it
-// back to the top of the heap.
+// scavenge scavenges nbytes worth of称得上 free pages, starting with the
+// highest address first. 从最高地址开始
+// Successive连续 calls continue from where it left off until the heap is exhausted 耗尽.
+// Call scavengeStartGen to bring it back to the top of the heap. 回到堆顶
 //
 // Returns the amount of memory scavenged in bytes.
 //

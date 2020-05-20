@@ -858,7 +858,7 @@ type itab struct {
 }
 
 // Lock-free stack node.
-//无锁栈节点
+// 无锁栈节点
 // Also known to export_test.go.
 type lfnode struct {
 	next    uint64

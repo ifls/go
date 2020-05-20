@@ -530,7 +530,7 @@ func prepareFreeWorkbufs() {
 	unlock(&work.wbufSpans.lock)
 }
 
-// freeSomeWbufs frees some workbufs back to the heap and returns
+// freeSomeWbufs frees some workbufs 回到堆中back to the heap and returns
 // true if it should be called again to free more.
 func freeSomeWbufs(preemptible bool) bool {
 	const batchSize = 64 // ~1–2 µs per span.
@@ -539,6 +539,7 @@ func freeSomeWbufs(preemptible bool) bool {
 		unlock(&work.wbufSpans.lock)
 		return false
 	}
+
 	systemstack(func() {
 		gp := getg().m.curg
 		for i := 0; i < batchSize && !(preemptible && gp.preempt); i++ {
@@ -547,6 +548,7 @@ func freeSomeWbufs(preemptible bool) bool {
 				break
 			}
 			work.wbufSpans.free.remove(span)
+			//释放手动管理的内存
 			mheap_.freeManual(span, &memstats.gc_sys)
 		}
 	})

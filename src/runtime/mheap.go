@@ -69,7 +69,7 @@ type mheap struct {
 	lock      mutex
 	pages     pageAlloc // page allocation data structure
 	sweepgen  uint32    // sweep generation, see comment in mspan; written during STW
-	sweepdone uint32    // all spans are swept
+	sweepdone uint32    // 不等于0 表示 sweep结束 all spans are swept
 	sweepers  uint32    // number of active sweepone calls
 
 	// allspans is a slice切片 of all mspans ever created. Each mspan

@@ -1072,7 +1072,7 @@ const (
 // If flags&gcDrainFlushBgCredit != 0, gcDrain flushes scan work
 // credit to gcController.bgScanCredit every gcCreditSlack units of
 // scan work.
-//
+// 扫描跟对象，黑化灰色对象，直到没有
 // gcDrain will always return if there is a pending STW.
 //
 //go:nowritebarrier
