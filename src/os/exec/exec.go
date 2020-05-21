@@ -5,7 +5,7 @@
 // Package exec runs external commands. It wraps os.StartProcess to make it
 // easier to remap stdin and stdout, connect I/O with pipes, and do other
 // adjustments.
-//
+// 执行cmd命令， 封装 startProcess函数实现
 // Unlike the "system" library call from C and other languages, the
 // os/exec package intentionally does not invoke the system shell and
 // does not expand any glob patterns or handle other expansions,
@@ -146,7 +146,7 @@ type Cmd struct {
 
 // Command returns the Cmd struct to execute the named program with
 // the given arguments.
-//
+// 执行命令行，程序
 // It sets only the Path and Args in the returned structure.
 //
 // If name contains no path separators, Command uses LookPath to
@@ -182,7 +182,7 @@ func Command(name string, arg ...string) *Cmd {
 }
 
 // CommandContext is like Command but includes a context.
-//
+// context可以用于杀掉启动的命令
 // The provided context is used to kill the process (by calling
 // os.Process.Kill) if the context becomes done before the command
 // completes on its own.

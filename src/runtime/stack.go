@@ -150,6 +150,7 @@ type stackpoolItem struct {
 }
 
 // Global pool of large stack spans.
+// 全局 的 大栈 缓存
 var stackLarge struct {
 	lock mutex
 	free [heapAddrBits - pageShift]mSpanList // free lists by log_2(s.npages)
@@ -319,9 +320,8 @@ func stackcache_clear(c *mcache) {
 }
 
 // stackalloc allocates an n byte stack.
-//
-// stackalloc must run on the system stack because it uses per-P
-// resources and must not split the stack.
+// 返回的不是指针是栈结构
+// stackalloc must run on the system stack because it uses per-P resources and must not split the stack.
 //
 //go:systemstack
 func stackalloc(n uint32) stack {
@@ -333,9 +333,11 @@ func stackalloc(n uint32) stack {
 	if thisg != thisg.m.g0 {
 		throw("stackalloc not on scheduler stack")
 	}
+
 	if n&(n-1) != 0 {
 		throw("stack size not a power of 2")
 	}
+
 	if stackDebug >= 1 {
 		print("stackalloc ", n, "\n")
 	}
@@ -347,6 +349,7 @@ func stackalloc(n uint32) stack {
 		if v == nil {
 			throw("out of memory (stackalloc)")
 		}
+
 		//v 是低地址
 		return stack{uintptr(v), uintptr(v) + uintptr(n)}
 	}
@@ -355,6 +358,7 @@ func stackalloc(n uint32) stack {
 	// If we need a stack of a bigger size, we fall back on allocating
 	// a dedicated span.
 	var v unsafe.Pointer
+	// n < 32K
 	if n < _FixedStack<<_NumStackOrders && n < _StackCacheSize {
 		//小栈分配
 		order := uint8(0)
@@ -365,10 +369,10 @@ func stackalloc(n uint32) stack {
 		}
 		var x gclinkptr
 		if stackNoCache != 0 || thisg.m.p == 0 || thisg.m.preemptoff != "" {
-			// thisg.m.p == 0 can happen in the guts of exitsyscall
-			// or procresize. Just get a stack from the global pool.
-			// Also don't touch stackcache during gc
-			// as it's flushed concurrently.
+			//不能从p里面拿
+			// thisg.m.p == 0 can happen in the guts of exitsyscall or procresize.
+			// Just get a stack from the global pool.
+			// Also don't touch stackcache during gc as it's flushed concurrently.
 			lock(&stackpool[order].item.mu)
 			//free poll 里分配栈空间
 			x = stackpoolalloc(order)
@@ -393,6 +397,7 @@ func stackalloc(n uint32) stack {
 
 		// Try to get a stack from the large stack cache.
 		lock(&stackLarge.lock)
+		//
 		if !stackLarge.free[log2npage].isEmpty() {
 			s = stackLarge.free[log2npage].first
 			stackLarge.free[log2npage].remove(s)
@@ -403,11 +408,12 @@ func stackalloc(n uint32) stack {
 
 		if s == nil {
 			// Allocate a new stack from the heap.
-			//从堆上分配栈
+			//从堆上分配 mspan
 			s = mheap_.allocManual(npage, &memstats.stacks_inuse)
 			if s == nil {
 				throw("out of memory")
 			}
+			// 空函数
 			osStackAlloc(s)
 			s.elemsize = uintptr(n)
 		}
@@ -423,6 +429,7 @@ func stackalloc(n uint32) stack {
 	if stackDebug >= 1 {
 		print("  allocated ", v, "\n")
 	}
+
 	return stack{uintptr(v), uintptr(v) + uintptr(n)}
 }
 

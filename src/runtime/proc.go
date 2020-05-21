@@ -1611,11 +1611,12 @@ func allocm(_p_ *p, fn func()) *m {
 
 	// In case of cgo or Solaris or illumos or Darwin, pthread_create will make us a stack 给一个栈空间.
 	// Windows and Plan 9 will layout sched stack on OS stack.
+	//创建m就会创建g0
 	if iscgo || GOOS == "solaris" || GOOS == "illumos" || GOOS == "windows" || GOOS == "plan9" || GOOS == "darwin" {
 		// 不分配栈空间
 		mp.g0 = malg(-1)
 	} else {
-		//初始化g0 分配g0的栈空间
+		//初始化g0 分配g0的栈空间 linux上算出来就是8K
 		mp.g0 = malg(8192 * sys.StackGuardMultiplier)
 	}
 	//g0.m = m
@@ -3783,6 +3784,8 @@ func malg(stacksize int32) *g {
 			//分配新g的栈空间
 			newg.stack = stackalloc(uint32(stacksize))
 		})
+
+		//计算栈相关大小
 		newg.stackguard0 = newg.stack.lo + _StackGuard
 		newg.stackguard1 = ^uintptr(0)
 		// Clear the bottom word of the stack. We record g
@@ -4072,6 +4075,7 @@ retry:
 	_p_.gFree.n--
 	if gp.stack.lo == 0 {
 		// Stack was 销毁deallocated in gfput. Allocate a new one.
+		//栈被销毁，分配一个新的
 		systemstack(func() {
 			gp.stack = stackalloc(_FixedStack)
 		})

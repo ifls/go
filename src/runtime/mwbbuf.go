@@ -35,7 +35,8 @@ const testSmallBuf = false
 // wbBuf is a per-P buffer of pointers queued by the write barrier.
 // This buffer is flushed to the GC workbufs when it fills up and on
 // various GC transitions.
-//
+// 写屏障缓冲区， 实现批量写屏障，增加性能
+
 // This is closely related to a "sequential store buffer" (SSB),
 // except that SSBs are usually used for maintaining remembered sets,
 // while this is used for marking.

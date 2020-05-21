@@ -245,7 +245,7 @@ func scavengeSleep(ns int64) int64 {
 }
 
 // Background scavenger.
-//
+// 向系统归还内存
 // The background scavenger maintains the RSS of the application below
 // the line described by the proportional scavenging statistics in
 // the mheap struct.

@@ -7,7 +7,7 @@ package user
 import "sync"
 
 // Current returns the current user.
-//
+// 返回当前用户
 // The first call will cache the current user information.
 // Subsequent calls will return the cached value and will not reflect
 // changes to the current user.

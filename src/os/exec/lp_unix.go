@@ -27,6 +27,7 @@ func findExecutable(file string) error {
 	return os.ErrPermission
 }
 
+// 在PATH 指定的目录下搜索可执行文件
 // LookPath searches for an executable named file in the
 // directories named by the PATH environment variable.
 // If file contains a slash, it is tried directly and the PATH is not consulted.

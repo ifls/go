@@ -134,7 +134,7 @@ const (
 
 	_FixAllocChunk = 16 << 10 // Chunk size for FixAlloc
 
-	// Per-P, per order stack segment cache size.
+	// Per-P, per order stack segment cache size. 23KB
 	_StackCacheSize = 32 * 1024
 
 	// Number of orders that get caching. Order 0 is FixedStack
@@ -961,6 +961,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	//gc的标记阶段已开始
 	if gcBlackenEnabled != 0 {
 		// Charge the current user G for this allocation.
+		//当前g停止，切换到 assistG 帮助标记
 		assistG = getg()
 		if assistG.m.curg != nil {
 			assistG = assistG.m.curg

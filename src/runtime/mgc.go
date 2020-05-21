@@ -1321,7 +1321,7 @@ func gcStart(trigger gcTrigger) {
 		}
 	}
 
-	//开始 异步后台工作标记
+	//开启 异步后台工作g
 	gcBgMarkStartWorkers()
 
 	systemstack(gcResetMarkState)
@@ -1585,7 +1585,7 @@ top:
 		traceGCSTWStart(0)
 	}
 
-	//stw
+	//stw markTermination
 	systemstack(stopTheWorldWithSema)
 	// The gcphase is _GCmark, it will transition to _GCmarktermination
 	// below. The important thing is that the wb remains active until
@@ -1804,7 +1804,7 @@ func gcMarkTermination(nextTriggerRatio float64) {
 	// so events don't leak into the wrong cycle.
 	mProf_NextCycle()
 
-	//恢复
+	//恢复世界
 	systemstack(func() { startTheWorldWithSema(true) })
 
 	// Flush the heap profile so we can start a new cycle next GC.
@@ -1824,6 +1824,7 @@ func gcMarkTermination(nextTriggerRatio float64) {
 	// is necessary to sweep all spans, we need to ensure all
 	// mcaches are flushed before we start the next GC cycle.
 	systemstack(func() {
+		//准备清扫
 		forEachP(func(_p_ *p) {
 			_p_.mcache.prepareForSweep()
 		})
@@ -1893,7 +1894,7 @@ func gcBgMarkStartWorkers() {
 	for _, p := range allp {
 		if p.gcBgMarkWorker == 0 {
 			go gcBgMarkWorker(p)
-			//无限等待
+			//永久等待
 			notetsleepg(&work.bgMarkReady, -1)
 			noteclear(&work.bgMarkReady)
 		}
