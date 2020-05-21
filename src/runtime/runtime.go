@@ -46,6 +46,7 @@ func tickspersecond() int64 {
 	return r
 }
 
+//goenvs() 初始化的时候保存在这里
 var envs []string
 var argslice []string
 

@@ -17,7 +17,7 @@ import (
 // field of a larger type representing a network connection or OS file.
 type FD struct {
 	// Lock sysfd and serialize access to Read and Write methods.
-	fdmu fdMutex
+	fdmu fdMutex	//保护读写的锁
 
 	// System file descriptor. Immutable until Close.
 	Sysfd int
@@ -83,6 +83,7 @@ func (fd *FD) destroy() error {
 
 // Close closes the FD. The underlying file descriptor is closed by the
 // destroy method when there are no remaining references.
+// 引用为0时才关闭文件描述符
 func (fd *FD) Close() error {
 	if !fd.fdmu.increfAndClose() {
 		return errClosing(fd.isFile)

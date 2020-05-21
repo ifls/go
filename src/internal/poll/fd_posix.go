@@ -47,6 +47,7 @@ func (fd *FD) Fchown(uid, gid int) error {
 	return syscall.Fchown(fd.Sysfd, uid, gid)
 }
 
+//截断文件到指定长度
 // Ftruncate wraps syscall.Ftruncate.
 func (fd *FD) Ftruncate(size int64) error {
 	if err := fd.incref(); err != nil {
@@ -57,7 +58,7 @@ func (fd *FD) Ftruncate(size int64) error {
 }
 
 // RawControl invokes the user-defined function f for a non-IO
-// operation.
+// operation. 使用用户自定义的函数操作fd
 func (fd *FD) RawControl(f func(uintptr)) error {
 	if err := fd.incref(); err != nil {
 		return err

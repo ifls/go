@@ -15,7 +15,7 @@ import (
 
 // Process stores the information about a process created by StartProcess.
 type Process struct {
-	Pid    int
+	Pid    int			//进程id
 	handle uintptr      // handle is accessed atomically on Windows
 	isdone uint32       // process has been successfully waited on, non zero if true
 	sigMu  sync.RWMutex // avoid race between wait and signal
@@ -59,7 +59,7 @@ type ProcAttr struct {
 	Sys *syscall.SysProcAttr
 }
 
-// A Signal represents an operating system signal.
+// A Signal represents an operating system signal. 表示操作系统信号
 // The usual underlying implementation is operating system-dependent:
 // on Unix it is syscall.Signal.
 type Signal interface {
@@ -70,6 +70,7 @@ type Signal interface {
 // Getpid returns the process id of the caller.
 func Getpid() int { return syscall.Getpid() }
 
+//父进程 pid
 // Getppid returns the process id of the caller's parent.
 func Getppid() int { return syscall.Getppid() }
 
@@ -80,6 +81,7 @@ func Getppid() int { return syscall.Getppid() }
 //
 // On Unix systems, FindProcess always succeeds and returns a Process
 // for the given pid, regardless of whether the process exists.
+// unix上只是个假实现
 func FindProcess(pid int) (*Process, error) {
 	return findProcess(pid)
 }
@@ -87,7 +89,7 @@ func FindProcess(pid int) (*Process, error) {
 // StartProcess starts a new process with the program, arguments and attributes
 // specified by name, argv and attr. The argv slice will become os.Args in the
 // new process, so it normally starts with the program name.
-//
+// 使用指定程序，开始一个新的进程
 // If the calling goroutine has locked the operating system thread
 // with runtime.LockOSThread and modified any inheritable OS-level
 // thread state (for example, Linux or Plan 9 name spaces), the new
@@ -112,6 +114,7 @@ func (p *Process) Release() error {
 // Kill causes the Process to exit immediately. Kill does not wait until
 // the Process has actually exited. This only kills the Process itself,
 // not any other processes it may have started.
+// 杀死 p.Pid 指定的进程
 func (p *Process) Kill() error {
 	return p.kill()
 }
@@ -121,10 +124,12 @@ func (p *Process) Kill() error {
 // Wait releases any resources associated with the Process.
 // On most operating systems, the Process must be a child
 // of the current process or an error will be returned.
+// 等待 p.Pid 进程退出，返回进程状态描述
 func (p *Process) Wait() (*ProcessState, error) {
 	return p.wait()
 }
 
+// 发送信号 使用 syscall.Kill 系统调用
 // Signal sends a signal to the Process.
 // Sending Interrupt on Windows is not implemented.
 func (p *Process) Signal(sig Signal) error {

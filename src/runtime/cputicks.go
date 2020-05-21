@@ -12,6 +12,6 @@
 
 package runtime
 
-// careful: cputicks is not guaranteed to be monotonic! In particular, we have
-// noticed drift between cpus on certain os/arch combinations. See issue 8976.
+// careful: cputicks is not guaranteed to be monotonic! 不保证单调递增
+// In particular, we have noticed drift显著漂移 between cpus on certain os/arch combinations. See issue 8976.
 func cputicks() int64

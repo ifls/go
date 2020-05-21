@@ -6,15 +6,15 @@
 package syscall
 
 const (
-	SYS_READ                   = 0
-	SYS_WRITE                  = 1
+	SYS_READ                   = 0		//File.Read()
+	SYS_WRITE                  = 1		//File.Write()
 	SYS_OPEN                   = 2
 	SYS_CLOSE                  = 3
 	SYS_STAT                   = 4
-	SYS_FSTAT                  = 5
+	SYS_FSTAT                  = 5		//File.Stat()
 	SYS_LSTAT                  = 6
 	SYS_POLL                   = 7
-	SYS_LSEEK                  = 8
+	SYS_LSEEK                  = 8		//File.Seek()
 	SYS_MMAP                   = 9
 	SYS_MPROTECT               = 10
 	SYS_MUNMAP                 = 11
@@ -23,8 +23,8 @@ const (
 	SYS_RT_SIGPROCMASK         = 14
 	SYS_RT_SIGRETURN           = 15
 	SYS_IOCTL                  = 16
-	SYS_PREAD64                = 17
-	SYS_PWRITE64               = 18
+	SYS_PREAD64                = 17		//File.ReadAt() pread()
+	SYS_PWRITE64               = 18		//File.WriteAt() pwrite()
 	SYS_READV                  = 19
 	SYS_WRITEV                 = 20
 	SYS_ACCESS                 = 21
@@ -67,9 +67,9 @@ const (
 	SYS_VFORK                  = 58
 	SYS_EXECVE                 = 59
 	SYS_EXIT                   = 60
-	SYS_WAIT4                  = 61
-	SYS_KILL                   = 62
-	SYS_UNAME                  = 63
+	SYS_WAIT4                  = 61		//Process.Wait()
+	SYS_KILL                   = 62		//Process.Kill()
+	SYS_UNAME                  = 63		//os.HostName()
 	SYS_SEMGET                 = 64
 	SYS_SEMOP                  = 65
 	SYS_SEMCTL                 = 66
@@ -80,14 +80,14 @@ const (
 	SYS_MSGCTL                 = 71
 	SYS_FCNTL                  = 72
 	SYS_FLOCK                  = 73
-	SYS_FSYNC                  = 74
+	SYS_FSYNC                  = 74		//File.Sync()
 	SYS_FDATASYNC              = 75
 	SYS_TRUNCATE               = 76
-	SYS_FTRUNCATE              = 77
+	SYS_FTRUNCATE              = 77		//File.Truncate()
 	SYS_GETDENTS               = 78
 	SYS_GETCWD                 = 79
-	SYS_CHDIR                  = 80
-	SYS_FCHDIR                 = 81
+	SYS_CHDIR                  = 80		//os.ChDir()
+	SYS_FCHDIR                 = 81		//File.ChDir()
 	SYS_RENAME                 = 82
 	SYS_MKDIR                  = 83
 	SYS_RMDIR                  = 84
@@ -97,9 +97,9 @@ const (
 	SYS_SYMLINK                = 88
 	SYS_READLINK               = 89
 	SYS_CHMOD                  = 90
-	SYS_FCHMOD                 = 91
+	SYS_FCHMOD                 = 91		//File.Chmod()
 	SYS_CHOWN                  = 92
-	SYS_FCHOWN                 = 93
+	SYS_FCHOWN                 = 93		//File.Chown()
 	SYS_LCHOWN                 = 94
 	SYS_UMASK                  = 95
 	SYS_GETTIMEOFDAY           = 96
@@ -223,7 +223,7 @@ const (
 	SYS_EPOLL_CTL_OLD          = 214
 	SYS_EPOLL_WAIT_OLD         = 215
 	SYS_REMAP_FILE_PAGES       = 216
-	SYS_GETDENTS64             = 217
+	SYS_GETDENTS64             = 217		//File.ReadDir
 	SYS_SET_TID_ADDRESS        = 218
 	SYS_RESTART_SYSCALL        = 219
 	SYS_SEMTIMEDOP             = 220
@@ -263,18 +263,18 @@ const (
 	SYS_INOTIFY_ADD_WATCH      = 254
 	SYS_INOTIFY_RM_WATCH       = 255
 	SYS_MIGRATE_PAGES          = 256
-	SYS_OPENAT                 = 257
-	SYS_MKDIRAT                = 258
+	SYS_OPENAT                 = 257		//os.Open() so.Create() os.OpenFile
+	SYS_MKDIRAT                = 258		//File.MkDir()
 	SYS_MKNODAT                = 259
 	SYS_FCHOWNAT               = 260
 	SYS_FUTIMESAT              = 261
-	SYS_NEWFSTATAT             = 262
+	SYS_NEWFSTATAT             = 262		//os.Stat() os.Lstat()
 	SYS_UNLINKAT               = 263
-	SYS_RENAMEAT               = 264
+	SYS_RENAMEAT               = 264		//File.Rename
 	SYS_LINKAT                 = 265
 	SYS_SYMLINKAT              = 266
 	SYS_READLINKAT             = 267
-	SYS_FCHMODAT               = 268
+	SYS_FCHMODAT               = 268		//os.ChMod()
 	SYS_FACCESSAT              = 269
 	SYS_PSELECT6               = 270
 	SYS_PPOLL                  = 271

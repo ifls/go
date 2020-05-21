@@ -11,25 +11,28 @@ import (
 	"unsafe"
 )
 
-// Integrated network poller (platform-independent part).
-// A particular implementation (epoll/kqueue/port/AIX/Windows)
+// Integrated全面的 network poller (platform-independent part). 平台无关部分
+// A particular implementation (epoll/kqueue/port/AIX/Windows) 特定平台的实现必须实现以下函数
 // must define the following functions:
-//
+// 初始化
 // func netpollinit()
 //     Initialize the poller. Only called once.
-//
+// 将fd加入到网络轮询
 // func netpollopen(fd uintptr, pd *pollDesc) int32
-//     Arm edge-triggered notifications for fd. The pd argument is to pass
-//     back to netpollready when fd is ready. Return an errno value.
-//
+//     Arm edge-triggered notifications for fd. 边缘触发
+//     The pd argument is to pass back to netpollready when fd is ready. pd参数会被用来调用 netpollready()函数
+//     Return an errno value. 返回一个错误码
+// 获取应该唤醒的g
 // func netpoll(delta int64) gList
-//     Poll the network. If delta < 0, block indefinitely. If delta == 0,
-//     poll without blocking. If delta > 0, block for up to delta nanoseconds.
-//     Return a list of goroutines built by calling netpollready.
-//
+//     Poll the network.
+//    If delta < 0, block indefinitely. 永久
+//    If delta == 0, poll without blocking. 非阻塞
+//    If delta > 0, block for up to delta nanoseconds. 阻塞直到 delta纳秒
+//     Return a list of goroutines built by calling netpollready. 返回gList(调用netpollready构建的)
+// 唤醒网络轮询
 // func netpollBreak()
 //     Wake up the network poller, assumed to be blocked in netpoll.
-//
+// 只是用于测试
 // func netpollIsPollDescriptor(fd uintptr) bool
 //     Reports whether fd is a file descriptor used by the poller.
 
@@ -58,16 +61,16 @@ const (
 	pdReady uintptr = 1
 	pdWait  uintptr = 2
 )
-
+//4K
 const pollBlockSize = 4 * 1024
 
 // Network poller descriptor.
 //
-// No heap pointers.
+// No heap pointers. 没有指向堆的指针
 //
 //go:notinheap
 type pollDesc struct {
-	link *pollDesc // in pollcache, protected by pollcache.lock
+	link *pollDesc // 指向链表下一个 in pollcache, protected by pollcache.lock
 
 	// The lock protects pollOpen, pollSetDeadline, pollUnblock and deadlineimpl operations.
 	// This fully covers seq, rt and wt variables. fd is constant throughout the PollDesc lifetime.
@@ -80,17 +83,18 @@ type pollDesc struct {
 	fd      uintptr
 	closing bool
 	everr   bool    // marks event scanning error happened
-	user    uint32  // user settable cookie
-	rseq    uintptr // protects from stale read timers
-	rg      uintptr // pdReady, pdWait, G waiting for read or nil
+	user    uint32  // user settable cookie 用户可变cookie
+	rseq    uintptr // protects from stale旧的 read timers
+	rg      uintptr // pdReady, pdWait, G waiting for read or nil 等待读的g 值为 pdReady标记，pdWait标记，*g, nil 之一
 	rt      timer   // read deadline timer (set if rt.f != nil)
 	rd      int64   // read deadline
 	wseq    uintptr // protects from stale write timers
-	wg      uintptr // pdReady, pdWait, G waiting for write or nil
+	wg      uintptr // pdReady, pdWait, G waiting for write or nil 等待写的g
 	wt      timer   // write deadline timer
 	wd      int64   // write deadline
 }
 
+//连续数组 构建单链表
 type pollCache struct {
 	lock  mutex
 	first *pollDesc
@@ -102,11 +106,11 @@ type pollCache struct {
 }
 
 var (
-	netpollInitLock mutex
-	netpollInited   uint32
+	netpollInitLock mutex		//保护初始化
+	netpollInited   uint32		//表示是否已初始化
 
-	pollcache      pollCache
-	netpollWaiters uint32
+	pollcache      pollCache	//pd缓存链表
+	netpollWaiters uint32		//有多少等待的g
 )
 
 //go:linkname poll_runtime_pollServerInit internal/poll.runtime_pollServerInit
@@ -119,6 +123,7 @@ func netpollGenericInit() {
 		lockInit(&netpollInitLock, lockRankNetpollInit)
 		lock(&netpollInitLock)
 		if netpollInited == 0 {
+			//netpoll_epoll.go
 			netpollinit()
 			atomic.Store(&netpollInited, 1)
 		}
@@ -181,6 +186,7 @@ func poll_runtime_pollClose(pd *pollDesc) {
 
 func (c *pollCache) free(pd *pollDesc) {
 	lock(&c.lock)
+	//插入链表头
 	pd.link = c.first
 	c.first = pd
 	unlock(&c.lock)
@@ -534,14 +540,20 @@ func (c *pollCache) alloc() *pollDesc {
 		}
 		// Must be in non-GC memory because can be referenced
 		// only from epoll/kqueue internals.
+		//一定要是堆外内存，因为只能被epoll内部引用
+		//分配了n块内存
 		mem := persistentalloc(n*pdSize, 0, &memstats.other_sys)
+		//一块连续内存
 		for i := uintptr(0); i < n; i++ {
+			//插入到链表
 			pd := (*pollDesc)(add(mem, i*pdSize))
 			pd.link = c.first
 			c.first = pd
 		}
 	}
+	//取表头
 	pd := c.first
+	//下移
 	c.first = pd.link
 	lockInit(&pd.lock, lockRankPollDesc)
 	unlock(&c.lock)

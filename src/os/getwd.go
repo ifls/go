@@ -19,9 +19,9 @@ var getwdCache struct {
 // syscall.Getwd based on its error.
 var useSyscallwd = func(error) bool { return true }
 
-// Getwd returns a rooted path name corresponding to the
-// current directory. If the current directory can be
-// reached via multiple paths (due to symbolic links),
+//获取当前目录
+// Getwd returns a rooted path name corresponding to the current directory.
+// If the current directory can be reached via multiple paths (due to symbolic links),
 // Getwd may return any one of them.
 func Getwd() (dir string, err error) {
 	if runtime.GOOS == "windows" || runtime.GOOS == "plan9" {

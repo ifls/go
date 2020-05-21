@@ -35,7 +35,7 @@ func Getuid() int { return syscall.Getuid() }
 func Geteuid() int { return syscall.Geteuid() }
 
 // Getgid returns the numeric group id of the caller.
-//
+// 组id
 // On Windows, it returns -1.
 func Getgid() int { return syscall.Getgid() }
 
@@ -53,10 +53,11 @@ func Getgroups() ([]int, error) {
 	return gids, NewSyscallError("getgroups", e)
 }
 
+// 退出当前进程
 // Exit causes the current program to exit with the given status code.
 // Conventionally, code zero indicates success, non-zero an error.
 // The program terminates immediately; deferred functions are not run.
-//
+// 实现在 runtime/runtime.go
 // For portability, the status code should be in the range [0, 125].
 func Exit(code int) {
 	if code == 0 {

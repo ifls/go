@@ -148,7 +148,7 @@ func (f *File) Truncate(size int64) error {
 	return nil
 }
 
-// Sync commits the current contents of the file to stable storage.
+// Sync commits the current contents of the file to stable storage. 提交当前文件的内容到稳定的存储
 // Typically, this means flushing the file system's in-memory copy
 // of recently written data to disk.
 func (f *File) Sync() error {
@@ -163,7 +163,7 @@ func (f *File) Sync() error {
 
 // Chtimes changes the access and modification times of the named
 // file, similar to the Unix utime() or utimes() functions.
-//
+// 改变文件的访问和修改时间
 // The underlying filesystem may truncate or round the values to a
 // less precise time unit.
 // If there is an error, it will be of type *PathError.

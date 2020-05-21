@@ -10,13 +10,13 @@ import (
 )
 
 // These functions cannot have go:noescape annotations,
-// because while ptr does not escape, new does.
+// because while虽然 ptr does not escape, new does 但是new分配的会逃逸到堆上.
 // If new is marked as not escaping, the compiler will make incorrect
 // escape analysis decisions about the pointer value being stored.
 
 // atomicwb performs a write barrier before an atomic pointer write.
 // The caller should guard the call with "if writeBarrier.enabled".
-//
+// 先执行了写屏障，然后写入指针
 //go:nosplit
 func atomicwb(ptr *unsafe.Pointer, new unsafe.Pointer) {
 	slot := (*uintptr)(unsafe.Pointer(ptr))

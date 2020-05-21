@@ -5,7 +5,7 @@
 // Linux system calls.
 // This file is compiled as ordinary Go code,
 // but it is also input to mksyscall,
-// which parses the //sys lines and generates system call stubs.
+// which parses the //sys lines and generates system call stubs. 解析 //sys 生成系统调用桩代码
 // Note that sometimes we use a lowercase //sys name and
 // wrap it in our own nicer implementation.
 
@@ -37,6 +37,7 @@ func Creat(path string, mode uint32) (fd int, err error) {
 
 //sys	faccessat(dirfd int, path string, mode uint32) (err error)
 
+//比使用系统调用更优的实现
 func Faccessat(dirfd int, path string, mode uint32, flags int) (err error) {
 	if flags & ^(_AT_SYMLINK_NOFOLLOW|_AT_EACCESS) != 0 {
 		return EINVAL

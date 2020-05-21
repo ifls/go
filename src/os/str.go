@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Simple conversions to avoid depending on strconv.
-
+// int to string 不依赖 strconv包
 package os
 
 // Convert integer to decimal string

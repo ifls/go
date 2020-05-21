@@ -13,7 +13,7 @@ import (
 // No locking needed because it is per-thread (per-P). 单线程访问，无并行，有并发？
 //
 // mcaches are allocated from non-GC'd memory, so any heap pointers
-// must be specially handled.
+// must be specially handled. mcache分配在堆外内存，指向堆的指针一定要特殊处理
 //
 //go:notinheap
 type mcache struct {

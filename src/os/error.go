@@ -89,6 +89,7 @@ func NewSyscallError(syscall string, err error) error {
 	return &SyscallError{syscall, err}
 }
 
+// 根据错误判断，文件或者目录是否已经存在
 // IsExist returns a boolean indicating whether the error is known to report
 // that a file or directory already exists. It is satisfied by ErrExist as
 // well as some syscall errors.
@@ -96,6 +97,7 @@ func IsExist(err error) bool {
 	return underlyingErrorIs(err, ErrExist)
 }
 
+//不存在
 // IsNotExist returns a boolean indicating whether the error is known to
 // report that a file or directory does not exist. It is satisfied by
 // ErrNotExist as well as some syscall errors.
@@ -103,6 +105,7 @@ func IsNotExist(err error) bool {
 	return underlyingErrorIs(err, ErrNotExist)
 }
 
+// 判断是否时权限拒绝错误
 // IsPermission returns a boolean indicating whether the error is known to
 // report that permission is denied. It is satisfied by ErrPermission as well
 // as some syscall errors.
@@ -110,6 +113,7 @@ func IsPermission(err error) bool {
 	return underlyingErrorIs(err, ErrPermission)
 }
 
+//是否是超时错误
 // IsTimeout returns a boolean indicating whether the error is known
 // to report that a timeout occurred.
 func IsTimeout(err error) bool {

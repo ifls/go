@@ -15,7 +15,8 @@ func Stat(name string) (FileInfo, error) {
 
 // Lstat returns a FileInfo describing the named file.
 // If the file is a symbolic link, the returned FileInfo
-// describes the symbolic link. Lstat makes no attempt to follow the link.
+// describes the symbolic link.
+// Lstat makes no attempt to follow the link. 不会解引用符号链接
 // If there is an error, it will be of type *PathError.
 func Lstat(name string) (FileInfo, error) {
 	testlog.Stat(name)

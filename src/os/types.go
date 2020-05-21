@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+//内存页大小
 // Getpagesize returns the underlying system's memory page size.
 func Getpagesize() int { return syscall.Getpagesize() }
 
@@ -20,11 +21,11 @@ type File struct {
 // A FileInfo describes a file and is returned by Stat and Lstat.
 type FileInfo interface {
 	Name() string       // base name of the file
-	Size() int64        // length in bytes for regular files; system-dependent for others
+	Size() int64        // 占用空间length in bytes for regular files; 其他类型文件依赖于操作系统 system-dependent for others
 	Mode() FileMode     // file mode bits
-	ModTime() time.Time // modification time
-	IsDir() bool        // abbreviation for Mode().IsDir()
-	Sys() interface{}   // underlying data source (can return nil)
+	ModTime() time.Time // 修改时间 modification time
+	IsDir() bool        // 缩写 abbreviation for Mode().IsDir()
+	Sys() interface{}   // 底层数据结构 underlying data source (can return nil)
 }
 
 // A FileMode represents a file's mode and permission bits.
@@ -108,6 +109,8 @@ func (m FileMode) Perm() FileMode {
 func (fs *fileStat) Name() string { return fs.name }
 func (fs *fileStat) IsDir() bool  { return fs.Mode().IsDir() }
 
+
+//是否是同一个文件
 // SameFile reports whether fi1 and fi2 describe the same file.
 // For example, on Unix this means that the device and inode fields
 // of the two underlying structures are identical; on other systems

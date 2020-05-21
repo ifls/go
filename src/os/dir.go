@@ -4,15 +4,20 @@
 
 package os
 
+// 读此文件相关的目录内容
 // Readdir reads the contents of the directory associated with file and
 // returns a slice of up to n FileInfo values, as would be returned
 // by Lstat, in directory order. Subsequent calls on the same file will yield
 // further FileInfos.
-//
+
+
+// 切片长度最多为n
 // If n > 0, Readdir returns at most n FileInfo structures. In this case, if
 // Readdir returns an empty slice, it will return a non-nil error
 // explaining why. At the end of a directory, the error is io.EOF.
 //
+
+// 全读出来
 // If n <= 0, Readdir returns all the FileInfo from the directory in
 // a single slice. In this case, if Readdir succeeds (reads all
 // the way to the end of the directory), it returns the slice and a
@@ -26,6 +31,7 @@ func (f *File) Readdir(n int) ([]FileInfo, error) {
 	return f.readdir(n)
 }
 
+// 只读目录名
 // Readdirnames reads the contents of the directory associated with file
 // and returns a slice of up to n names of files in the directory,
 // in directory order. Subsequent calls on the same file will yield

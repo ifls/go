@@ -4,6 +4,8 @@
 
 package os
 
+// syscall.63 SYS_UNAME
+// 返回主机名
 // Hostname returns the host name reported by the kernel.
 func Hostname() (name string, err error) {
 	return hostname()

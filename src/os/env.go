@@ -13,6 +13,7 @@ import (
 
 // Expand replaces ${var} or $var in the string based on the mapping function.
 // For example, os.ExpandEnv(s) is equivalent to os.Expand(s, os.Getenv).
+// 将 s = "sss ${PATH}" 转换为 s = "sss /usr/local:/bin"
 func Expand(s string, mapping func(string) string) string {
 	var buf []byte
 	// ${} is all ASCII, so bytes are fine for this operation.
@@ -95,25 +96,26 @@ func getShellName(s string) (string, int) {
 	return s[:i], i
 }
 
+// 读环境变量 从初始化保存的环境变量里找
 // Getenv retrieves the value of the environment variable named by the key.
 // It returns the value, which will be empty if the variable is not present.
-// To distinguish between an empty value and an unset value, use LookupEnv.
+// To distinguish between an empty value and an unset value, use LookupEnv. 区分 "" 和未定义环境变量使用 LookupEnv
 func Getenv(key string) string {
 	testlog.Getenv(key)
 	v, _ := syscall.Getenv(key)
 	return v
 }
 
-// LookupEnv retrieves the value of the environment variable named
-// by the key. If the variable is present in the environment the
-// value (which may be empty) is returned and the boolean is true.
-// Otherwise the returned value will be empty and the boolean will
-// be false.
+// GetEnv加强版本
+// LookupEnv retrieves the value of the environment variable named by the key.
+// If the variable is present in the environment the value (which may be empty) is returned and the boolean is true.
+// Otherwise the returned value will be empty and the boolean will be false.
 func LookupEnv(key string) (string, bool) {
 	testlog.Getenv(key)
 	return syscall.Getenv(key)
 }
 
+//定义
 // Setenv sets the value of the environment variable named by the key.
 // It returns an error, if any.
 func Setenv(key, value string) error {
@@ -124,16 +126,19 @@ func Setenv(key, value string) error {
 	return nil
 }
 
+// 取消定义 只有加载了cgo才有效
 // Unsetenv unsets a single environment variable.
 func Unsetenv(key string) error {
 	return syscall.Unsetenv(key)
 }
 
+//清除所有环境变量，批量unsetenv
 // Clearenv deletes all environment variables.
 func Clearenv() {
 	syscall.Clearenv()
 }
 
+//获取所有环境变量 从runtime拿
 // Environ returns a copy of strings representing the environment,
 // in the form "key=value".
 func Environ() []string {

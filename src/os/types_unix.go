@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// A fileStat is the implementation of FileInfo returned by Stat and Lstat.
+// A fileStat is the implementation of FileInfo接口 returned by Stat and Lstat.
 type fileStat struct {
 	name    string
 	size    int64

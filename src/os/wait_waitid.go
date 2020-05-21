@@ -19,6 +19,7 @@ const _P_PID = 1
 
 // blockUntilWaitable attempts to block until a call to p.Wait will
 // succeed immediately, and reports whether it has done so.
+// 参考 Process.wait()
 // It does not actually call p.Wait.
 func (p *Process) blockUntilWaitable() (bool, error) {
 	// The waitid system call expects a pointer to a siginfo_t,

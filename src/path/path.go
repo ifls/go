@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-// A lazybuf is a lazily constructed path buffer.
+// A lazybuf is a laszily constructed path buffer.
 // It supports append, reading previously appended bytes,
 // and retrieving the final string. It does not allocate a buffer
 // to hold the output until that output diverges from s.

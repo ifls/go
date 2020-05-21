@@ -646,7 +646,7 @@ func schedinit() {
 
 	//参数 runtime1.go
 	goargs()
-	//环境变量 os_linux.go
+	//读取储存环境变量 os_linux.go
 	goenvs()
 	//解析出GODEBUG 环境变量 runtime1.go
 	parsedebugvars()

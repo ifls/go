@@ -2,15 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package os provides a platform-independent interface to operating system
-// functionality. The design is Unix-like, although the error handling is
-// Go-like; failing calls return values of type error rather than error numbers.
-// Often, more information is available within the error. For example,
-// if a call that takes a file name fails, such as Open or Stat, the error
+// os/file.go
+// Package os provides a platform-independent interface to operating system functionality.
+// The design is Unix-like, although the error handling is Go-like;
+// failing calls return values of type error rather than error numbers. 失败调用返回error而不是错误码
+// Often, more information is available within the error. 这样就可以有更多的信息
+// For example, if a call that takes a file name fails, such as Open or Stat, the error
 // will include the failing file name when printed and will be of type
 // *PathError, which may be unpacked for more information.
 //
-// The os interface is intended to be uniform across all operating systems.
+// The os interface is intended to be uniform across all operating systems. 统一所有操作系统
 // Features not generally available appear in the system-specific package syscall.
 //
 // Here is a simple example, opening a file and reading some of it.
@@ -25,7 +26,7 @@
 //	open file.go: no such file or directory
 //
 // The file's data can then be read into a slice of bytes. Read and
-// Write take their byte counts from the length of the argument slice.
+// Write take their byte counts from the length of the argument slice. 应该读取的数据长度根据切片长度来
 //
 //	data := make([]byte, 100)
 //	count, err := file.Read(data)
@@ -34,9 +35,9 @@
 //	}
 //	fmt.Printf("read %d bytes: %q\n", count, data[:count])
 //
-// Note: The maximum number of concurrent operations on a File may be limited by
-// the OS or the system. The number should be high, but exceeding it may degrade
-// performance or cause other issues.
+// Note: The maximum number of concurrent并发 operations on a File may be limited by
+// the OS or the system.
+// The number should be high, but exceeding it may degrade performance or cause other issues. 降低性能或者导致其他问题
 //
 package os
 
@@ -68,16 +69,17 @@ var (
 // Flags to OpenFile wrapping those of the underlying system. Not all
 // flags may be implemented on a given system.
 const (
-	// Exactly one of O_RDONLY, O_WRONLY, or O_RDWR must be specified.
+	// Exactly one of O_RDONLY, O_WRONLY, or O_RDWR must be specified.必选一个
 	O_RDONLY int = syscall.O_RDONLY // open the file read-only.
 	O_WRONLY int = syscall.O_WRONLY // open the file write-only.
 	O_RDWR   int = syscall.O_RDWR   // open the file read-write.
+
 	// The remaining values may be or'ed in to control behavior.
-	O_APPEND int = syscall.O_APPEND // append data to the file when writing.
-	O_CREATE int = syscall.O_CREAT  // create a new file if none exists.
-	O_EXCL   int = syscall.O_EXCL   // used with O_CREATE, file must not exist.
-	O_SYNC   int = syscall.O_SYNC   // open for synchronous I/O.
-	O_TRUNC  int = syscall.O_TRUNC  // truncate regular writable file when opened.
+	O_APPEND int = syscall.O_APPEND // append data to the file when writing. 总是写到结尾
+	O_CREATE int = syscall.O_CREAT  // create a new file if none exists. 不存在则创建
+	O_EXCL   int = syscall.O_EXCL   // used with O_CREATE, file must not exist. 和 CREATE选项一起使用，指定文件必须是未存在
+	O_SYNC   int = syscall.O_SYNC   // open for synchronous I/O.	同步IO
+	O_TRUNC  int = syscall.O_TRUNC  // truncate regular writable file when opened.  截断文件长度为0，就是删除文件内容
 )
 
 // Seek whence values.
@@ -117,7 +119,7 @@ func (f *File) Read(b []byte) (n int, err error) {
 	return n, f.wrapErr("read", e)
 }
 
-// ReadAt reads len(b) bytes from the File starting at byte offset off.
+// ReadAt reads len(b) bytes from the File starting at byte offset off. 从偏移处开始读
 // It returns the number of bytes read and the error, if any.
 // ReadAt always returns a non-nil error when n < len(b).
 // At end of file, that error is io.EOF.
@@ -284,6 +286,7 @@ func setStickyBit(name string) error {
 }
 
 // Chdir changes the current working directory to the named directory.
+// 切换工作目录
 // If there is an error, it will be of type *PathError.
 func Chdir(dir string) error {
 	if e := syscall.Chdir(dir); e != nil {
@@ -336,7 +339,7 @@ func OpenFile(name string, flag int, perm FileMode) (*File, error) {
 // lstat is overridden in tests.
 var lstat = Lstat
 
-// Rename renames (moves) oldpath to newpath.
+// Rename renames (moves) oldpath to newpath. 移动路径
 // If newpath already exists and is not a directory, Rename replaces it.
 // OS-specific restrictions may apply when oldpath and newpath are in different directories.
 // If there is an error, it will be of type *LinkError.
@@ -367,7 +370,7 @@ func (f *File) wrapErr(op string, err error) error {
 }
 
 // TempDir returns the default directory to use for temporary files.
-//
+// 返回使用临时文件的默认目录
 // On Unix systems, it returns $TMPDIR if non-empty, else /tmp.
 // On Windows, it uses GetTempPath, returning the first non-empty
 // value from %TMP%, %TEMP%, %USERPROFILE%, or the Windows directory.
@@ -527,12 +530,14 @@ func UserHomeDir() (string, error) {
 //
 // On Plan 9, the mode's permission bits, ModeAppend, ModeExclusive,
 // and ModeTemporary are used.
+// syscall.268
 func Chmod(name string, mode FileMode) error { return chmod(name, mode) }
 
 // Chmod changes the mode of the file to mode.
 // If there is an error, it will be of type *PathError.
 func (f *File) Chmod(mode FileMode) error { return f.chmod(mode) }
 
+// 和netpoll 里网络轮询相关
 // SetDeadline sets the read and write deadlines for a File.
 // It is equivalent to calling both SetReadDeadline and SetWriteDeadline.
 //

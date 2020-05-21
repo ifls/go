@@ -6,6 +6,7 @@ import (
 	"unsafe"
 )
 
+// 给锁排名，有什么用？
 // lockRankStruct is embedded in mutex
 type lockRankStruct struct {
 	// static lock ranking of the lock

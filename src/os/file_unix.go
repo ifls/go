@@ -51,12 +51,12 @@ func rename(oldname, newname string) error {
 // can overwrite this data, which could cause the finalizer
 // to close the wrong file descriptor.
 type file struct {
-	pfd         poll.FD
-	name        string
+	pfd         poll.FD		//poll fd
+	name        string     //文件名
 	dirinfo     *dirInfo // nil unless directory being read
-	nonblock    bool     // whether we set nonblocking mode
-	stdoutOrErr bool     // whether this is stdout or stderr
-	appendMode  bool     // whether file is opened for appending
+	nonblock    bool     // 阻塞or非阻塞 whether we set nonblocking mode
+	stdoutOrErr bool     // 是不是 标准输出 whether this is stdout or stderr
+	appendMode  bool     // 是否已打开 whether file is opened for appending
 }
 
 // Fd returns the integer Unix file descriptor referencing the open file.

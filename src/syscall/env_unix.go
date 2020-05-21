@@ -28,6 +28,7 @@ var (
 
 func runtime_envs() []string // in package runtime
 
+// 在runtime/env_posix.go 里实现 需要cgo调用，才有用
 // setenv_c and unsetenv_c are provided by the runtime but are no-ops
 // if cgo isn't loaded.
 func setenv_c(k, v string)
