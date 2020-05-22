@@ -547,6 +547,7 @@ func TestReadStringAllocs(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+
 	if allocs != 1 {
 		t.Errorf("Unexpected number of allocations, got %f, want 1", allocs)
 	}
@@ -1454,7 +1455,7 @@ func TestReaderDiscard(t *testing.T) {
 }
 
 func TestReaderSize(t *testing.T) {
-	if got, want := NewReader(nil).Size(), DefaultBufSize; got != want {
+	if got, want := NewReader(nil).Size(), 4096; got != want {
 		t.Errorf("NewReader's Reader.Size = %d; want %d", got, want)
 	}
 	if got, want := NewReaderSize(nil, 1234).Size(), 1234; got != want {
@@ -1463,7 +1464,7 @@ func TestReaderSize(t *testing.T) {
 }
 
 func TestWriterSize(t *testing.T) {
-	if got, want := NewWriter(nil).Size(), DefaultBufSize; got != want {
+	if got, want := NewWriter(nil).Size(), 4096; got != want {
 		t.Errorf("NewWriter's Writer.Size = %d; want %d", got, want)
 	}
 	if got, want := NewWriterSize(nil, 1234).Size(), 1234; got != want {
