@@ -3,8 +3,8 @@
 // license that can be found in the LICENSE file.
 
 /*
-	Package builtin provides documentation for Go's predeclared identifiers.
-	The items documented here are not actually in package builtin
+	Package builtin provides documentation for Go's predeclared identifiers. 提供文档for 预声明的标识符
+	The items documented here are not actually in package builtin 这里描述的并不再buildint包里，只是方便godoc
 	but their descriptions here allow godoc to present documentation
 	for the language's special identifiers.
 */
@@ -82,25 +82,25 @@ type uint uint
 // any pointer.
 type uintptr uintptr
 
-// byte is an alias for uint8 and is equivalent to uint8 in all ways. It is
+// byte is an alias别名 for uint8 and is equivalent to uint8 in all ways. It is
 // used, by convention, to distinguish byte values from 8-bit unsigned
 // integer values.
 type byte = uint8
 
-// rune is an alias for int32 and is equivalent to int32 in all ways. It is
+// rune is an alias别名 for int32 and is equivalent to int32 in all ways. It is
 // used, by convention, to distinguish character values from integer values.
 type rune = int32
 
-// iota is a predeclared identifier representing the untyped integer ordinal
+// iota is a predeclared identifier representing the untyped integer 无类型int ordinal序数
 // number of the current const specification in a (usually parenthesized)
 // const declaration. It is zero-indexed.
 const iota = 0 // Untyped int.
 
 // nil is a predeclared identifier representing the zero value for a
 // pointer, channel, func, interface, map, or slice type.
-var nil Type // Type must be a pointer, channel, func, interface, map, or slice type
+var nil Type // Type must be a pointer, channel, func, interface, map, or slice type 6种类型之一
 
-// Type is here for the purposes of documentation only. It is a stand-in
+// Type is here for the purposes of documentation only. It is a stand-in 替身，占位符
 // for any Go type, but represents the same type for any given function
 // invocation.
 type Type int
@@ -122,39 +122,40 @@ type FloatType float32
 // stand-in for either complex type: complex64 or complex128.
 type ComplexType complex64
 
-// The append built-in function appends elements to the end of a slice. If
-// it has sufficient capacity, the destination is resliced to accommodate the
-// new elements. If it does not, a new underlying array will be allocated.
-// Append returns the updated slice. It is therefore necessary to store the
-// result of append, often in the variable holding the slice itself:
+// The append built-in function appends elements to the end of a slice.
+// If it has sufficient capacity, the destination is resliced加长 to accommodate容纳 the new elements.
+// If it does not, a new underlying array will be allocated. 重新分配底层数组
+// Append returns the updated slice.
+// It is therefore necessary to store the result of append, often in the variable holding the slice itself:
 //	slice = append(slice, elem1, elem2)
 //	slice = append(slice, anotherSlice...)
 // As a special case, it is legal to append a string to a byte slice, like this:
-//	slice = append([]byte("hello "), "world"...)
+//	slice = append([]byte("hello "), "world"...)	//可以使用字符串字面量...
+// 第一个参数允许为nil
 func append(slice []Type, elems ...Type) []Type
 
-// The copy built-in function copies elements from a source slice into a
-// destination slice. (As a special case, it also will copy bytes from a
-// string to a slice of bytes.) The source and destination may overlap. Copy
-// returns the number of elements copied, which will be the minimum of
-// len(src) and len(dst).
+// The copy built-in function copies elements from a source slice into a destination slice.
+// (As a special case, it also will copy bytes from a string to a slice of bytes.)
+// The source and destination may overlap. 后向拷贝或者前向拷贝，选一个
+// Copy returns the number of elements copied, which will be the minimum of
+// len(src) and len(dst). 返回实际拷贝的字节数   n = min(len(src), len(dst))
 func copy(dst, src []Type) int
 
 // The delete built-in function deletes the element with the specified key
-// (m[key]) from the map. If m is nil or there is no such element, delete
-// is a no-op.
+// (m[key]) from the map.
+// If m is nil or there is no such element, delete is a no-op. 允许nilmap
 func delete(m map[Type]Type1, key Type)
 
 // The len built-in function returns the length of v, according to its type:
+// 五种类型
 //	Array: the number of elements in v.
 //	Pointer to array: the number of elements in *v (even if v is nil).
 //	Slice, or map: the number of elements in v; if v is nil, len(v) is zero.
-//	String: the number of bytes in v.
+//	String: the number of bytes in v. 字节数
 //	Channel: the number of elements queued (unread) in the channel buffer;
 //	         if v is nil, len(v) is zero.
-// For some arguments, such as a string literal or a simple array expression, the
-// result can be a constant. See the Go language specification's "Length and
-// capacity" section for details.
+// For some arguments, such as a string literal or a simple array expression, the result can be a constant. 编译期优化为常量
+// See the Go language specification's "Length and capacity" section for details.
 func len(v Type) int
 
 // The cap built-in function returns the capacity of v, according to its type:
@@ -162,40 +163,43 @@ func len(v Type) int
 //	Pointer to array: the number of elements in *v (same as len(v)).
 //	Slice: the maximum length the slice can reach when resliced;
 //	if v is nil, cap(v) is zero.
-//	Channel: the channel buffer capacity, in units of elements;
+//	Channel: the channel buffer capacity, in units of elements; make(chan int, size) 预先设置的数量
 //	if v is nil, cap(v) is zero.
 // For some arguments, such as a simple array expression, the result can be a
 // constant. See the Go language specification's "Length and capacity" section for
 // details.
+// 没有 cap(map) 和 cap(string)
 func cap(v Type) int
 
-// The make built-in function allocates and initializes an object of type
-// slice, map, or chan (only). Like new, the first argument is a type, not a
-// value. Unlike new, make's return type is the same as the type of its
-// argument, not a pointer to it. The specification of the result depends on
-// the type:
+// The make built-in function allocates and initializes 分配和初始化 an object of type slice, map, or chan (only).
+// Like new, the first argument is a type, not a value.
+// Unlike new, make's return type is the same as the type of its argument, not a pointer to it. 不是返回指针， 但是map的底层类型就是指针
+// The specification of the result depends on the type:
+
 //	Slice: The size specifies the length. The capacity of the slice is
-//	equal to its length. A second integer argument may be provided to
+//	equal to its length.
+// 	A second integer argument may be provided to
 //	specify a different capacity; it must be no smaller than the
-//	length. For example, make([]int, 0, 10) allocates an underlying array
+//	length.
+// 	For example, make([]int, 0, 10) allocates an underlying array
 //	of size 10 and returns a slice of length 0 and capacity 10 that is
 //	backed by this underlying array.
-//	Map: An empty map is allocated with enough space to hold the
-//	specified number of elements. The size may be omitted, in which case
-//	a small starting size is allocated.
-//	Channel: The channel's buffer is initialized with the specified
-//	buffer capacity. If zero, or the size is omitted, the channel is
-//	unbuffered.
+
+//	Map: An empty map is allocated with enough space to hold the specified number of elements.
+// 	The size may be omitted, in which case a small starting size is allocated.
+
+//	Channel: The channel's buffer is initialized with the specified buffer capacity.
+//	If zero, or the size is omitted, the channel is unbuffered. 无缓冲channel
 func make(t Type, size ...IntegerType) Type
 
 // The new built-in function allocates memory. The first argument is a type,
 // not a value, and the value returned is a pointer to a newly
-// allocated zero value of that type.
+// allocated zero value of that type. 指向新分配的内存区域
 func new(Type) *Type
 
-// The complex built-in function constructs a complex value from two
-// floating-point values. The real and imaginary parts must be of the same
-// size, either float32 or float64 (or assignable to them), and the return
+// The complex built-in function constructs构造 a complex value from two floating-point values.
+// The real and imaginary parts must be of the same
+// size, either float32 or float64 (or assignable to them), and the return 必须都是32位或者64位
 // value will be the corresponding complex type (complex64 for float32,
 // complex128 for float64).
 func complex(r, i FloatType) ComplexType
@@ -210,53 +214,51 @@ func real(c ComplexType) FloatType
 func imag(c ComplexType) FloatType
 
 // The close built-in function closes a channel, which must be either
-// bidirectional or send-only. It should be executed only by the sender,
-// never the receiver, and has the effect of shutting down the channel after
-// the last sent value is received. After the last value has been received
-// from a closed channel c, any receive from c will succeed without
+// bidirectional or send-only. 只用于关闭写/发送
+// It should be executed only by the sender, never the receiver, and has the effect of shutting down the channel after
+// the last sent value is received. 应该只被发送者调用, 在最好一个发送完的值被接收后才算正是关闭
+// After the last value has been received from a closed channel c, any receive from c will succeed without
 // blocking, returning the zero value for the channel element. The form
-//	x, ok := <-c
+//	x, ok := <-c		//ok == false
 // will also set ok to false for a closed channel.
 func close(c chan<- Type)
 
-// The panic built-in function stops normal execution of the current
-// goroutine. When a function F calls panic, normal execution of F stops
-// immediately. Any functions whose execution was deferred by F are run in
-// the usual way, and then F returns to its caller. To the caller G, the
-// invocation of F then behaves like a call to panic, terminating G's
-// execution and running any deferred functions. This continues until all
-// functions in the executing goroutine have stopped, in reverse order. At
-// that point, the program is terminated with a non-zero exit code. This
-// termination sequence is called panicking and can be controlled by the
+// The panic built-in function stops normal execution of the current goroutine. 停止g的执行
+// When a function F calls panic, normal execution of F stops immediately 立刻停止.
+// Any functions whose execution was deferred by F are run in the usual way, and then F returns to its caller. 先执行defer 然后返回到caller
+// To the caller G, the invocation of F then behaves like a call to panic, terminating G's  调用F就像调用了panic
+// execution and running any deferred functions.
+// This continues until all functions in the executing goroutine have stopped, in reverse order. 持续到当前协程所有函数都被执行，反向地
+// At that point, the program is terminated with a non-zero exit code.  非0终止
+// This termination sequence is called panicking  and can be controlled by the  panicking
 // built-in function recover.
 func panic(v interface{})
 
-// The recover built-in function allows a program to manage behavior of a
-// panicking goroutine. Executing a call to recover inside a deferred
-// function (but not any function called by it) stops the panicking sequence
-// by restoring normal execution and retrieves the error value passed to the
-// call of panic. If recover is called outside the deferred function it will
-// not stop a panicking sequence. In this case, or when the goroutine is not
-// panicking, or if the argument supplied to panic was nil, recover returns
-// nil. Thus the return value from recover reports whether the goroutine is
-// panicking.
+// The recover built-in function allows a program to manage behavior of a panicking goroutine.
+// Executing a call to recover inside a deferred function (but not any function called by it) stops the panicking sequence
+// by restoring normal execution恢复正常执行 and retrieves the error value (passed to the
+// call of panic).
+// If recover is called outside the deferred function it will not stop a panicking sequence. 在defer外面调用recover 不生效
+// In this case, or when the goroutine is not panicking, or if the argument supplied to panic was nil, recover returns nil.
+
+// Thus the return value from recover reports whether the goroutine is panicking. 返回值用于判断是否发生了panic
 func recover() interface{}
 
 // The print built-in function formats its arguments in an
-// implementation-specific way and writes the result to standard error.
+// implementation-specific way and writes the result to standard error. 标准错误
 // Print is useful for bootstrapping and debugging; it is not guaranteed
-// to stay in the language.
+// to stay in the language. 语言不一定会保留此特性
 func print(args ...Type)
 
 // The println built-in function formats its arguments in an
 // implementation-specific way and writes the result to standard error.
 // Spaces are always added between arguments and a newline is appended.
-// Println is useful for bootstrapping and debugging; it is not guaranteed
+// Println is useful for bootstrapping自举启动 and debugging调试; it is not guaranteed
 // to stay in the language.
 func println(args ...Type)
 
 // The error built-in interface type is the conventional interface for
-// representing an error condition, with the nil value representing no error.
+// representing an error condition情况, with the nil value representing no error.
 type error interface {
 	Error() string
 }
