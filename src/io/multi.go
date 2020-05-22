@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+
+// multiReader & multiWriter
 package io
 
 type eofReader struct{}
@@ -10,6 +12,7 @@ func (eofReader) Read([]byte) (int, error) {
 	return 0, EOF
 }
 
+//
 type multiReader struct {
 	readers []Reader
 }
@@ -17,19 +20,21 @@ type multiReader struct {
 func (mr *multiReader) Read(p []byte) (n int, err error) {
 	for len(mr.readers) > 0 {
 		// Optimization to flatten nested multiReaders (Issue 13558).
+		//防止嵌套结构
 		if len(mr.readers) == 1 {
 			if r, ok := mr.readers[0].(*multiReader); ok {
 				mr.readers = r.readers
 				continue
 			}
 		}
+
 		n, err = mr.readers[0].Read(p)
 		if err == EOF {
-			// Use eofReader instead of nil to avoid nil panic
-			// after performing flatten (Issue 18232).
-			mr.readers[0] = eofReader{} // permit earlier GC
+			// Use eofReader instead of nil to avoid nil panic after performing flatten (Issue 18232).
+			mr.readers[0] = eofReader{} // permit earlier GC 允许更早的gc
 			mr.readers = mr.readers[1:]
 		}
+
 		if n > 0 || err != EOF {
 			if err == EOF && len(mr.readers) > 0 {
 				// Don't return EOF yet. More readers remain.
@@ -41,10 +46,9 @@ func (mr *multiReader) Read(p []byte) (n int, err error) {
 	return 0, EOF
 }
 
-// MultiReader returns a Reader that's the logical concatenation of
-// the provided input readers. They're read sequentially. Once all
-// inputs have returned EOF, Read will return EOF.  If any of the readers
-// return a non-nil, non-EOF error, Read will return that error.
+// MultiReader returns a Reader that's the logical concatenation逻辑连接 of the provided input readers.
+// They're read sequentially. Once all inputs have returned EOF, Read will return EOF.
+// If any of the readers return a non-nil, non-EOF error, Read will return that error. 只要有一个出错，就返回错误
 func MultiReader(readers ...Reader) Reader {
 	r := make([]Reader, len(readers))
 	copy(r, readers)
@@ -55,12 +59,14 @@ type multiWriter struct {
 	writers []Writer
 }
 
+//写入每一个writer
 func (t *multiWriter) Write(p []byte) (n int, err error) {
 	for _, w := range t.writers {
 		n, err = w.Write(p)
 		if err != nil {
 			return
 		}
+
 		if n != len(p) {
 			err = ErrShortWrite
 			return
@@ -71,6 +77,7 @@ func (t *multiWriter) Write(p []byte) (n int, err error) {
 
 var _ StringWriter = (*multiWriter)(nil)
 
+//写入每一个
 func (t *multiWriter) WriteString(s string) (n int, err error) {
 	var p []byte // lazily initialized if/when needed
 	for _, w := range t.writers {
@@ -103,6 +110,7 @@ func MultiWriter(writers ...Writer) Writer {
 	allWriters := make([]Writer, 0, len(writers))
 	for _, w := range writers {
 		if mw, ok := w.(*multiWriter); ok {
+			//扁平化
 			allWriters = append(allWriters, mw.writers...)
 		} else {
 			allWriters = append(allWriters, w)

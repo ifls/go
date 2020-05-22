@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package ioutil implements some I/O utility functions.
+// Package ioutil implements some I/O utility functions. 工具函数
 package ioutil
 
 import (
@@ -15,6 +15,7 @@ import (
 
 // readAll reads from r until an error or EOF and returns the data it read
 // from the internal buffer allocated with a specified capacity.
+// 借助 bytes.Buffer 使用自定义cap
 func readAll(r io.Reader, capacity int64) (b []byte, err error) {
 	var buf bytes.Buffer
 	// If the buffer overflows, we will get bytes.ErrTooLarge.
@@ -27,20 +28,24 @@ func readAll(r io.Reader, capacity int64) (b []byte, err error) {
 		if panicErr, ok := e.(error); ok && panicErr == bytes.ErrTooLarge {
 			err = panicErr
 		} else {
+			//继续传递
 			panic(e)
 		}
 	}()
+
+	//64位
 	if int64(int(capacity)) == capacity {
 		buf.Grow(int(capacity))
 	}
+	//读完
 	_, err = buf.ReadFrom(r)
 	return buf.Bytes(), err
 }
 
 // ReadAll reads from r until an error or EOF and returns the data it read.
-// A successful call returns err == nil, not err == EOF. Because ReadAll is
-// defined to read from src until EOF, it does not treat an EOF from Read
-// as an error to be reported.
+// A successful call returns err == nil, not err == EOF.
+// Because ReadAll is defined to read from src until EOF, it does not treat an EOF from Read as an error to be reported.
+//使用默认cap
 func ReadAll(r io.Reader) ([]byte, error) {
 	return readAll(r, bytes.MinRead)
 }
@@ -70,6 +75,7 @@ func ReadFile(filename string) ([]byte, error) {
 			n = size
 		}
 	}
+	// f io.Reader
 	return readAll(f, n)
 }
 
@@ -81,6 +87,7 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	if err != nil {
 		return err
 	}
+
 	_, err = f.Write(data)
 	if err1 := f.Close(); err == nil {
 		err = err1
@@ -89,12 +96,13 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 }
 
 // ReadDir reads the directory named by dirname and returns
-// a list of directory entries sorted by filename.
+// a list of directory entries sorted by filename. 返回文件名条目
 func ReadDir(dirname string) ([]os.FileInfo, error) {
 	f, err := os.Open(dirname)
 	if err != nil {
 		return nil, err
 	}
+	//File.Readdir
 	list, err := f.Readdir(-1)
 	f.Close()
 	if err != nil {
@@ -104,6 +112,7 @@ func ReadDir(dirname string) ([]os.FileInfo, error) {
 	return list, nil
 }
 
+//faker closer
 type nopCloser struct {
 	io.Reader
 }
@@ -115,6 +124,7 @@ func (nopCloser) Close() error { return nil }
 func NopCloser(r io.Reader) io.ReadCloser {
 	return nopCloser{r}
 }
+
 
 type devNull int
 
@@ -130,6 +140,7 @@ func (devNull) WriteString(s string) (int, error) {
 	return len(s), nil
 }
 
+//无限缓存
 var blackHolePool = sync.Pool{
 	New: func() interface{} {
 		b := make([]byte, 8192)
@@ -141,6 +152,7 @@ func (devNull) ReadFrom(r io.Reader) (n int64, err error) {
 	bufp := blackHolePool.Get().(*[]byte)
 	readSize := 0
 	for {
+		//直到读完
 		readSize, err = r.Read(*bufp)
 		n += int64(readSize)
 		if err != nil {
@@ -153,6 +165,6 @@ func (devNull) ReadFrom(r io.Reader) (n int64, err error) {
 	}
 }
 
-// Discard is an io.Writer on which all Write calls succeed
-// without doing anything.
+// Discard is an io.Writer on which all Write calls succeed without doing anything.
+// 目的只是把reader读光
 var Discard io.Writer = devNull(0)

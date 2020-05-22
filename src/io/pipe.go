@@ -12,7 +12,7 @@ import (
 	"sync"
 )
 
-// onceError is an object that will only store an error once.
+// onceError is an object that will only store an error once. 不允许覆盖
 type onceError struct {
 	sync.Mutex // guards following
 	err        error
@@ -26,11 +26,13 @@ func (a *onceError) Store(err error) {
 	}
 	a.err = err
 }
+
 func (a *onceError) Load() error {
 	a.Lock()
 	defer a.Unlock()
 	return a.err
 }
+
 
 // ErrClosedPipe is the error used for read or write operations on a closed pipe.
 var ErrClosedPipe = errors.New("io: read/write on closed pipe")
@@ -60,6 +62,7 @@ func (p *pipe) Read(b []byte) (n int, err error) {
 		p.rdCh <- nr
 		return nr, nil
 	case <-p.done:
+		//这里为什么再case一个 p.done
 		return 0, p.readCloseError()
 	}
 }
@@ -90,6 +93,7 @@ func (p *pipe) Write(b []byte) (n int, err error) {
 		defer p.wrMu.Unlock()
 	}
 
+	//nb
 	for once := true; once || len(b) > 0; once = false {
 		select {
 		case p.wrCh <- b:
@@ -179,21 +183,19 @@ func (w *PipeWriter) CloseWithError(err error) error {
 	return w.p.CloseWrite(err)
 }
 
-// Pipe creates a synchronous in-memory pipe.
-// It can be used to connect code expecting an io.Reader
-// with code expecting an io.Writer.
+// Pipe creates a synchronous in-memory pipe. 同步内存管理
+// It can be used to connect code expecting an io.Reader with code expecting an io.Writer.
 //
 // Reads and Writes on the pipe are matched one to one
 // except when multiple Reads are needed to consume a single Write.
 // That is, each Write to the PipeWriter blocks until it has satisfied
-// one or more Reads from the PipeReader that fully consume
-// the written data.
-// The data is copied directly from the Write to the corresponding
-// Read (or Reads); there is no internal buffering.
+// one or more Reads from the PipeReader that fully consume the written data.
+
+// The data is copied directly from the Write to the corresponding Read (or Reads); there is no internal buffering.
 //
-// It is safe to call Read and Write in parallel with each other or with Close.
+// It is safe to call Read and Write in parallel with each other or with Close. 并发安全
 // Parallel calls to Read and parallel calls to Write are also safe:
-// the individual calls will be gated sequentially.
+// the individual单独地 calls will be gated sequentially. 顺序防守
 func Pipe() (*PipeReader, *PipeWriter) {
 	p := &pipe{
 		wrCh: make(chan []byte),
