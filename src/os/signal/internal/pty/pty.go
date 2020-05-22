@@ -5,9 +5,9 @@
 // +build aix darwin dragonfly freebsd linux,!android netbsd openbsd
 // +build cgo
 
-// Package pty is a simple pseudo-terminal package for Unix systems,
-// implemented by calling C functions via cgo.
-// This is only used for testing the os/signal package.
+// Package pty is a simple pseudo-terminal伪终端 package for Unix systems,
+// implemented by calling C functions via cgo. 通过cgo实现
+// This is only used for testing the os/signal package. 只是用于测试 os/signal
 package pty
 
 /*
@@ -40,6 +40,7 @@ func (e *PtyError) Error() string {
 
 func (e *PtyError) Unwrap() error { return e.Errno }
 
+//打开一个伪终端，就是一个文件，返回终端名
 // Open returns a master pty and the name of the linked slave tty.
 func Open() (master *os.File, slave string, err error) {
 	m, err := C.posix_openpt(C.O_RDWR)
