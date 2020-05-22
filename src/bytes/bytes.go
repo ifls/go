@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package bytes implements functions for the manipulation of byte slices.
-// It is analogous to the facilities of the strings package.
+// Package bytes implements functions for the manipulation of byte slices. 操作 []byte 的函数
+// It is analogous类似的 to the facilities of the strings package.
 package bytes
 
 import (
@@ -24,6 +24,7 @@ func Equal(a, b []byte) bool {
 // The result will be 0 if a==b, -1 if a < b, and +1 if a > b.
 // A nil argument is equivalent to an empty slice.
 func Compare(a, b []byte) int {
+	//internal/bytealg/compare_native.go
 	return bytealg.Compare(a, b)
 }
 
@@ -50,16 +51,21 @@ func explode(s []byte, n int) [][]byte {
 	return a[0:na]
 }
 
-// Count counts the number of non-overlapping instances of sep in s.
+// Count counts the number of non-overlapping instances of sep in s. 计数, 非重叠的情况
+
 // If sep is an empty slice, Count returns 1 + the number of UTF-8-encoded code points in s.
 func Count(s, sep []byte) int {
 	// special case
 	if len(sep) == 0 {
+		//为什么+1
 		return utf8.RuneCount(s) + 1
 	}
+
 	if len(sep) == 1 {
+		//数单个字符
 		return bytealg.Count(s, sep[0])
 	}
+
 	n := 0
 	for {
 		i := Index(s, sep)
@@ -67,6 +73,7 @@ func Count(s, sep []byte) int {
 			return n
 		}
 		n++
+		//[i, i + len(sep) 是已匹配的
 		s = s[i+len(sep):]
 	}
 }
@@ -87,10 +94,12 @@ func ContainsRune(b []byte, r rune) bool {
 }
 
 // IndexByte returns the index of the first instance of c in b, or -1 if c is not present in b.
+// 寻找单个字节
 func IndexByte(b []byte, c byte) int {
 	return bytealg.IndexByte(b, c)
 }
 
+// 快捷实现，可以用做参考实现
 func indexBytePortable(s []byte, c byte) int {
 	for i, b := range s {
 		if b == c {
@@ -100,11 +109,13 @@ func indexBytePortable(s []byte, c byte) int {
 	return -1
 }
 
+//找最后一个实例的idx
 // LastIndex returns the index of the last instance of sep in s, or -1 if sep is not present in s.
 func LastIndex(s, sep []byte) int {
 	n := len(sep)
 	switch {
 	case n == 0:
+		//？？？
 		return len(s)
 	case n == 1:
 		return LastIndexByte(s, sep[0])
@@ -116,16 +127,22 @@ func LastIndex(s, sep []byte) int {
 	case n > len(s):
 		return -1
 	}
+
 	// Rabin-Karp search from the end of the string
+	//sep的hash
 	hashss, pow := bytealg.HashStrRevBytes(sep)
 	last := len(s) - n
 	var h uint32
+	//s[ls-n, ls) 的hash
 	for i := len(s) - 1; i >= last; i-- {
 		h = h*bytealg.PrimeRK + uint32(s[i])
 	}
+
 	if h == hashss && Equal(s[last:], sep) {
 		return last
 	}
+
+	//前移
 	for i := last - 1; i >= 0; i-- {
 		h *= bytealg.PrimeRK
 		h += uint32(s[i])
@@ -137,6 +154,7 @@ func LastIndex(s, sep []byte) int {
 	return -1
 }
 
+// 参考实现
 // LastIndexByte returns the index of the last instance of c in s, or -1 if c is not present in s.
 func LastIndexByte(s []byte, c byte) int {
 	for i := len(s) - 1; i >= 0; i-- {
@@ -387,10 +405,11 @@ func SplitAfter(s, sep []byte) [][]byte {
 
 var asciiSpace = [256]uint8{'\t': 1, '\n': 1, '\v': 1, '\f': 1, '\r': 1, ' ': 1}
 
-// Fields interprets s as a sequence of UTF-8-encoded code points.
+// Fields interprets s as a sequence of UTF-8-encoded code points 码点.
 // It splits the slice s around each instance of one or more consecutive white space
 // characters, as defined by unicode.IsSpace, returning a slice of subslices of s or an
 // empty slice if s contains only white space.
+// 切分words
 func Fields(s []byte) [][]byte {
 	// First count the fields.
 	// This is an exact count if s is ASCII, otherwise it is an approximation.
@@ -497,6 +516,7 @@ func FieldsFunc(s []byte, f func(rune) bool) [][]byte {
 
 // Join concatenates the elements of s to create a new byte slice. The separator
 // sep is placed between elements in the resulting slice.
+// 连接字符串
 func Join(s [][]byte, sep []byte) []byte {
 	if len(s) == 0 {
 		return []byte{}
@@ -505,15 +525,21 @@ func Join(s [][]byte, sep []byte) []byte {
 		// Just return a copy.
 		return append([]byte(nil), s[0]...)
 	}
+
+	//预先计算长度
 	n := len(sep) * (len(s) - 1)
 	for _, v := range s {
 		n += len(v)
 	}
 
 	b := make([]byte, n)
+
+	//第一个s[0]
 	bp := copy(b, s[0])
 	for _, v := range s[1:] {
+		// sep
 		bp += copy(b[bp:], sep)
+		// s[i]
 		bp += copy(b[bp:], v)
 	}
 	return b
@@ -521,10 +547,12 @@ func Join(s [][]byte, sep []byte) []byte {
 
 // HasPrefix tests whether the byte slice s begins with prefix.
 func HasPrefix(s, prefix []byte) bool {
+	//长度符合，再 前部分字符串相等
 	return len(s) >= len(prefix) && Equal(s[0:len(prefix)], prefix)
 }
 
 // HasSuffix tests whether the byte slice s ends with suffix.
+// 同上
 func HasSuffix(s, suffix []byte) bool {
 	return len(s) >= len(suffix) && Equal(s[len(s)-len(suffix):], suffix)
 }
@@ -567,7 +595,7 @@ func Map(mapping func(r rune) rune, s []byte) []byte {
 }
 
 // Repeat returns a new byte slice consisting of count copies of b.
-//
+// 重复 count遍
 // It panics if count is negative or if
 // the result of (len(b) * count) overflows.
 func Repeat(b []byte, count int) []byte {
@@ -587,14 +615,15 @@ func Repeat(b []byte, count int) []byte {
 	nb := make([]byte, len(b)*count)
 	bp := copy(nb, b)
 	for bp < len(nb) {
+		//nb
 		copy(nb[bp:], nb[:bp])
 		bp *= 2
 	}
 	return nb
 }
 
-// ToUpper returns a copy of the byte slice s with all Unicode letters mapped to
-// their upper case.
+// ToUpper returns a copy of the byte slice s with all Unicode letters mapped to their upper case.
+// 非原地， 可以抽象定义 toUpper的 一批抽象函数 func(byte) byte
 func ToUpper(s []byte) []byte {
 	isASCII, hasLower := true, false
 	for i := 0; i < len(s); i++ {
@@ -607,10 +636,12 @@ func ToUpper(s []byte) []byte {
 	}
 
 	if isASCII { // optimize for ASCII-only byte slices.
+		//是ascii, hasLower才遍历了所有字符，才有意义
 		if !hasLower {
 			// Just return a copy.
 			return append([]byte(""), s...)
 		}
+
 		b := make([]byte, len(s))
 		for i := 0; i < len(s); i++ {
 			c := s[i]
@@ -624,8 +655,8 @@ func ToUpper(s []byte) []byte {
 	return Map(unicode.ToUpper, s)
 }
 
-// ToLower returns a copy of the byte slice s with all Unicode letters mapped to
-// their lower case.
+// ToLower returns a copy of the byte slice s with all Unicode letters mapped to their lower case.
+// 同上
 func ToLower(s []byte) []byte {
 	isASCII, hasUpper := true, false
 	for i := 0; i < len(s); i++ {
@@ -705,10 +736,12 @@ func ToValidUTF8(s, replacement []byte) []byte {
 }
 
 // isSeparator reports whether the rune could mark a word boundary.
+// 单词分隔符
 // TODO: update when package unicode captures more of the properties.
 func isSeparator(r rune) bool {
 	// ASCII alphanumerics and underscore are not separators
 	if r <= 0x7F {
+		// ascii 字符集
 		switch {
 		case '0' <= r && r <= '9':
 			return false
@@ -719,9 +752,11 @@ func isSeparator(r rune) bool {
 		case r == '_':
 			return false
 		}
+		//除字母数字下划线都是true
 		return true
 	}
 	// Letters and digits are not separators
+	//
 	if unicode.IsLetter(r) || unicode.IsDigit(r) {
 		return false
 	}
@@ -781,6 +816,7 @@ func TrimFunc(s []byte, f func(r rune) bool) []byte {
 
 // TrimPrefix returns s without the provided leading prefix string.
 // If s doesn't start with prefix, s is returned unchanged.
+// 简单
 func TrimPrefix(s, prefix []byte) []byte {
 	if HasPrefix(s, prefix) {
 		return s[len(prefix):]
@@ -790,6 +826,7 @@ func TrimPrefix(s, prefix []byte) []byte {
 
 // TrimSuffix returns s without the provided trailing suffix string.
 // If s doesn't end with suffix, s is returned unchanged.
+//同上
 func TrimSuffix(s, suffix []byte) []byte {
 	if HasSuffix(s, suffix) {
 		return s[:len(s)-len(suffix)]
@@ -912,8 +949,8 @@ func TrimRight(s []byte, cutset string) []byte {
 	return TrimRightFunc(s, makeCutsetFunc(cutset))
 }
 
-// TrimSpace returns a subslice of s by slicing off all leading and
-// trailing white space, as defined by Unicode.
+// TrimSpace returns a subslice of s by slicing off all leading and trailing white space, as defined by Unicode.
+// 清除前面和后面的空白字符
 func TrimSpace(s []byte) []byte {
 	// Fast path for ASCII: look for the first ASCII non-space byte
 	start := 0
@@ -930,7 +967,7 @@ func TrimSpace(s []byte) []byte {
 	}
 
 	// Now look for the first ASCII non-space byte from the end
-	stop := len(s)
+	stop := len(s)  //左闭右开
 	for ; stop > start; stop-- {
 		c := s[stop-1]
 		if c >= utf8.RuneSelf {
@@ -966,27 +1003,32 @@ func Runes(s []byte) []rune {
 	return t
 }
 
-// Replace returns a copy of the slice s with the first n
-// non-overlapping instances of old replaced by new.
+// Replace returns a copy of the slice s with the first n non-overlapping instances of old replaced by new. 前n个 非重叠old会被替换为new
+
 // If old is empty, it matches at the beginning of the slice
 // and after each UTF-8 sequence, yielding up to k+1 replacements
 // for a k-rune slice.
-// If n < 0, there is no limit on the number of replacements.
+
+// If n < 0, there is no limit on the number of replacements. < 0 不限制
 func Replace(s, old, new []byte, n int) []byte {
 	m := 0
 	if n != 0 {
 		// Compute number of replacements.
 		m = Count(s, old)
 	}
+
 	if m == 0 {
 		// Just return a copy.
 		return append([]byte(nil), s...)
 	}
+
+	//nb
 	if n < 0 || m < n {
 		n = m
 	}
 
 	// Apply replacements to buffer.
+	//预先分配，然后idx运算
 	t := make([]byte, len(s)+n*(len(new)-len(old)))
 	w := 0
 	start := 0
@@ -1000,10 +1042,14 @@ func Replace(s, old, new []byte, n int) []byte {
 		} else {
 			j += Index(s[start:], old)
 		}
+		//拷贝单词
 		w += copy(t[w:], s[start:j])
+		//拷贝new
 		w += copy(t[w:], new)
+		//移动old
 		start = j + len(old)
 	}
+	//拷贝最后的
 	w += copy(t[w:], s[start:])
 	return t[0:w]
 }
@@ -1074,6 +1120,7 @@ func EqualFold(s, t []byte) bool {
 }
 
 // Index returns the index of the first instance of sep in s, or -1 if sep is not present in s.
+// 返回sep出现的第一个实例的idx
 func Index(s, sep []byte) int {
 	n := len(sep)
 	switch {
@@ -1089,32 +1136,43 @@ func Index(s, sep []byte) int {
 	case n > len(s):
 		return -1
 	case n <= bytealg.MaxLen:
+		// 两个字符串都小，直接暴力匹配
 		// Use brute force when s and sep both are small
 		if len(s) <= bytealg.MaxBruteForce {
+			// <= 64
 			return bytealg.Index(s, sep)
 		}
+
 		c0 := sep[0]
 		c1 := sep[1]
 		i := 0
 		t := len(s) - n + 1
+		// 统计失败次数
 		fails := 0
 		for i < t {
 			if s[i] != c0 {
 				// IndexByte is faster than bytealg.Index, so use it as long as
 				// we're not getting lots of false positives.
+				// 匹配单个字符串
 				o := IndexByte(s[i+1:t], c0)
 				if o < 0 {
 					return -1
 				}
+				//右移
 				i += o + 1
 			}
+
+			//第2个字符匹配 && 字符串匹配
 			if s[i+1] == c1 && Equal(s[i:i+n], sep) {
 				return i
 			}
+
 			fails++
 			i++
 			// Switch to bytealg.Index when IndexByte produces too many false positives.
+			// (i + 16) / 8 失败过多
 			if fails > bytealg.Cutover(i) {
+				//整个字节数组匹配
 				r := bytealg.Index(s[i:], sep)
 				if r >= 0 {
 					return r + i
@@ -1124,6 +1182,8 @@ func Index(s, sep []byte) int {
 		}
 		return -1
 	}
+
+
 	c0 := sep[0]
 	c1 := sep[1]
 	i := 0
@@ -1137,11 +1197,14 @@ func Index(s, sep []byte) int {
 			}
 			i += o + 1
 		}
+
 		if s[i+1] == c1 && Equal(s[i:i+n], sep) {
 			return i
 		}
+
 		i++
 		fails++
+
 		if fails >= 4+i>>4 && i < t {
 			// Give up on IndexByte, it isn't skipping ahead
 			// far enough to be better than Rabin-Karp.
@@ -1151,6 +1214,7 @@ func Index(s, sep []byte) int {
 			// we should cutover at even larger average skips,
 			// because Equal becomes that much more expensive.
 			// This code does not take that effect into account.
+			// rk匹配算法
 			j := bytealg.IndexRabinKarpBytes(s[i:], sep)
 			if j < 0 {
 				return -1

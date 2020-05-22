@@ -27,7 +27,7 @@ var MaxLen int
 // IndexRabinKarp are exactly the same, except that the types are different. Can we eliminate
 // three of them without causing allocation?
 
-// PrimeRK is the prime base used in Rabin-Karp algorithm.
+// PrimeRK is the prime素数 base used in Rabin-Karp algorithm.
 const PrimeRK = 16777619
 
 // HashStrBytes returns the hash and the appropriate multiplicative

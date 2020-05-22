@@ -5,6 +5,7 @@
 #include "go_asm.h"
 #include "textflag.h"
 
+// func Compare(a, b []byte) int
 TEXT ·Compare(SB),NOSPLIT,$0-56
 	MOVQ	a_base+0(FP), SI
 	MOVQ	a_len+8(FP), BX

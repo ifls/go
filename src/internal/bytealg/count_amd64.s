@@ -5,6 +5,7 @@
 #include "go_asm.h"
 #include "textflag.h"
 
+//func Count(b []byte, c byte) int
 TEXT ·Count(SB),NOSPLIT,$0-40
 	CMPB	internal∕cpu·X86+const_offsetX86HasPOPCNT(SB), $1
 	JEQ	2(PC)
@@ -15,6 +16,7 @@ TEXT ·Count(SB),NOSPLIT,$0-40
 	LEAQ	ret+32(FP), R8
 	JMP	countbody<>(SB)
 
+//func CountString(s string, c byte) int
 TEXT ·CountString(SB),NOSPLIT,$0-32
 	CMPB	internal∕cpu·X86+const_offsetX86HasPOPCNT(SB), $1
 	JEQ	2(PC)

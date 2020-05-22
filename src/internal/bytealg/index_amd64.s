@@ -5,6 +5,8 @@
 #include "go_asm.h"
 #include "textflag.h"
 
+// []byte 24 * 2 + 8
+// func Index(a, b []byte) int
 TEXT ·Index(SB),NOSPLIT,$0-56
 	MOVQ a_base+0(FP), DI
 	MOVQ a_len+8(FP), DX
@@ -14,6 +16,8 @@ TEXT ·Index(SB),NOSPLIT,$0-56
 	LEAQ ret+48(FP), R11
 	JMP  indexbody<>(SB)
 
+//string 16 * 2 + 8
+// func IndexString(a, b string) int
 TEXT ·IndexString(SB),NOSPLIT,$0-40
 	MOVQ a_base+0(FP), DI
 	MOVQ a_len+8(FP), DX
