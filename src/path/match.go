@@ -10,7 +10,7 @@ import (
 	"unicode/utf8"
 )
 
-// ErrBadPattern indicates a pattern was malformed.
+// ErrBadPattern indicates a pattern was malformed. 畸形的
 var ErrBadPattern = errors.New("syntax error in pattern")
 
 // Match reports whether name matches the shell pattern.
@@ -19,14 +19,14 @@ var ErrBadPattern = errors.New("syntax error in pattern")
 //	pattern:
 //		{ term }
 //	term:
-//		'*'         matches any sequence of non-/ characters
-//		'?'         matches any single non-/ character
+//		'*'         matches any sequence任意序列 of non-/ characters
+//		'?'         matches any single任意单个 non-/ character
 //		'[' [ '^' ] { character-range } ']'
 //		            character class (must be non-empty)
 //		c           matches character c (c != '*', '?', '\\', '[')
 //		'\\' c      matches character c
 //
-//	character-range:
+//	character-range: 字符区间
 //		c           matches character c (c != '\\', '-', ']')
 //		'\\' c      matches character c
 //		lo '-' hi   matches character c for lo <= c <= hi
@@ -35,6 +35,8 @@ var ErrBadPattern = errors.New("syntax error in pattern")
 // The only possible returned error is ErrBadPattern, when pattern
 // is malformed.
 //
+
+// TODO
 func Match(pattern, name string) (matched bool, err error) {
 Pattern:
 	for len(pattern) > 0 {
