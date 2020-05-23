@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package ring implements operations on circular lists.
+// Package ring implements operations on circular lists.  环形列表
 package ring
 
 // A Ring is an element of a circular list, or ring.
-// Rings do not have a beginning or end; a pointer to any ring element
-// serves as reference to the entire ring. Empty rings are represented
-// as nil Ring pointers. The zero value for a Ring is a one-element
-// ring with a nil Value.
+// Rings do not have a beginning or end; 没有开始或者结束
+// a pointer to any ring element serves as reference to the entire ring.
+// Empty rings are represented as nil Ring pointers.
+// The zero value for a Ring is a one-element ring with a nil Value.
 //
 type Ring struct {
 	next, prev *Ring
@@ -39,8 +39,8 @@ func (r *Ring) Prev() *Ring {
 }
 
 // Move moves n % r.Len() elements backward (n < 0) or forward (n >= 0)
-// in the ring and returns that ring element. r must not be empty.
-//
+// in the ring and returns that ring element. r must not be empty. r必须不是nil
+// 前进/后退
 func (r *Ring) Move(n int) *Ring {
 	if r.next == nil {
 		return r.init()
@@ -58,7 +58,7 @@ func (r *Ring) Move(n int) *Ring {
 	return r
 }
 
-// New creates a ring of n elements.
+// New creates a ring of n elements. 创建n个元素的无值环
 func New(n int) *Ring {
 	if n <= 0 {
 		return nil
@@ -77,37 +77,38 @@ func New(n int) *Ring {
 // Link connects ring r with ring s such that r.Next()
 // becomes s and returns the original value for r.Next().
 // r must not be empty.
+// 链接两个环
+
+// 如果本身就是在同一个环上, 则删除r和s之间的
+// If r and s point to the same ring, linking them removes the elements between r and s from the ring.
+
+// The removed elements form a subring and the result is a reference to that subring
+// (if no elements were removed, the result is still the original value for r.Next(), and not nil).
 //
-// If r and s point to the same ring, linking
-// them removes the elements between r and s from the ring.
-// The removed elements form a subring and the result is a
-// reference to that subring (if no elements were removed,
-// the result is still the original value for r.Next(),
-// and not nil).
-//
-// If r and s point to different rings, linking
-// them creates a single ring with the elements of s inserted
-// after r. The result points to the element following the
-// last element of s after insertion.
+// If r and s point to different rings, linking them creates a single ring with the elements of s inserted after r.
+// The result points to the element following the last element of s after insertion.
 //
 func (r *Ring) Link(s *Ring) *Ring {
+	//r头
 	n := r.Next()
 	if s != nil {
+		//s尾
 		p := s.Prev()
 		// Note: Cannot use multiple assignment because
 		// evaluation order of LHS is not specified.
 		r.next = s
 		s.prev = r
+
 		n.prev = p
 		p.next = n
 	}
 	return n
 }
 
-// Unlink removes n % r.Len() elements from the ring r, starting
-// at r.Next(). If n % r.Len() == 0, r remains unchanged.
+// Unlink removes n % r.Len() elements from the ring r, starting at r.Next().
+// If n % r.Len() == 0, r remains unchanged.
 // The result is the removed subring. r must not be empty.
-//
+// 删除长度为n的中间子环
 func (r *Ring) Unlink(n int) *Ring {
 	if n <= 0 {
 		return nil
@@ -116,12 +117,13 @@ func (r *Ring) Unlink(n int) *Ring {
 }
 
 // Len computes the number of elements in ring r.
-// It executes in time proportional to the number of elements.
+// It executes in time proportional 线性  to the number of elements.
 //
 func (r *Ring) Len() int {
 	n := 0
 	if r != nil {
 		n = 1
+		// 环形的遍历终止条件 p != r
 		for p := r.Next(); p != r; p = p.next {
 			n++
 		}

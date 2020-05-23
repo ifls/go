@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package list implements a doubly linked list.
+// Package list implements a doubly linked list. 双端链表
 //
 // To iterate over a list (where l is a *List):
 //	for e := l.Front(); e != nil; e = e.Next() {
@@ -14,7 +14,8 @@ package list
 // Element is an element of a linked list.
 type Element struct {
 	// Next and previous pointers in the doubly-linked list of elements.
-	// To simplify the implementation, internally a list l is implemented
+
+	// To simplify the implementation, internally a list l is implemented 实现成一个环
 	// as a ring, such that &l.root is both the next element of the last
 	// list element (l.Back()) and the previous element of the first list
 	// element (l.Front()).
@@ -89,7 +90,9 @@ func (l *List) lazyInit() {
 }
 
 // insert inserts e after at, increments l.len, and returns e.
+// at->e
 func (l *List) insert(e, at *Element) *Element {
+	//
 	e.prev = at
 	e.next = at.next
 	e.prev.next = e
@@ -106,8 +109,10 @@ func (l *List) insertValue(v interface{}, at *Element) *Element {
 
 // remove removes e from its list, decrements l.len, and returns e.
 func (l *List) remove(e *Element) *Element {
+	//摘除
 	e.prev.next = e.next
 	e.next.prev = e.prev
+	//reset
 	e.next = nil // avoid memory leaks
 	e.prev = nil // avoid memory leaks
 	e.list = nil
@@ -120,9 +125,11 @@ func (l *List) move(e, at *Element) *Element {
 	if e == at {
 		return e
 	}
+	//摘除
 	e.prev.next = e.next
 	e.next.prev = e.prev
 
+	//插入到at之后
 	e.prev = at
 	e.next = at.next
 	e.prev.next = e
