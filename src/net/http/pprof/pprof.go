@@ -52,7 +52,7 @@
 //
 // For a study of the facility in action, visit
 //
-//	https://blog.golang.org/2011/06/profiling-go-programs.html
+//	TODO https://blog.golang.org/2011/06/profiling-go-programs.html
 //
 package pprof
 

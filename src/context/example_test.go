@@ -60,9 +60,8 @@ func ExampleWithDeadline() {
 	d := time.Now().Add(shortDuration)
 	ctx, cancel := context.WithDeadline(context.Background(), d)
 
-	// Even though ctx will be expired, it is good practice to call its
-	// cancellation function in any case. Failure to do so may keep the
-	// context and its parent alive longer than necessary.
+	// Even though ctx will be expired, it is good practice to call its cancellation function in any case 任何情况.
+	// Failure to do so may keep the context and its parent alive longer than necessary.
 	defer cancel()
 
 	select {
@@ -86,6 +85,7 @@ func ExampleWithTimeout() {
 
 	select {
 	case <-time.After(1 * time.Second):
+		//睡过了头
 		fmt.Println("overslept")
 	case <-ctx.Done():
 		fmt.Println(ctx.Err()) // prints "context deadline exceeded"

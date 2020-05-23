@@ -4,7 +4,7 @@
 
 // Package strings implements simple functions to manipulate UTF-8 encoded strings. 操作utf-8编码的字符串的函数
 //
-// For information about UTF-8 strings in Go, see https://blog.golang.org/strings.
+// For information about UTF-8 strings in Go, TODO see https://blog.golang.org/strings.
 package strings
 
 import (
