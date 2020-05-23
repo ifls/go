@@ -2,21 +2,21 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package sql provides a generic interface around SQL (or SQL-like)
-// databases.
-//
-// The sql package must be used in conjunction with a database driver.
-// See https://golang.org/s/sqldrivers for a list of drivers.
+// Package sql provides a generic interface around SQL (or SQL-like) databases.
+// 提供sql数据库通用接口
+// The sql package must be used in conjunction结合 with a database driver.
+// See TODO https://golang.org/s/sqldrivers for a list of drivers.
 //
 // Drivers that do not support context cancellation will not return until
-// after the query is completed.
+// after the query is completed. 应该要使用支持取消的
 //
 // For usage examples, see the wiki page at
-// https://golang.org/s/sqlwiki.
+// TODO https://golang.org/s/sqlwiki.
 package sql
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -39,8 +39,8 @@ var (
 var nowFunc = time.Now
 
 // Register makes a database driver available by the provided name.
-// If Register is called twice with the same name or if driver is nil,
-// it panics.
+// If Register is called twice with the same name or if driver is nil, it panics.
+// 插入map, 不允许重复注册
 func Register(name string, driver driver.Driver) {
 	driversMu.Lock()
 	defer driversMu.Unlock()
@@ -72,21 +72,19 @@ func Drivers() []string {
 	return list
 }
 
-// A NamedArg is a named argument. NamedArg values may be used as
-// arguments to Query or Exec and bind to the corresponding named
-// parameter in the SQL statement.
+// A NamedArg is a named argument.
+// NamedArg values may be used as arguments to Query or Exec and bind to the corresponding named parameter in the SQL statement.
 //
-// For a more concise way to create NamedArg values, see
-// the Named function.
+// For a more concise way to create NamedArg values, see the Named function.  Named()
 type NamedArg struct {
+	// for what
 	_Named_Fields_Required struct{}
 
 	// Name is the name of the parameter placeholder.
 	//
-	// If empty, the ordinal position in the argument list will be
-	// used.
+	// If empty, the ordinal按顺序 position in the argument list will be used.
 	//
-	// Name must omit any symbol prefix.
+	// Name must omit省略 any symbol prefix. 符号前缀
 	Name string
 
 	// Value is the value of the parameter.
@@ -108,29 +106,27 @@ type NamedArg struct {
 //         sql.Named("end", endTime),
 //     )
 func Named(name string, value interface{}) NamedArg {
-	// This method exists because the go1compat promise
-	// doesn't guarantee that structs don't grow more fields,
-	// so unkeyed struct literals are a vet error. Thus, we don't
-	// want to allow sql.NamedArg{name, value}.
+	// This method exists because the go1compat promise doesn't guarantee that structs don't grow more fields, 不保证此函数不会增加字段
+	// so unkeyed struct literals are a vet error. Thus, we don't want to allow sql.NamedArg{name, value}.
 	return NamedArg{Name: name, Value: value}
 }
 
 // IsolationLevel is the transaction isolation level used in TxOptions.
 type IsolationLevel int
 
-// Various isolation levels that drivers may support in BeginTx.
-// If a driver does not support a given isolation level an error may be returned.
+// Various isolation levels that drivers may support in BeginTx事务中.
+// If a driver does not support a given isolation level an error may be returned. 不支持就返回错误
 //
 // See https://en.wikipedia.org/wiki/Isolation_(database_systems)#Isolation_levels.
 const (
 	LevelDefault IsolationLevel = iota
-	LevelReadUncommitted
-	LevelReadCommitted
-	LevelWriteCommitted
-	LevelRepeatableRead
-	LevelSnapshot
-	LevelSerializable
-	LevelLinearizable
+	LevelReadUncommitted		//读未提交
+	LevelReadCommitted			//读已提交
+	LevelWriteCommitted			//写提交
+	LevelRepeatableRead			//可重复读
+	LevelSnapshot				//快照隔离
+	LevelSerializable			//可串行化
+	LevelLinearizable			//线性化
 )
 
 // String returns the name of the transaction isolation level.
@@ -162,9 +158,9 @@ var _ fmt.Stringer = LevelDefault
 // TxOptions holds the transaction options to be used in DB.BeginTx.
 type TxOptions struct {
 	// Isolation is the transaction isolation level.
-	// If zero, the driver or database's default level is used.
+	// If zero, the driver or database's default level is used. 不复制, 则使用默认隔离级别
 	Isolation IsolationLevel
-	ReadOnly  bool
+	ReadOnly  bool		//是否只读
 }
 
 // RawBytes is a byte slice that holds a reference to memory owned by

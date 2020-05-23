@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package crypto collects common cryptographic constants.
+// Package crypto collects common cryptographic密码 constants.  加密与hash，密不可分
 package crypto
 
 import (
@@ -11,8 +11,7 @@ import (
 	"strconv"
 )
 
-// Hash identifies a cryptographic hash function that is implemented in another
-// package.
+// Hash identifies a cryptographic hash function that is implemented in another package. 标识一种加密hash函数
 type Hash uint
 
 // HashFunc simply returns the value of h so that Hash implements SignerOpts.
@@ -88,6 +87,7 @@ const (
 	maxHash
 )
 
+//单位是字节
 var digestSizes = []uint8{
 	MD4:         16,
 	MD5:         16,
@@ -120,6 +120,7 @@ func (h Hash) Size() int {
 	panic("crypto: Size of unknown hash function")
 }
 
+//全局函数 hash.Hash包定义的函数
 var hashes = make([]func() hash.Hash, maxHash)
 
 // New returns a new hash.Hash calculating the given hash function. New panics

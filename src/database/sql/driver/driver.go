@@ -2,9 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package driver defines interfaces to be implemented by database
-// drivers as used by package sql.
-//
+// Package driver defines interfaces to be implemented by database drivers as used by package sql.
+// 定义数据库驱动应该实现的接口
 // Most code should use package sql.
 //
 // The driver interface has evolved over time. Drivers should implement

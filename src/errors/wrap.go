@@ -11,6 +11,7 @@ import (
 // Unwrap returns the result of calling the Unwrap method on err, if err's
 // type contains an Unwrap method returning error.
 // Otherwise, Unwrap returns nil.
+// 非递归
 func Unwrap(err error) error {
 	u, ok := err.(interface {
 		Unwrap() error
@@ -18,11 +19,12 @@ func Unwrap(err error) error {
 	if !ok {
 		return nil
 	}
+
 	return u.Unwrap()
 }
 
 // Is reports whether any error in err's chain matches target.
-//
+// 链式匹配
 // The chain consists of err itself followed by the sequence of errors obtained by
 // repeatedly calling Unwrap.
 //
@@ -41,11 +43,15 @@ func Is(err, target error) bool {
 		return err == target
 	}
 
+	//target可比较
 	isComparable := reflectlite.TypeOf(target).Comparable()
+	//循环解包装
 	for {
 		if isComparable && err == target {
 			return true
 		}
+
+		//
 		if x, ok := err.(interface{ Is(error) bool }); ok && x.Is(target) {
 			return true
 		}
@@ -60,7 +66,7 @@ func Is(err, target error) bool {
 
 // As finds the first error in err's chain that matches target, and if so, sets
 // target to that error value and returns true. Otherwise, it returns false.
-//
+// target是返回值
 // The chain consists of err itself followed by the sequence of errors obtained by
 // repeatedly calling Unwrap.
 //
@@ -74,12 +80,14 @@ func Is(err, target error) bool {
 //
 // As panics if target is not a non-nil pointer to either a type that implements
 // error, or to any interface type.
+// 基于反射实现
 func As(err error, target interface{}) bool {
 	if target == nil {
 		panic("errors: target cannot be nil")
 	}
 	val := reflectlite.ValueOf(target)
 	typ := val.Type()
+	//必须是非空指针
 	if typ.Kind() != reflectlite.Ptr || val.IsNil() {
 		panic("errors: target must be a non-nil pointer")
 	}
