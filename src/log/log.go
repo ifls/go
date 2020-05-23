@@ -2,15 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package log implements a simple logging package. It defines a type, Logger,
-// with methods for formatting output. It also has a predefined 'standard'
-// Logger accessible through helper functions Print[f|ln], Fatal[f|ln], and
-// Panic[f|ln], which are easier to use than creating a Logger manually.
-// That logger writes to standard error and prints the date and time
-// of each logged message.
-// Every log message is output on a separate line: if the message being
-// printed does not end in a newline, the logger will add one.
-// The Fatal functions call os.Exit(1) after writing the log message.
+// Package log implements a simple logging日志 package.
+// It defines a type, Logger, with methods for formatting output.
+// It also has a predefined 'standard' Logger accessible through helper functions Print[f|ln], Fatal[f|ln], and Panic[f|ln],
+// which are easier to use than creating a Logger manually.
+
+// That logger writes to standard error标准错误 and prints the date and time of each logged message.
+// Every log message is output on a separate line: if the message being printed does not end in a newline, the logger will add one.
+// The Fatal functions call os.Exit(1) after writing the log message. 无法恢复
 // The Panic functions call panic after writing the log message.
 package log
 
@@ -34,14 +33,19 @@ import (
 //	2009/01/23 01:23:23 message
 // while flags Ldate | Ltime | Lmicroseconds | Llongfile produce,
 //	2009/01/23 01:23:23.123123 /a/b/c/d.go:23: message
+
+//flags
 const (
 	Ldate         = 1 << iota     // the date in the local time zone: 2009/01/23
 	Ltime                         // the time in the local time zone: 01:23:23
 	Lmicroseconds                 // microsecond resolution: 01:23:23.123123.  assumes Ltime.
+
 	Llongfile                     // full file name and line number: /a/b/c/d.go:23
 	Lshortfile                    // final file name element and line number: d.go:23. overrides Llongfile
-	LUTC                          // if Ldate or Ltime is set, use UTC rather than the local time zone
-	Lmsgprefix                    // move the "prefix" from the beginning of the line to before the message
+
+	LUTC                          // if Ldate or Ltime is set, use UTC rather than the local time zone  使用UTC时间
+
+	Lmsgprefix                    // move the "prefix" from the beginning of the line to before the message 使用前缀
 	LstdFlags     = Ldate | Ltime // initial values for the standard logger
 )
 
@@ -50,11 +54,11 @@ const (
 // the Writer's Write method. A Logger can be used simultaneously from
 // multiple goroutines; it guarantees to serialize access to the Writer.
 type Logger struct {
-	mu     sync.Mutex // ensures atomic writes; protects the following fields
-	prefix string     // prefix on each line to identify the logger (but see Lmsgprefix)
+	mu     sync.Mutex // ensures atomic writes 原子写; protects the following fields
+	prefix string     // prefix on each line to identify the logger (but see Lmsgprefix) 前缀
 	flag   int        // properties
-	out    io.Writer  // destination for output
-	buf    []byte     // for accumulating text to write
+	out    io.Writer  // destination for output 写入到哪里
+	buf    []byte     // for accumulating累积 text to write 缓冲
 }
 
 // New creates a new Logger. The out variable sets the
@@ -76,6 +80,7 @@ func (l *Logger) SetOutput(w io.Writer) {
 var std = New(os.Stderr, "", LstdFlags)
 
 // Cheap integer to fixed-width decimal ASCII. Give a negative width to avoid zero-padding.
+// int -> string
 func itoa(buf *[]byte, i int, wid int) {
 	// Assemble decimal in reverse order.
 	var b [20]byte
@@ -97,6 +102,7 @@ func itoa(buf *[]byte, i int, wid int) {
 //   * date and/or time (if corresponding flags are provided),
 //   * file and line number (if corresponding flags are provided),
 //   * l.prefix (if it's not blank and Lmsgprefix is set).
+//格式化时间和调用点
 func (l *Logger) formatHeader(buf *[]byte, t time.Time, file string, line int) {
 	if l.flag&Lmsgprefix == 0 {
 		*buf = append(*buf, l.prefix...)
@@ -161,10 +167,13 @@ func (l *Logger) Output(calldepth int, s string) error {
 	var line int
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
+	//处理调用跟踪
 	if l.flag&(Lshortfile|Llongfile) != 0 {
 		// Release lock while getting caller info - it's expensive.
 		l.mu.Unlock()
 		var ok bool
+		//返回调用点文件名和行号
 		_, file, line, ok = runtime.Caller(calldepth)
 		if !ok {
 			file = "???"
@@ -172,16 +181,21 @@ func (l *Logger) Output(calldepth int, s string) error {
 		}
 		l.mu.Lock()
 	}
+
+	//重置缓冲
 	l.buf = l.buf[:0]
 	l.formatHeader(&l.buf, now, file, line)
 	l.buf = append(l.buf, s...)
+	//补充换行
 	if len(s) == 0 || s[len(s)-1] != '\n' {
 		l.buf = append(l.buf, '\n')
 	}
+	//输出
 	_, err := l.out.Write(l.buf)
 	return err
 }
 
+//只有3个输出级别，严格来说只有一种
 // Printf calls l.Output to print to the logger.
 // Arguments are handled in the manner of fmt.Printf.
 func (l *Logger) Printf(format string, v ...interface{}) {
@@ -271,6 +285,13 @@ func (l *Logger) Writer() io.Writer {
 	defer l.mu.Unlock()
 	return l.out
 }
+
+
+
+
+
+
+
 
 // SetOutput sets the output destination for the standard logger.
 func SetOutput(w io.Writer) {

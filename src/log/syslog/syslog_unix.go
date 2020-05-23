@@ -13,7 +13,7 @@ import (
 
 // unixSyslog opens a connection to the syslog daemon running on the
 // local machine using a Unix domain socket.
-
+// 打开一个到 syslog daemon 的链接
 func unixSyslog() (conn serverConn, err error) {
 	logTypes := []string{"unixgram", "unix"}
 	logPaths := []string{"/dev/log", "/var/run/syslog", "/var/run/log"}
