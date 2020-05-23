@@ -3,15 +3,14 @@
 // license that can be found in the LICENSE file.
 
 // Package plugin implements loading and symbol resolution of Go plugins.
-//
-// A plugin is a Go main package with exported functions and variables that
-// has been built with:
+// 实现go插件的加载和符号解析
+// A plugin is a Go main package with exported functions and variables that has been built with:
 //
 //	go build -buildmode=plugin
 //
-// When a plugin is first opened, the init functions of all packages not
-// already part of the program are called. The main function is not run.
-// A plugin is only initialized once, and cannot be closed.
+// When a plugin is first opened, the init functions of all packages not already part of the program are called. 非重复的init函数会被执行
+// The main function is not run. 不允许
+// A plugin is only initialized once, and cannot be closed. 只能初始化，并且无法被关闭
 //
 // Currently plugins are only supported on Linux, FreeBSD, and macOS.
 // Please report any issues.
@@ -19,10 +18,10 @@ package plugin
 
 // Plugin is a loaded Go plugin.
 type Plugin struct {
-	pluginpath string
+	pluginpath string		//路径
 	err        string        // set if plugin failed to load
-	loaded     chan struct{} // closed when loaded
-	syms       map[string]interface{}
+	loaded     chan struct{} // closed when loaded 加载完成就关闭
+	syms       map[string]interface{}	//符号表
 }
 
 // Open opens a Go plugin.
