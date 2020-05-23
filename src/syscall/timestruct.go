@@ -3,11 +3,12 @@
 // license that can be found in the LICENSE file.
 
 // +build aix darwin dragonfly freebsd js,wasm linux netbsd openbsd solaris
-
+// c语言 时间结构体 转 纳秒
 package syscall
 
 // TimespecToNsec converts a Timespec value into a number of
 // nanoseconds since the Unix epoch.
+// 秒/纳秒 -> 纳秒
 func TimespecToNsec(ts Timespec) int64 { return ts.Nano() }
 
 // NsecToTimespec takes a number of nanoseconds since the Unix epoch
@@ -24,6 +25,7 @@ func NsecToTimespec(nsec int64) Timespec {
 
 // TimevalToNsec converts a Timeval value into a number of nanoseconds
 // since the Unix epoch.
+// 秒/微秒 ->纳秒
 func TimevalToNsec(tv Timeval) int64 { return tv.Nano() }
 
 // NsecToTimeval takes a number of nanoseconds since the Unix epoch

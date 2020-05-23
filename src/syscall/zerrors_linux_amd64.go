@@ -3,7 +3,7 @@
 
 // Created by cgo -godefs - DO NOT EDIT
 // cgo -godefs -- -m64 _const.go
-
+// 常量定义
 // +build amd64,linux
 
 package syscall

@@ -6,6 +6,7 @@
 
 /*
 Input to cgo -godefs.  See also mkerrors.sh and mkall.sh
+//导出c定义到go
 */
 
 // +godefs map struct_in_addr [4]byte /* in_addr */

@@ -3,7 +3,7 @@
 
 // +build linux,amd64
 
-
+//系统调用包装函数
 // 参考 apue unix环境高级编程
 //https://filippo.io/linux-syscall-table/
 package syscall

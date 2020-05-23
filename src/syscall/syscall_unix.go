@@ -25,14 +25,17 @@ const (
 	darwin64Bit = runtime.GOOS == "darwin" && sizeofPtr == 8
 	netbsd32Bit = runtime.GOOS == "netbsd" && sizeofPtr == 4
 )
-
+//3参数
 func Syscall(trap, a1, a2, a3 uintptr) (r1, r2 uintptr, err Errno)
+//6参数
 func Syscall6(trap, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2 uintptr, err Errno)
+
+//不通知runtime
 func RawSyscall(trap, a1, a2, a3 uintptr) (r1, r2 uintptr, err Errno)
 //exec_linux.go 有原始系统调用
 func RawSyscall6(trap, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2 uintptr, err Errno)
 
-// clen returns the index of the first NULL byte in n or len(n) if n contains no NULL byte.
+// clen returns the index of the first (NULL byte) in n or len(n) if n contains no NULL byte.
 func clen(n []byte) int {
 	for i := 0; i < len(n); i++ {
 		if n[i] == 0 {

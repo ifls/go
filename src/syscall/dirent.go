@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // +build aix darwin dragonfly freebsd js,wasm linux netbsd openbsd solaris
-
+// 目录条目
 package syscall
 
 import "unsafe"

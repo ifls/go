@@ -1,6 +1,8 @@
 // Created by cgo -godefs - DO NOT EDIT
 // cgo -godefs types_linux.go
 
+//定义常量和类型
+
 // +build amd64,linux
 
 package syscall
