@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package quotedprintable implements quoted-printable encoding as specified by
-// RFC 2045.
+// RFC 2045. 使用可打印字符的编码
 package quotedprintable
 
 import (
