@@ -28,6 +28,7 @@ type GCStats struct {
 // summarizing the distribution of pause time. For example, if
 // len(stats.PauseQuantiles) is 5, it will be filled with the minimum,
 // 25%, 50%, 75%, and maximum pause times.
+//读取gc统计
 func ReadGCStats(stats *GCStats) {
 	// Create a buffer with space for at least two copies of the
 	// pause history tracked by the runtime. One will be returned
@@ -88,20 +89,20 @@ func ReadGCStats(stats *GCStats) {
 // The initial setting is the value of the GOGC environment variable
 // at startup, or 100 if the variable is not set.
 // A negative percentage disables garbage collection.
+//设置回收百分比
 func SetGCPercent(percent int) int {
 	return int(setGCPercent(int32(percent)))
 }
 
-// FreeOSMemory forces a garbage collection followed by an
-// attempt to return as much memory to the operating system
-// as possible. (Even if this is not called, the runtime gradually
-// returns memory to the operating system in a background task.)
+// FreeOSMemory forces a garbage collection followed by an attempt to return as much memory to the operating system as possible.
+// (Even if this is not called, the runtime gradually returns memory to the operating system in a background task.)
+//主动要求gc返还 内存给操作系统
 func FreeOSMemory() {
 	freeOSMemory()
 }
 
-// SetMaxStack sets the maximum amount of memory that
-// can be used by a single goroutine stack.
+// SetMaxStack sets the maximum amount of memory that can be used by a single goroutine stack.
+// 设置单个协程的栈可以使用的最大内存
 // If any goroutine exceeds this limit while growing its stack,
 // the program crashes.
 // SetMaxStack returns the previous setting.
@@ -114,9 +115,8 @@ func SetMaxStack(bytes int) int {
 	return setMaxStack(bytes)
 }
 
-// SetMaxThreads sets the maximum number of operating system
-// threads that the Go program can use. If it attempts to use more than
-// this many, the program crashes.
+// SetMaxThreads sets the maximum number of operating system threads that the Go program can use.
+// If it attempts to use more than this many, the program crashes.
 // SetMaxThreads returns the previous setting.
 // The initial setting is 10,000 threads.
 //
@@ -132,22 +132,19 @@ func SetMaxThreads(threads int) int {
 	return setMaxThreads(threads)
 }
 
-// SetPanicOnFault controls the runtime's behavior when a program faults
-// at an unexpected (non-nil) address. Such faults are typically caused by
-// bugs such as runtime memory corruption, so the default response is to crash
-// the program. Programs working with memory-mapped files or unsafe
-// manipulation of memory may cause faults at non-nil addresses in less
-// dramatic situations; SetPanicOnFault allows such programs to request
-// that the runtime trigger only a panic, not a crash.
-// SetPanicOnFault applies only to the current goroutine.
-// It returns the previous setting.
+// SetPanicOnFault controls the runtime's behavior when a program faults at an unexpected (non-nil) address.
+// Such faults are typically caused by bugs such as runtime memory corruption, so the default response is to crash the program.
+// Programs working with memory-mapped files or unsafe manipulation of memory may cause faults at non-nil addresses in less dramatic戏剧性 situations;
+// SetPanicOnFault allows such programs to request that the runtime trigger only a panic, not a crash.
+// SetPanicOnFault applies only to the current goroutine. 只对当前g有效
+// It returns the previous setting. 返回之前的设置
+// true 表示只产生panic, 而不是直接奔溃
 func SetPanicOnFault(enabled bool) bool {
 	return setPanicOnFault(enabled)
 }
 
-// WriteHeapDump writes a description of the heap and the objects in
-// it to the given file descriptor.
-//
+// WriteHeapDump writes a description of the heap and the objects in it to the given file descriptor.
+// 输出内存打印
 // WriteHeapDump suspends the execution of all goroutines until the heap
 // dump is completely written.  Thus, the file descriptor must not be
 // connected to a pipe or socket whose other end is in the same Go
@@ -156,13 +153,14 @@ func SetPanicOnFault(enabled bool) bool {
 // The heap dump format is defined at https://golang.org/s/go15heapdump.
 func WriteHeapDump(fd uintptr)
 
-// SetTraceback sets the amount of detail printed by the runtime in
-// the traceback it prints before exiting due to an unrecovered panic
+// SetTraceback sets the amount of detail printed by the runtime in the traceback it prints before exiting due to an unrecovered panic
 // or an internal runtime error.
+
 // The level argument takes the same values as the GOTRACEBACK
 // environment variable. For example, SetTraceback("all") ensure
 // that the program prints all goroutines when it crashes.
 // See the package runtime documentation for details.
 // If SetTraceback is called with a level lower than that of the
 // environment variable, the call is ignored.
+//设置 打印追踪的详细程度
 func SetTraceback(level string)

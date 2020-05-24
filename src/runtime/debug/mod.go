@@ -11,9 +11,8 @@ import (
 // exported from runtime
 func modinfo() string
 
-// ReadBuildInfo returns the build information embedded
-// in the running binary. The information is available only
-// in binaries built with module support.
+// ReadBuildInfo returns the build information embedded in the running binary. 返回构建信息
+// The information is available only in binaries built with module support.
 func ReadBuildInfo() (info *BuildInfo, ok bool) {
 	return readBuildInfo(modinfo())
 }
