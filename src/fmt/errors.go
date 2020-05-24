@@ -7,24 +7,25 @@ package fmt
 import "errors"
 
 // Errorf formats according to a format specifier and returns the string as a
-// value that satisfies error.
+// value that satisfies error接口.
 //
-// If the format specifier includes a %w verb with an error operand,
-// the returned error will implement an Unwrap method returning the operand. It is
-// invalid to include more than one %w verb or to supply it with an operand
-// that does not implement the error interface. The %w verb is otherwise
-// a synonym for %v.
+// If the format specifier includes a %w verb with an error operand操作数, the returned error will implement an Unwrap method returning the operand.
+// It is invalid to include more than one %w verb or to supply it with an operand that does not implement the error interface.
+// The %w verb is otherwise a synonym同义词 for %v.
 func Errorf(format string, a ...interface{}) error {
 	p := newPrinter()
+
 	p.wrapErrs = true
 	p.doPrintf(format, a)
 	s := string(p.buf)
+	//以err作为返回值
 	var err error
 	if p.wrappedErr == nil {
 		err = errors.New(s)
 	} else {
 		err = &wrapError{s, p.wrappedErr}
 	}
+
 	p.free()
 	return err
 }
