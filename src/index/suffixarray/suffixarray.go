@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package suffixarray implements substring search in logarithmic time using
-// an in-memory suffix array.
+// Package suffixarray implements substring search 子字符串查找 in logarithmic 对数时间 time using an in-memory suffix array 后缀数组.
 //
 // Example use:
 //
@@ -12,7 +11,7 @@
 //
 //	// lookup byte slice s
 //	offsets1 := index.Lookup(s, -1) // the list of all indices where s occurs in data
-//	offsets2 := index.Lookup(s, 3)  // the list of at most 3 indices where s occurs in data
+//	offsets2 := index.Lookup(s, 3)  // the list of at most最多 3 indices where s occurs in data
 //
 package suffixarray
 

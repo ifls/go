@@ -7,7 +7,7 @@
 // other data structures that need to map arbitrary strings or byte
 // sequences to a uniform distribution on unsigned 64-bit integers.
 //
-// The hash functions are collision-resistant but not cryptographically secure.
+// The hash functions are collision-resistant扛碰撞 but not cryptographically secure 非密码安全.
 // (See crypto/sha256 and crypto/sha512 for cryptographic use.)
 //
 // The hash value of a given byte sequence is consistent within a

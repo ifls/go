@@ -2,14 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package fnv implements FNV-1 and FNV-1a, non-cryptographic hash functions
+// Package fnv implements FNV-1 and FNV-1a, non-cryptographic非加密 hash functions
 // created by Glenn Fowler, Landon Curt Noll, and Phong Vo.
-// See
-// https://en.wikipedia.org/wiki/Fowler-Noll-Vo_hash_function.
+// See https://en.wikipedia.org/wiki/Fowler-Noll-Vo_hash_function.
 //
 // All the hash.Hash implementations returned by this package also
-// implement encoding.BinaryMarshaler and encoding.BinaryUnmarshaler to
-// marshal and unmarshal the internal state of the hash.
+// implement encoding.BinaryMarshaler and encoding.BinaryUnmarshaler to marshal and unmarshal the internal state of the hash.
 package fnv
 
 import (

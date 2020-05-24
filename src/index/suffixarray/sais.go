@@ -8,7 +8,7 @@
 // especially section 3 (https://ieeexplore.ieee.org/document/5582081).
 // See also http://zork.net/~st/jottings/sais.html.
 //
-// With optimizations inspired by Yuta Mori's sais-lite
+// With optimizations优化 inspired by Yuta Mori's sais-lite
 // (https://sites.google.com/site/yuta256/sais).
 //
 // And with other new optimizations.
