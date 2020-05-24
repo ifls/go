@@ -2,23 +2,23 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package binary implements simple translation between numbers and byte
-// sequences and encoding and decoding of varints.
+// Package binary implements simple translation between
+// numbers and byte sequences
+// and
+// encoding and decoding of varints.
 //
-// Numbers are translated by reading and writing fixed-size values.
+// Numbers are translated by reading and writing fixed-size固定数量 values.
 // A fixed-size value is either a fixed-size arithmetic
 // type (bool, int8, uint8, int16, float32, complex64, ...)
 // or an array or struct containing only fixed-size values.
 //
-// The varint functions encode and decode single integer values using
-// a variable-length encoding; smaller values require fewer bytes.
-// For a specification, see
-// https://developers.google.com/protocol-buffers/docs/encoding.
+// The varint functions encode and decode single integer values using a variable-length可变长度 encoding;
+// smaller values require fewer bytes.
+// For a specification, see TODO https://developers.google.com/protocol-buffers/docs/encoding.
 //
-// This package favors simplicity over efficiency. Clients that require
-// high-performance serialization, especially for large data structures,
-// should look at more advanced solutions such as the encoding/gob
-// package or protocol buffers.
+// This package favors simplicity over efficiency.
+// Clients that require high-performance serialization序列化, especially for large data structures,
+// should look at more advanced先进 solutions such as the encoding/gob package or protocol buffers pb.
 package binary
 
 import (
@@ -29,7 +29,7 @@ import (
 	"sync"
 )
 
-// A ByteOrder specifies how to convert byte sequences into
+// A ByteOrder specifies how to convert byte sequences []byte into
 // 16-, 32-, or 64-bit unsigned integers.
 type ByteOrder interface {
 	Uint16([]byte) uint16
@@ -67,7 +67,7 @@ func (littleEndian) Uint32(b []byte) uint32 {
 
 func (littleEndian) PutUint32(b []byte, v uint32) {
 	_ = b[3] // early bounds check to guarantee safety of writes below
-	b[0] = byte(v)
+	b[0] = byte(v)		//低地址保存最小位的数
 	b[1] = byte(v >> 8)
 	b[2] = byte(v >> 16)
 	b[3] = byte(v >> 24)

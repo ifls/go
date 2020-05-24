@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package hex implements hexadecimal encoding and decoding.
+// Package hex implements hexadecimal十六进制 encoding and decoding.
 package hex
 
 import (
@@ -16,6 +16,7 @@ const hextable = "0123456789abcdef"
 
 // EncodedLen returns the length of an encoding of n source bytes.
 // Specifically, it returns n * 2.
+// 返回长度用于提前分配空间
 func EncodedLen(n int) int { return n * 2 }
 
 // Encode encodes src into EncodedLen(len(src))

@@ -3,7 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package ascii85 implements the ascii85 data encoding
-// as used in the btoa tool and Adobe's PostScript and PDF document formats.
+// as used in the btoa tool and Adobe's PostScript and PDF document formats. pdf
+// 也叫base85
 package ascii85
 
 import (

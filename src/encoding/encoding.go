@@ -3,12 +3,13 @@
 // license that can be found in the LICENSE file.
 
 // Package encoding defines interfaces shared by other packages that
-// convert data to and from byte-level and textual representations.
-// Packages that check for these interfaces include encoding/gob,
-// encoding/json, and encoding/xml. As a result, implementing an
-// interface once can make a type useful in multiple encodings.
+// convert data to and from byte-level and textual representations. 将对象数据 <--> []byte or string 相互转换
+
+// Packages that check for these interfaces include encoding/gob, encoding/json, and encoding/xml.
+// As a result, implementing an interface once can make a type useful in multiple encodings.
 // Standard types that implement these interfaces include time.Time and net.IP.
-// The interfaces come in pairs that produce and consume encoded data.
+
+// The interfaces come in pairs that produce and consume encoded data. 成对出现
 package encoding
 
 // BinaryMarshaler is the interface implemented by an object that can

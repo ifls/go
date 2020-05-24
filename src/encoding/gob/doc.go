@@ -3,10 +3,8 @@
 // license that can be found in the LICENSE file.
 
 /*
-Package gob manages streams of gobs - binary values exchanged between an
-Encoder (transmitter) and a Decoder (receiver). A typical use is transporting
-arguments and results of remote procedure calls (RPCs) such as those provided by
-package "net/rpc".
+Package gob manages streams of gobs - binary values exchanged between an Encoder (transmitter) and a Decoder (receiver).
+A typical use is transporting arguments and results of remote procedure calls (RPCs) such as those provided by package "net/rpc".
 
 The implementation compiles a custom codec for each data type in the stream and
 is most efficient when a single Encoder is used to transmit a stream of values,
