@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// These examples demonstrate more intricate uses of the flag package.
+// These examples demonstrate more intricate复杂的 uses of the flag package.
 package flag_test
 
 import (
@@ -76,7 +76,7 @@ func init() {
 func Example() {
 	// All the interesting pieces are with the variables declared above, but
 	// to enable the flag package to see the flags defined there, one must
-	// execute, typically at the start of main (not init!):
+	// execute, typically at the start of main (not init!): 在main()开头调用, 而不是init函数
 	//	flag.Parse()
 	// We don't run it here because this is not a main function and
 	// the testing suite has already parsed the flags.
