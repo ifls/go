@@ -8,7 +8,7 @@ package hash
 import "io"
 
 // Hash is the common interface implemented by all hash functions.
-//
+// 哈希算法一般生成定长不可逆的 []byte 也可以说是摘要, 加密算法生成变长可逆可解码的 []byte
 // Hash implementations in the standard library (e.g. hash/crc32 and
 // crypto/sha256) implement the encoding.BinaryMarshaler and encoding.BinaryUnmarshaler interfaces.
 // Marshaling a hash implementation allows its internal state to be saved and used for additional processing later,
