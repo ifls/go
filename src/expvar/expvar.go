@@ -2,21 +2,19 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package expvar provides a standardized interface to public variables, such
-// as operation counters in servers. It exposes these variables via HTTP at
-// /debug/vars in JSON format.
+// Package expvar provides a standardized interface to public variables, such as operation counters操作计数器 in servers.
+// It exposes these variables via HTTP at /debug/vars in JSON format. 可以从浏览器访问
 //
-// Operations to set or modify these public variables are atomic.
+// Operations to set or modify these public variables are atomic. 原子修改
 //
-// In addition to adding the HTTP handler, this package registers the
+// In addition to除了 adding the HTTP handler, this package registers the
 // following variables:
 //
 //	cmdline   os.Args
 //	memstats  runtime.Memstats
 //
-// The package is sometimes only imported for the side effect of
-// registering its HTTP handler and the above variables. To use it
-// this way, link this package into your program:
+// The package is sometimes only imported for the side effect副作用 of registering its HTTP handler and the above variables.
+// To use it this way, link this package into your program:
 //	import _ "expvar"
 //
 package expvar
@@ -125,7 +123,7 @@ func (v *Map) String() string {
 	return b.String()
 }
 
-// Init removes all keys from the map.
+// Init removes all keys from the map. 重置reset
 func (v *Map) Init() *Map {
 	v.keysMu.Lock()
 	defer v.keysMu.Unlock()
@@ -141,12 +139,16 @@ func (v *Map) Init() *Map {
 func (v *Map) addKey(key string) {
 	v.keysMu.Lock()
 	defer v.keysMu.Unlock()
-	// Using insertion sort to place key into the already-sorted v.keys.
+	// Using insertion sort使用插入排序的思路 to place key into the already-sorted v.keys.
 	if i := sort.SearchStrings(v.keys, key); i >= len(v.keys) {
+		// 没找到
 		v.keys = append(v.keys, key)
 	} else if v.keys[i] != key {
+		// 相同就不用插入,直接返回了, 搜索到idx之后, 还要再比较一次？
 		v.keys = append(v.keys, "")
+		//后移
 		copy(v.keys[i+1:], v.keys[i:])
+		//
 		v.keys[i] = key
 	}
 }
@@ -162,7 +164,9 @@ func (v *Map) Set(key string, av Var) {
 	// before LoadOrStore: LoadOrStore causes the key interface to escape even on
 	// the Load path.
 	if _, ok := v.m.Load(key); !ok {
+		//插入value
 		if _, dup := v.m.LoadOrStore(key, av); !dup {
+			//插入key
 			v.addKey(key)
 			return
 		}
@@ -173,6 +177,7 @@ func (v *Map) Set(key string, av Var) {
 
 // Add adds delta to the *Int value stored under the given map key.
 func (v *Map) Add(key string, delta int64) {
+	//先判断,插入key
 	i, ok := v.m.Load(key)
 	if !ok {
 		var dup bool
@@ -183,6 +188,7 @@ func (v *Map) Add(key string, delta int64) {
 	}
 
 	// Add to Int; ignore otherwise.
+	//增加 delta
 	if iv, ok := i.(*Int); ok {
 		iv.Add(delta)
 	}
@@ -211,7 +217,9 @@ func (v *Map) Delete(key string) {
 	defer v.keysMu.Unlock()
 	i := sort.SearchStrings(v.keys, key)
 	if i < len(v.keys) && key == v.keys[i] {
+		//删除中间的值
 		v.keys = append(v.keys[:i], v.keys[i+1:]...)
+		//删除key
 		v.m.Delete(key)
 	}
 }
@@ -270,9 +278,9 @@ var (
 	varKeys   []string // sorted
 )
 
-// Publish declares a named exported variable. This should be called from a
-// package's init function when it creates its Vars. If the name is already
-// registered then this will log.Panic.
+// Publish declares a named exported variable.
+// This should be called from a package's init function when it creates its Vars. 应该在init函数中使用
+// If the name is already registered then this will log.Panic.
 func Publish(name string, v Var) {
 	if _, dup := vars.LoadOrStore(name, v); dup {
 		log.Panicln("Reuse of exported var name:", name)
@@ -280,6 +288,7 @@ func Publish(name string, v Var) {
 	varKeysMu.Lock()
 	defer varKeysMu.Unlock()
 	varKeys = append(varKeys, name)
+	//排序
 	sort.Strings(varKeys)
 }
 
@@ -329,6 +338,7 @@ func Do(f func(KeyValue)) {
 	}
 }
 
+// httpHandler
 func expvarHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	fmt.Fprintf(w, "{\n")
@@ -344,22 +354,26 @@ func expvarHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Handler returns the expvar HTTP Handler.
-//
+// 返回处理器
 // This is only needed to install the handler in a non-standard location.
 func Handler() http.Handler {
+	//类型转换
 	return http.HandlerFunc(expvarHandler)
 }
 
+//命令行参数
 func cmdline() interface{} {
 	return os.Args
 }
 
+//返回内存统计
 func memstats() interface{} {
 	stats := new(runtime.MemStats)
 	runtime.ReadMemStats(stats)
 	return *stats
 }
 
+//注册 http接口
 func init() {
 	http.HandleFunc("/debug/vars", expvarHandler)
 	Publish("cmdline", Func(cmdline))
