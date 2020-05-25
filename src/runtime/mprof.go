@@ -490,6 +490,7 @@ func (r *StackRecord) Stack() []uintptr {
 // memory profiling rate should do so just once, as early as
 // possible in the execution of the program (for example,
 // at the beginning of main).
+// 2^19
 var MemProfileRate int = 512 * 1024
 
 // A MemProfileRecord describes the live objects allocated

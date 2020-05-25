@@ -164,7 +164,7 @@ func stackinit() {
 	if _StackCacheSize&_PageMask != 0 {
 		throw("cache size must be a multiple of page size")
 	}
-	//初始化栈缓存
+	//初始化 栈缓存对象，并未分配空间
 	for i := range stackpool {
 		stackpool[i].item.span.init()
 		lockInit(&stackpool[i].item.mu, lockRankStackpool)

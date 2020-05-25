@@ -55,6 +55,7 @@ type mcentral struct {
 
 // Initialize a single central free list.
 func (c *mcentral) init(spc spanClass) {
+	//设置尺寸
 	c.spanclass = spc
 	if go115NewMCentralImpl {
 		lockInit(&c.partial[0].spineLock, lockRankSpanSetSpine)
@@ -62,6 +63,7 @@ func (c *mcentral) init(spc spanClass) {
 		lockInit(&c.full[0].spineLock, lockRankSpanSetSpine)
 		lockInit(&c.full[1].spineLock, lockRankSpanSetSpine)
 	} else {
+		//重置链表
 		c.nonempty.init()
 		c.empty.init()
 		lockInit(&c.lock, lockRankMcentral)
@@ -92,7 +94,7 @@ func (c *mcentral) fullSwept(sweepgen uint32) *spanSet {
 	return &c.full[sweepgen/2%2]
 }
 
-//分配到mcache
+// 分配一个mspan给到mcache
 // Allocate a span to use in an mcache.
 func (c *mcentral) cacheSpan() *mspan {
 	if !go115NewMCentralImpl {
@@ -126,20 +128,21 @@ func (c *mcentral) cacheSpan() *mspan {
 
 	var s *mspan
 
-	// Try partial swept spans first.
+	// 1. 部分空的mspan Try partial swept spans first.
 	if s = c.partialSwept(sg).pop(); s != nil {
 		goto havespan
 	}
 
 	// Now try partial unswept spans.
 	for ; spanBudget >= 0; spanBudget-- {
+		//部分满
 		s = c.partialUnswept(sg).pop()
 		if s == nil {
 			break
 		}
 		if atomic.Load(&s.sweepgen) == sg-2 && atomic.Cas(&s.sweepgen, sg-2, sg-1) {
 			// We got ownership of the span, so let's sweep it and use it.
-			s.sweep(true)
+			s.sweep(true)  //清扫了，就直接重用
 			goto havespan
 		}
 		// We failed to get ownership of the span, which means it's being or
@@ -159,13 +162,16 @@ func (c *mcentral) cacheSpan() *mspan {
 		if atomic.Load(&s.sweepgen) == sg-2 && atomic.Cas(&s.sweepgen, sg-2, sg-1) {
 			// We got ownership of the span, so let's sweep it.
 			s.sweep(true)
+
 			// Check if there's any free space.
+			//检查是否确实有空闲空间
 			freeIndex := s.nextFreeIndex()
 			if freeIndex != s.nelems {
 				s.freeindex = freeIndex
 				goto havespan
 			}
 			// Add it to the swept list, because sweeping didn't give us any free space.
+			//扫不出，还是满的，放回列表
 			c.fullSwept(sg).push(s)
 		}
 		// See comment for partial unswept spans.
@@ -196,21 +202,23 @@ havespan:
 	atomic.Xadd64(&c.nmalloc, int64(n))
 	usedBytes := uintptr(s.allocCount) * s.elemsize
 	atomic.Xadd64(&memstats.heap_live, int64(spanBytes)-int64(usedBytes))
+
 	if trace.enabled {
 		// heap_live changed.
 		traceHeapAlloc()
 	}
+
 	if gcBlackenEnabled != 0 {
 		// heap_live changed.
 		gcController.revise()
 	}
+
+
 	freeByteBase := s.freeindex &^ (64 - 1)
 	whichByte := freeByteBase / 8
 	// Init alloc bits cache.
 	s.refillAllocCache(whichByte)
-
-	// Adjust the allocCache so that s.freeindex corresponds to the low bit in
-	// s.allocCache.
+	// Adjust the allocCache so that s.freeindex corresponds to the low bit in s.allocCache.
 	//更新占用信息
 	s.allocCache >>= s.freeindex % 64
 
@@ -503,6 +511,7 @@ func (c *mcentral) freeSpan(s *mspan, preserve bool, wasempty bool) bool {
 }
 
 // grow allocates a new empty span from the heap and initializes it for c's size class.
+// 从堆中申请mspan
 func (c *mcentral) grow() *mspan {
 	npages := uintptr(class_to_allocnpages[c.spanclass.sizeclass()])
 	size := uintptr(class_to_size[c.spanclass.sizeclass()])
@@ -516,7 +525,9 @@ func (c *mcentral) grow() *mspan {
 	// Use division by multiplication and shifts to quickly compute:
 	// n := (npages << _PageShift) / size
 	n := (npages << _PageShift) >> s.divShift * uintptr(s.divMul) >> s.divShift2
+	//初始化界限
 	s.limit = s.base() + size*n
+	//初始化
 	heapBitsForAddr(s.base()).initSpan(s)
 	return s
 }

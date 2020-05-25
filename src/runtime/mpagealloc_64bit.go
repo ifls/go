@@ -44,11 +44,17 @@ var levelBits = [summaryLevels]uint{
 // With levelShift, one can compute the index of the summary at level l related to a
 // pointer p by doing:
 //   p >> levelShift[l]
+// 5
 var levelShift = [summaryLevels]uint{
+	// 48 - 14 = 34
 	heapAddrBits - summaryL0Bits,
+	// 31
 	heapAddrBits - summaryL0Bits - 1*summaryLevelBits,
+	// 28
 	heapAddrBits - summaryL0Bits - 2*summaryLevelBits,
+	// 25
 	heapAddrBits - summaryL0Bits - 3*summaryLevelBits,
+	// 22
 	heapAddrBits - summaryL0Bits - 4*summaryLevelBits,
 }
 
@@ -64,16 +70,17 @@ var levelLogPages = [summaryLevels]uint{
 	logPallocChunkPages,
 }
 
-// sysInit performs architecture-dependent initialization of fields
-// in pageAlloc. pageAlloc should be uninitialized except for sysStat
-// if any runtime statistic should be updated.
+// sysInit performs architecture-dependent initialization of fields in pageAlloc.
+// pageAlloc should be uninitialized except for sysStat if any runtime statistic should be updated.
 func (s *pageAlloc) sysInit() {
 	// Reserve memory for each level. This will get mapped in
 	// as R/W by setArenas.
 	for l, shift := range levelShift {
+		// 48 - 34 = 14 2 ^ 14
 		entries := 1 << (heapAddrBits - shift)
 
 		// Reserve b bytes of memory anywhere in the address space.
+		// 64 * 2^14 向上取整到页大小的整数倍
 		b := alignUp(uintptr(entries)*pallocSumBytes, physPageSize)
 		//分配任意b大小的空间
 		r := sysReserve(nil, b)

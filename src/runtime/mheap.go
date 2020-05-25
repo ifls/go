@@ -86,7 +86,7 @@ type mheap struct {
 	// store. Accesses during STW might not hold the lock, but
 	// must ensure that allocation cannot happen around the
 	// access (since that may free the backing store).
-	allspans []*mspan // all spans out there
+	allspans []*mspan // 所有的mspan all spans out there
 
 	// sweepSpans contains two mspan stacks: one of swept in-use
 	// spans, and one of unswept in-use spans. These two trade
@@ -196,9 +196,9 @@ type mheap struct {
 	// add more heap arenas. This is initially populated with a
 	// set of general hint addresses, and grown with the bounds of
 	// actual heap arena ranges.
-	arenaHints *arenaHint
+	arenaHints *arenaHint		//链接 分配的 arenaHint
 
-	// arena is a pre-reserved space for allocating heap arenas
+	// arena is a pre-reserved space预留空间 for allocating heap arenas
 	// (the actual arenas). This is only used on 32-bit.
 	arena linearAlloc
 
@@ -222,8 +222,8 @@ type mheap struct {
 	// it can be read safely.
 	markArenas []arenaIdx
 
-	// curArena is the arena that the heap is currently growing
-	// into. This should always be physPageSize-aligned.
+	// curArena is the arena that the heap is currently growing into. 当前新增的arena
+	// This should always be physPageSize-aligned.
 	curArena struct {
 		base, end uintptr
 	}
@@ -274,7 +274,7 @@ type heapArena struct {
 	// known to contain in-use or stack spans. This means there
 	// must not be a safe-point between establishing that an
 	// address is live and looking it up in the spans array.
-	spans [pagesPerArena]*mspan
+	spans [pagesPerArena]*mspan		//一个arena中所有的mspan
 
 	// pageInUse is a bitmap位图 that indicates which spans are in
 	// state mSpanInUse. This bitmap is indexed by page number,
@@ -560,7 +560,9 @@ func recordspan(vh unsafe.Pointer, p unsafe.Pointer) {
 type spanClass uint8
 
 const (
+	//134
 	numSpanClasses = _NumSizeClasses << 1
+	// 5
 	tinySpanClass  = spanClass(tinySizeClass<<1 | 1)
 )
 
@@ -730,13 +732,13 @@ func pageIndexOf(p uintptr) (arena *heapArena, pageIdx uintptr, pageMask uint8) 
 // Initialize the heap.
 //初始化堆
 func (h *mheap) init() {
-	//锁初始化
+	//设置锁排名
 	lockInit(&h.lock, lockRankMheap)
 	lockInit(&h.sweepSpans[0].spineLock, lockRankSpine)
 	lockInit(&h.sweepSpans[1].spineLock, lockRankSpine)
 	lockInit(&h.speciallock, lockRankMheapSpecial)
 
-	//初始化多个空闲链表分配器
+	//初始化多个fixalloc.go空闲链表分配器，分配的对象全部不在堆上
 	h.spanalloc.init(unsafe.Sizeof(mspan{}), recordspan, unsafe.Pointer(h), &memstats.mspan_sys)
 	h.cachealloc.init(unsafe.Sizeof(mcache{}), nil, nil, &memstats.mcache_sys)
 	h.specialfinalizeralloc.init(unsafe.Sizeof(specialfinalizer{}), nil, nil, &memstats.other_sys)
@@ -749,7 +751,7 @@ func (h *mheap) init() {
 	// and re-allocating a span to prevent background sweeping
 	// from improperly cas'ing it from 0.
 	//
-	// This is safe because mspan contains no heap pointers.
+	// This is safe because mspan contains no heap pointers. 不进行清零初始化
 	h.spanalloc.zero = false
 
 	// h->mapcache needs no init
@@ -763,9 +765,9 @@ func (h *mheap) init() {
 
 // reclaim sweeps and reclaims扫描 at least npage pages into the heap.
 // It is called before allocating npage pages to keep growth in check.
-// 参数是下限，不会无限扫描下去
+// 参数是下限，期望的最低值 不会无限扫描回收下去
 // reclaim implements the page-reclaimer half of the sweeper.
-//
+// 实际上是对 heapArena里的mspan调用 sweep(false)
 // h must NOT be locked.
 func (h *mheap) reclaim(npage uintptr) {
 	// TODO(austin): Half of the time spent freeing spans is in
@@ -773,7 +775,7 @@ func (h *mheap) reclaim(npage uintptr) {
 	// could make the slow path here several times faster by
 	// batching heap frees.
 
-	// Bail early if there's no more reclaim work.
+	// Bail early 提前保释 if there's no more reclaim work.
 	if atomic.Load64(&h.reclaimIndex) >= 1<<63 {
 		return
 	}
@@ -790,7 +792,7 @@ func (h *mheap) reclaim(npage uintptr) {
 	arenas := h.sweepArenas
 	locked := false
 	for npage > 0 {
-		// Pull from accumulated credit first.
+		// Pull from accumulated credit first. 先算账，帐平了就可以返回了
 		if credit := atomic.Loaduintptr(&h.reclaimCredit); credit > 0 {
 			take := credit
 			if take > npage {
@@ -879,7 +881,9 @@ func (h *mheap) reclaimChunk(arenas []arenaIdx, pageIdx, n uintptr) uintptr {
 					if atomic.Load(&s.sweepgen) == sg-2 && atomic.Cas(&s.sweepgen, sg-2, sg-1) {
 						npages := s.npages
 						unlock(&h.lock)
+						// 清扫，返回给上一级
 						if s.sweep(false) {
+							//部分空的也算
 							nFreed += npages
 						}
 						lock(&h.lock)
@@ -912,6 +916,7 @@ func (h *mheap) reclaimChunk(arenas []arenaIdx, pageIdx, n uintptr) uintptr {
 //
 // If needzero is true, the memory for the returned span will be zeroed.
 // 在系统栈执行中 获取新的runtime.mspan
+// mcentral.grow() <= 32KB < largeAlloc
 func (h *mheap) alloc(npages uintptr, spanclass spanClass, needzero bool) *mspan {
 	// Don't do any operations that lock the heap on the G stack.
 	// It might trigger stack growth, and the stack growth code needs
@@ -956,8 +961,8 @@ func (h *mheap) allocManual(npages uintptr, stat *uint64) *mspan {
 	return h.allocSpan(npages, true, 0, stat)
 }
 
-// setSpans modifies the span map so [spanOf(base), spanOf(base+npage*pageSize))
-// is s.
+// setSpans modifies the span map so [spanOf(base), spanOf(base+npage*pageSize)) is s.
+// 记录到heapArena结构体的spans里
 func (h *mheap) setSpans(base, npage uintptr, s *mspan) {
 	p := base / pageSize
 	ai := arenaIndex(base)
@@ -1128,7 +1133,7 @@ func (h *mheap) freeMSpanLocked(s *mspan) {
 //
 // allocSpan must be called on the system stack both because it acquires
 // the heap lock and because it must block GC transitions.
-//
+// called from alloc() 和 allocManual()
 //go:systemstack
 func (h *mheap) allocSpan(npages uintptr, manual bool, spanclass spanClass, sysStat *uint64) (s *mspan) {
 	// Function-global state.
@@ -1138,23 +1143,23 @@ func (h *mheap) allocSpan(npages uintptr, manual bool, spanclass spanClass, sysS
 	// If the allocation is small enough, try the page cache!
 	pp := gp.m.p.ptr()
 
-	//页数少于16
+	//页数少于16 从页缓存分配mspan
 	if pp != nil && npages < pageCachePages/4 {
 		c := &pp.pcache
 
 		// If the cache is empty, refill it.
 		if c.empty() {
 			lock(&h.lock)
-			//分配页缓存
+			//从堆页分配器分配到p的页缓存
 			*c = h.pages.allocToCache()
 			unlock(&h.lock)
 		}
 
 		// Try to allocate from the cache.
-		//从当前p的页缓存分配页
+		//从当前p的页缓存分配页面
 		base, scav = c.alloc(npages)
 		if base != 0 {
-			//分配mspan
+			//分配mspan结构体
 			s = h.tryAllocMSpan()
 
 			if s != nil && gcBlackenEnabled == 0 && (manual || spanclass.sizeclass() != 0) {
@@ -1183,7 +1188,7 @@ func (h *mheap) allocSpan(npages uintptr, manual bool, spanclass spanClass, sysS
 	//从pp的页缓存分配失败
 	if base == 0 {
 		// Try to acquire a base address.
-		// 从堆的页分配器分配页面
+		// 直接从堆的页分配器分配页面
 		base, scav = h.pages.alloc(npages)
 		if base == 0 {
 			//堆里也分配页失败
@@ -1204,7 +1209,7 @@ func (h *mheap) allocSpan(npages uintptr, manual bool, spanclass spanClass, sysS
 	if s == nil {
 		// We failed to get an mspan earlier, so grab
 		// one now that we have the heap lock.
-		//分配mspan
+		//分配mspan结构体
 		s = h.allocMSpanLocked()
 	}
 
@@ -1367,21 +1372,21 @@ HaveSpan:
 // Try to add at least npage pages of memory to the heap,
 // returning whether it worked.
 //
-// h must be locked.
+// h must be locked. 
+// 分配多页空间，加入到pageAlloc 然后从其中分配mspan
 func (h *mheap) grow(npage uintptr) bool {
 	// We must grow the heap in whole palloc chunks.
 	ask := alignUp(npage, pallocChunkPages) * pageSize
 
 	totalGrowth := uintptr(0)
-	// This may overflow because ask could be very large
-	// and is otherwise unrelated to h.curArena.base.
+	// This may overflow because ask could be very large and is otherwise unrelated to h.curArena.base.
 	end := h.curArena.base + ask
 	nBase := alignUp(end, physPageSize)
 	if nBase > h.curArena.end || /* overflow */ end < h.curArena.base {
 		// Not enough room in the current arena. Allocate more
 		// arena space. This may not be contiguous with the
 		// current arena, so we have to request the full ask.
-		//系统要内存
+		// 系统要内存
 		av, asize := h.sysAlloc(ask)
 		if av == nil {
 			print("runtime: out of memory: cannot allocate ", ask, "-byte block (", memstats.heap_sys, " in use)\n")
@@ -1424,6 +1429,7 @@ func (h *mheap) grow(npage uintptr) bool {
 	// Grow into the current arena.
 	v := h.curArena.base
 	h.curArena.base = nBase
+	//内存增长到pageAlloc
 	h.pages.grow(v, nBase-v)
 	totalGrowth += nBase - v
 

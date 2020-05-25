@@ -4,29 +4,30 @@
 
 // Page allocator. 页分配器
 //
-// The page allocator manages mapped pages (defined by pageSize, NOT
-// physPageSize) for allocation and re-use. It is embedded into mheap.
+// The page allocator manages mapped pages (defined by pageSize, NOT physPageSize) for allocation and re-use.
+// It is embedded into mheap.
 //
-// Pages are managed using a bitmap that is sharded into chunks.
-// In the bitmap, 1 means in-use, and 0 means free. The bitmap spans the
-// process's address space. Chunks are managed in a sparse-array-style structure
-// similar to mheap.arenas, since the bitmap may be large on some systems.
+// Pages are managed using a bitmap that is sharded into chunks块.
+// In the bitmap, 1 means in-use, and 0 means free.
+// The bitmap spans持续 the process's address space.
+// Chunks are managed in a sparse-array-style structure similar to mheap.arenas, since the bitmap may be large on some systems.
 //
-// The bitmap is efficiently searched by using a radix tree in combination
-// with fast bit-wise intrinsics. Allocation is performed using an address-ordered
-// first-fit approach.
+// The bitmap is efficiently searched by using a radix tree压缩前缀树 in combination with fast bit-wise intrinsics特性.
+// Allocation is performed using an address-ordered first-fit首次匹配 approach.
 //
 // Each entry in the radix tree is a summary that describes three properties of
-// a particular region of the address space: the number of contiguous free pages
-// at the start and end of the region it represents, and the maximum number of
-// contiguous free pages found anywhere in that region.
+// a particular region of the address space:
+//	the number of contiguous free pages at the start
+//	and end of the region it represents,
+//	and the maximum number of contiguous free pages found anywhere in that region.
 //
-// Each level of the radix tree is stored as one contiguous array, which represents
-// a different granularity of subdivision of the processes' address space. Thus, this
-// radix tree is actually implicit in these large arrays, as opposed to having explicit
-// dynamically-allocated pointer-based node structures. Naturally, these arrays may be
-// quite large for system with large address spaces, so in these cases they are mapped
-// into memory as needed. The leaf summaries of the tree correspond to a bitmap chunk.
+// Each level of the radix tree is stored as one contiguous连续 array, which represents
+// a different granularity of subdivision of the processes' address space.
+// Thus, this radix tree is actually implicit in these large arrays,
+// as opposed to having explicit dynamically-allocated pointer-based node structures.
+// Naturally, these arrays may be quite large for system with large address spaces,
+// so in these cases they are mapped into memory as needed.
+// The leaf summaries of the tree correspond to a bitmap chunk.
 //
 // The root level (referred to as L0 and index 0 in pageAlloc.summary) has each
 // summary represent the largest section of address space (16 GiB on 64-bit systems),
@@ -300,7 +301,7 @@ type pageAlloc struct {
 
 	// mheap_.lock. This level of indirection makes it possible
 	// to test pageAlloc indepedently of the runtime allocator.
-	mheapLock *mutex
+	mheapLock *mutex	//堆锁 init()函数里赋值
 
 	// sysStat is the runtime memstat to update when new system
 	// memory is committed by the pageAlloc for allocation metadata.
@@ -319,9 +320,11 @@ func (s *pageAlloc) init(mheapLock *mutex, sysStat *uint64) {
 		print("runtime: summary max pages = ", maxPackedValue, "\n")
 		throw("root level max pages doesn't fit in summary")
 	}
+
+	//统计数 gc_sys
 	s.sysStat = sysStat
 
-	// Initialize s.inUse.
+	// Initialize s.inUse. 地址范围列表
 	s.inUse.init(sysStat)
 
 	// System-dependent initialization.
@@ -346,6 +349,7 @@ func (s *pageAlloc) chunkOf(ci chunkIdx) *pallocData {
 // It may allocate metadata, in which case *s.sysStat will be updated.
 //
 // s.mheapLock must be held.
+// 增长可分配的内存
 func (s *pageAlloc) grow(base, size uintptr) {
 	// Round up to chunks, since we can't deal with increments smaller
 	// than chunks. Also, sysGrow expects aligned values.
@@ -759,6 +763,7 @@ nextLevel:
 // should be ignored.
 //
 // s.mheapLock must be held.
+// 用于分配span
 func (s *pageAlloc) alloc(npages uintptr) (addr uintptr, scav uintptr) {
 	// If the searchAddr refers to a region which has a higher address than
 	// any known chunk, then we know we're out of memory.

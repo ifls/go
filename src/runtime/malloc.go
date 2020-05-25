@@ -4,20 +4,19 @@
 
 // Memory allocator. 内存分配器
 //
-// This was originally based on tcmalloc, but has diverged quite a bit.
-// http://goog-perftools.sourceforge.net/doc/tcmalloc.html
+// This was originally based on基于 tcmalloc, but has diverged分歧 quite a bit.
+// TODO http://goog-perftools.sourceforge.net/doc/tcmalloc.html
 
 // The main allocator works in runs of pages.
-// Small allocation sizes (up to and including <= 32 kB) are
-// rounded to one of about 70 size classes, each of which
-// has its own free set空闲集合 of objects of exactly that size.
-// Any free page of memory can be split into a set of objects of one size class, which are then managed using a free bitmap.
+// Small allocation sizes (up to and including <= 32 kB) are rounded to one of about大约 70 size classes,
+// each of which has its own free set 空闲集合 of objects of exactly that size.
+// Any free page of memory can be split into a set of objects of one size class, which are then managed using a free bitmap. 空闲位图
 //
 // The allocator's data structures are:
 //
 //	fixalloc: a free-list allocator for fixed-size off-heap堆外 objects,
 //		used to manage storage used by the allocator. 管理分配器所占用的内存
-//	mheap: the malloc heap, managed at page (8192-byte) granularity间隔尺寸.
+//	mheap: the malloc heap, managed at page (8192-byte) granularity尺寸.
 //	mspan: a run of一连串的 in-use pages managed by the mheap.
 //	mcentral: collects收集 all spans of a given size class.
 //	mcache: a per-P cache of mspans with free space.
@@ -48,54 +47,45 @@
 // Sweeping an mspan and freeing objects on it proceeds up a similar
 // hierarchy:
 //
-//	1. If the mspan is being swept in response to allocation, it
-//	   is returned to the mcache to satisfy the allocation.
+//	1. If the mspan is being swept in response to allocation, it is returned to the mcache to satisfy the allocation.
 //
-//	2. Otherwise, if the mspan still has allocated objects in it,
-//	   it is placed on the mcentral free list for the mspan's size
-//	   class.
+//	2. Otherwise, if the mspan still has allocated objects in it, it is placed on the mcentral free list for the mspan's size class.
 //
-//	3. Otherwise, if all objects in the mspan are free, the mspan's
-//	   pages are returned to the mheap and the mspan is now dead.
+//	3. Otherwise, if all objects in the mspan are free, the mspan's pages are returned to the mheap and the mspan is now dead.
 //
-// Allocating and freeing a large object uses the mheap
-// directly, bypassing the mcache and mcentral.
+// Allocating and freeing a large object大对象 uses the mheap directly, bypassing the mcache and mcentral.
 //
-// If mspan.needzero is false, then free object slots in the mspan are
-// already zeroed. Otherwise if needzero is true, objects are zeroed as
-// they are allocated. There are various benefits to delaying zeroing
-// this way:
+// If mspan.needzero is false, then free object slots in the mspan are already zeroed.
+// Otherwise if needzero is true, objects are zeroed as they are allocated.
+// There are various benefits to delaying zeroing this way:
 //
-//	1. Stack frame allocation can avoid zeroing altogether.
+//	1. Stack frame allocation can avoid zeroing altogether完全.
 //
-//	2. It exhibits better temporal locality, since the program is
-//	   probably about to write to the memory.
+//	2. It exhibits better temporal locality, since the program is probably about to write to the memory.
 //
 //	3. We don't zero pages that never get reused.
 
 // Virtual memory layout 虚拟内存布局
 //
-// The heap consists of a set of arenas, which are 64MB on 64-bit and
-// 4MB on 32-bit (heapArenaBytes).
+// The heap consists of a set of arenas, which每一个 are 64MB on 64-bit and 4MB on 32-bit (heapArenaBytes).
 // Each arena's start address is also aligned to the arena size. 起始地址 % 64M
 //
-// Each arena has an associated heapArena object that stores the
-// metadata for that arena: the heap bitmap for all words in the arena
-// and the span map for all pages in the arena.
+// Each arena has an associated heapArena object that stores the metadata for that arena:
+// the heap bitmap for all words in the arena 堆位图
+// and
+// the span map for all pages in the arena. span位图
 //
 // heapArena objects are themselves allocated off-heap. 堆外分配
 //
-// Since arenas are aligned, the address space can be viewed as a series of arena frames.
-// The arena map (mheap_.arenas) maps from arena frame number to *heapArena, or nil for parts of the address
-// space not backed by the Go heap.
-// The arena map is structured as a two-level array consisting of a "L1" arena map and many "L2" arena
-// maps; however, since arenas are large, on many architectures, the
-// arena map consists of a single, large L2 map.
+// Since arenas are aligned, the address space地址空间 can be viewed as a series of arena frames.
+// The arena map (mheap_.arenas) maps from arena frame number (arena index) to *heapArena,
+// or nil for parts of the address space not backed by the Go heap. linux 起始地址从 1^47开始, 前面的arenas[i] == nil
+
+// The arena map is structured as a two-level array consisting of a "L1" arena map and many "L2" arena maps;
+// however, since arenas are large, on many architectures, the arena map consists of a single, large L2 map. 在许多架构上，只是一个大的二级映射关系
 //
-// The arena map covers覆盖 the entire possible address space, allowing
-// the Go heap to use any part of the address space. The allocator
-// attempts to keep arenas contiguous so that large spans (and hence
-// large objects) can cross arenas. 跨arena分配空间
+// The arena map covers覆盖 the entire完整 possible address space, allowing the Go heap to use any part of the address space. 大多数平台除amd64都是从0开始的
+// The allocator attempts to keep arenas contiguous连续 so that large spans (and hence large objects) can cross arenas. 大的span 大的对象 超过arena分配空间
 
 package runtime
 
@@ -428,32 +418,33 @@ var (
 // sysFault transitions a memory region from Ready or Prepared to Reserved. It
 // marks a region such that it will always fault if accessed. Used only for
 // debugging the runtime.
+
 //schedinit() 中调用
 func mallocinit() {
-	// size_2  是16B
+	// size_2  是16B 检查sizeclass.go是否正确生成
 	if class_to_size[_TinySizeClass] != _TinySize {
 		throw("bad TinySizeClass")
 	}
 
 	testdefersizes()
 
-	//必须是2的幂次
+	//必须是2的幂次 2M
 	if heapArenaBitmapBytes&(heapArenaBitmapBytes-1) != 0 {
-		// heapBits expects modular arithmetic on bitmap
-		// addresses to work.
+		// heapBits expects需要 modular arithmetic模运算 on bitmap addresses to work.
 		throw("heapArenaBitmapBytes not a power of 2")
 	}
 
-	// Copy class sizes out for statistics table.
+	// Copy拷贝到统计 class sizes out for statistics table.
 	for i := range class_to_size {
 		memstats.by_size[i].size = uint32(class_to_size[i])
 	}
 
-	// Check physPageSize.
+	// Check physPageSize. 初始化失败
 	if physPageSize == 0 {
 		// The OS init code failed to fetch the physical page size.
 		throw("failed to get system page size")
 	}
+	// (minPhysPageSize, maxPhysPageSize)
 	if physPageSize > maxPhysPageSize {
 		print("system page size (", physPageSize, ") is larger than maximum page size (", maxPhysPageSize, ")\n")
 		throw("bad system page size")
@@ -466,6 +457,8 @@ func mallocinit() {
 		print("system page size (", physPageSize, ") must be a power of 2\n")
 		throw("bad system page size")
 	}
+
+	//物理大页
 	if physHugePageSize&(physHugePageSize-1) != 0 {
 		print("system huge page size (", physHugePageSize, ") must be a power of 2\n")
 		throw("bad system huge page size")
@@ -481,13 +474,17 @@ func mallocinit() {
 		// Since physHugePageSize is a power of 2, it suffices to increase
 		// physHugePageShift until 1<<physHugePageShift == physHugePageSize.
 		for 1<<physHugePageShift != physHugePageSize {
+			//计算位移量
 			physHugePageShift++
 		}
 	}
+
+	// 8k % 2^9 = 16
 	if pagesPerArena%pagesPerSpanRoot != 0 {
 		print("pagesPerArena (", pagesPerArena, ") is not divisible by pagesPerSpanRoot (", pagesPerSpanRoot, ")\n")
 		throw("bad pagesPerSpanRoot")
 	}
+	// 8k % 2^9 = 16
 	if pagesPerArena%pagesPerReclaimerChunk != 0 {
 		print("pagesPerArena (", pagesPerArena, ") is not divisible by pagesPerReclaimerChunk (", pagesPerReclaimerChunk, ")\n")
 		throw("bad pagesPerReclaimerChunk")
@@ -498,35 +495,33 @@ func mallocinit() {
 
 	//分配第一个mcache
 	mcache0 = allocmcache()
-	//锁初始化
+
+	//设置锁的rank
 	lockInit(&gcBitsArenas.lock, lockRankGcBitsArenas)
 	lockInit(&proflock, lockRankProf)
 	lockInit(&globalAlloc.mutex, lockRankGlobalAlloc)
 
+	//创建arena hint 链表
 	// Create initial arena growth hints.
 	if sys.PtrSize == 8 {
-		// On a 64-bit machine, we pick the following hints
-		// because:
+		// On a 64-bit machine, we pick the following hints because:
 		//
 		// 1. Starting from the middle of the address space
 		// makes it easier to grow out a contiguous range
 		// without running in to some other mapping.
 		//
-		// 2. This makes Go heap addresses more easily
-		// recognizable when debugging.
+		// 2. This makes Go heap addresses more easily recognizable when debugging.
 		//
-		// 3. Stack scanning in gccgo is still conservative,
-		// so it's important that addresses be distinguishable
-		// from other data.
+		// 3. Stack scanning in gccgo is still conservative保守, so it's important that addresses be distinguishable可区分的 from other data.
 		//
 		// Starting at 0x00c0 means that the valid memory addresses
 		// will begin 0x00c0, 0x00c1, ...
 		// In little-endian, that's c0 00, c1 00, ... None of those are valid
 		// UTF-8 sequences, and they are otherwise as far away from
-		// ff (likely a common byte) as possible. If that fails, we try other 0xXXc0
-		// addresses. An earlier attempt to use 0x11f8 caused out of memory errors
-		// on OS X during thread allocations.  0x00c0 causes conflicts with
-		// AddressSanitizer which reserves all memory up to 0x0100.
+		// ff (likely a common byte) as possible.
+		// If that fails, we try other 0xXXc0 addresses.
+		// An earlier attempt to use 0x11f8 caused out of memory errors on OS X during thread allocations.
+		// 0x00c0 causes conflicts with AddressSanitizer which reserves all memory up to 0x0100.
 		// These choices reduce the odds of a conservative garbage collector
 		// not collecting memory because some non-pointer block of memory
 		// had a bit pattern that matched a memory address.
@@ -561,9 +556,15 @@ func mallocinit() {
 					continue
 				}
 			default:
+				// 0x 7f        00        00        00        00        00
+				// 0b 0111 1111 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000
+				// 0b 0000 0000 1100 0000 0000 0000 0000 0000 0000 0000 0000 0000
 				p = uintptr(i)<<40 | uintptrMask&(0x00c0<<32)
 			}
+			//堆外对象
+
 			hint := (*arenaHint)(mheap_.arenaHintAlloc.alloc())
+			//指向堆内地址
 			hint.addr = p
 			hint.next, mheap_.arenaHints = mheap_.arenaHints, hint
 		}
@@ -647,33 +648,38 @@ func mallocinit() {
 // be transitioned to Ready before use.
 //
 // h must be locked.
+// 分配1-n个arena大小的空间
 func (h *mheap) sysAlloc(n uintptr) (v unsafe.Pointer, size uintptr) {
-	//n 是字节数
+	//n 是字节数 % 64M
 	n = alignUp(n, heapArenaBytes)
 
-	// First, try the arena pre-reservation.
+	// First, try the arena pre-reservation. 预留空间
 	v = h.arena.alloc(n, heapArenaBytes, &memstats.heap_sys)
 	if v != nil {
 		size = n
 		goto mapped
 	}
 
-	// Try to grow the heap at a hint address.
+	// Try to grow the heap at a hint address. 链表
 	for h.arenaHints != nil {
 		hint := h.arenaHints
 		p := hint.addr
+
 		if hint.down {
 			p -= n
 		}
+
 		if p+n < p {
 			// We can't use this, so don't ask.
 			v = nil
 		} else if arenaIndex(p+n-1) >= 1<<arenaBits {
 			// Outside addressable heap. Can't use.
+			// 超过了范围
 			v = nil
 		} else {
 			v = sysReserve(unsafe.Pointer(p), n)
 		}
+
 		if p == uintptr(v) {
 			// Success. Update the hint.
 			if !hint.down {
@@ -689,10 +695,13 @@ func (h *mheap) sysAlloc(n uintptr) (v unsafe.Pointer, size uintptr) {
 		// told to only return the requested address. In
 		// particular, this is already how Windows behaves, so
 		// it would simplify things there.
+		// 分配成功但是用不上, 算失败要回收
 		if v != nil {
 			sysFree(v, n, nil)
 		}
+		//next
 		h.arenaHints = hint.next
+		//释放到前hint
 		h.arenaHintAlloc.free(unsafe.Pointer(hint))
 	}
 
@@ -706,14 +715,14 @@ func (h *mheap) sysAlloc(n uintptr) (v unsafe.Pointer, size uintptr) {
 		}
 
 		// All of the hints failed, so we'll take any
-		// (sufficiently aligned) address the kernel will give
-		// us. 从系统拿
+		// (sufficiently aligned) address the kernel will give us.
+		// 从hint地址拿失败了， 再从系统拿任意地址开头的
 		v, size = sysReserveAligned(nil, n, heapArenaBytes)
 		if v == nil {
 			return nil, 0
 		}
 
-		// Create new hints for extending this region.
+		// Create new hints for extending this region. 插入两个 方向的
 		hint := (*arenaHint)(h.arenaHintAlloc.alloc())
 		hint.addr, hint.down = uintptr(v), true
 		hint.next, mheap_.arenaHints = mheap_.arenaHints, hint
@@ -741,16 +750,18 @@ func (h *mheap) sysAlloc(n uintptr) (v unsafe.Pointer, size uintptr) {
 		}
 	}
 
+	//未分配在对齐的地址上
 	if uintptr(v)&(heapArenaBytes-1) != 0 {
 		throw("misrounded allocation in sysAlloc")
 	}
 
 	// Transition from Reserved to Prepared.
+	// 尽快分配物理空间
 	sysMap(v, size, &memstats.heap_sys)
 
 mapped:
 	// Create arena metadata. 分队对应空间的元数据
-	//上界， 下界
+	//上界, 下界
 	for ri := arenaIndex(uintptr(v)); ri <= arenaIndex(uintptr(v)+size-1); ri++ {
 		l2 := h.arenas[ri.l1()]
 		if l2 == nil {
@@ -769,17 +780,17 @@ mapped:
 		}
 
 		var r *heapArena
-		//分配arena结构体
+		//分配arena结构体 堆外分配
 		r = (*heapArena)(h.heapArenaAlloc.alloc(unsafe.Sizeof(*r), sys.PtrSize, &memstats.gc_sys))
 		if r == nil {
-			//包装sysAlloc
+			//包装sysAlloc 向系统申请内存
 			r = (*heapArena)(persistentalloc(unsafe.Sizeof(*r), sys.PtrSize, &memstats.gc_sys))
 			if r == nil {
 				throw("out of memory allocating heap arena metadata")
 			}
 		}
 
-		// Add the arena to the arenas list.
+		// Add the arena to the arenas list. []arenaindex
 		if len(h.allArenas) == cap(h.allArenas) {
 			size := 2 * uintptr(cap(h.allArenas)) * sys.PtrSize
 			if size == 0 {
@@ -790,6 +801,7 @@ mapped:
 				throw("out of memory allocating allArenas")
 			}
 			oldSlice := h.allArenas
+			//堆外切片
 			*(*notInHeapSlice)(unsafe.Pointer(&h.allArenas)) = notInHeapSlice{newArray, len(h.allArenas), int(size / sys.PtrSize)}
 			copy(h.allArenas, oldSlice)
 			// Do not free the old backing array because
@@ -804,6 +816,7 @@ mapped:
 		// new heap arena becomes visible before the heap lock
 		// is released (which shouldn't happen, but there's
 		// little downside负面,下降趋势 to this).
+		// arena[i] = &heapArena
 		atomic.StorepNoWB(unsafe.Pointer(&l2[ri.l2()]), unsafe.Pointer(r))
 	}
 
@@ -915,7 +928,7 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 			println("runtime: s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
 			throw("s.allocCount != s.nelems && freeIndex == s.nelems")
 		}
-		//换一个, 必须是可分配的
+		//向mcental 换一个, 必须是可分配的
 		c.refill(spc)
 		shouldhelpgc = true
 		s = c.alloc[spc]
@@ -937,14 +950,16 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 }
 
 // Allocate an object of size bytes.
-// Small objects are allocated from the per-P cache's free lists.
-// Large objects (> 32 kB) are allocated straight from the heap.
+// Small objects are allocated from the per-P cache's free lists. <= 32K mcache
+// Large objects (> 32 kB) are allocated straight from the heap.  > 32k mheap
 // 分配对象的入口 new(T) = newobject(typ) = mallocgc(typ.size, typ, true)
 func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
+	//标记收尾阶段，不能分配内存，修改内存对象关系图
 	if gcphase == _GCmarktermination {
 		throw("mallocgc called with gcphase == _GCmarktermination")
 	}
 
+	//0, 不用分配空间，返回一个指向0的指针，例如 new(struct{})
 	if size == 0 {
 		return unsafe.Pointer(&zerobase)
 	}
@@ -970,17 +985,16 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 				align = 1
 			}
 		}
-		//使用sbrk 类似的直接分配内存
+		//使用sbrk 类似的直接向系统要内存，再分配内存
 		return persistentalloc(size, align, &memstats.other_sys)
 	}
 
-	// assistG is the G to charge for负责此次分配的g this allocation, or nil if
-	// GC is not currently active.
+	// assistG is the G to charge for负责此次分配的g this allocation, or nil if GC is not currently active.
 	var assistG *g
 	//gc的标记阶段已开始
 	if gcBlackenEnabled != 0 {
 		// Charge the current user G for this allocation.
-		//当前g停止，切换到 assistG 帮助标记
+		//当前g停止用户代码，切换到帮助标记
 		assistG = getg()
 		if assistG.m.curg != nil {
 			assistG = assistG.m.curg
@@ -998,16 +1012,16 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 		}
 	}
 
-	// Set mp.mallocing to keep from being preempted by GC.
+	// Set mp.mallocing to keep from being preempted by GC. 避免被gc抢占
 	//lockm
 	mp := acquirem()
 
-	//防单m重入
+	//防一个m 重复进入分配
 	if mp.mallocing != 0 {
 		throw("malloc deadlock")
 	}
 
-	//信号处理g进行malloc
+	//信号处理g不能分配内存，进行malloc
 	if mp.gsignal == getg() {
 		throw("malloc during signal")
 	}
@@ -1023,9 +1037,8 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	} else {
 		// We will be called without a P while bootstrapping自举,
 		// in which case we use mcache0, which is set in mallocinit.
-		// mcache0 is cleared when bootstrapping is complete,
-		// by procresize.
-		// m0没有p0对应，但是有分配的mcache0
+		// mcache0 is cleared 清除when bootstrapping is complete, by procresize (因为移动到了p0上).
+		// m0一开始没有p0对应，但是有分配的mcache0
 		c = mcache0
 		if c == nil {
 			throw("malloc called with no P")
@@ -1033,8 +1046,11 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 	}
 
 	var x unsafe.Pointer
+	// 无类型 或者类型无指针
 	noscan := typ == nil || typ.ptrdata == 0
+	// <= 32KB
 	if size <= maxSmallSize {
+		// <- 16B
 		if noscan && size < maxTinySize {
 			//noscan表示非包含指针类型的数据类型
 			// 微对象（不可以是指针类型的对象） 先尝试tiny分配器，再mcache，mcenttral,mheap
@@ -1076,12 +1092,17 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			} else if size&1 == 0 {
 				off = alignUp(off, 2)
 			}
+
+			//<= 16B && 还有小块内存
 			if off+size <= maxTinySize && c.tiny != 0 {
 				// The object fits into existing tiny block.
-				//拿到小对象指针
+				// 拿到小对象指针
 				x = unsafe.Pointer(c.tiny + off)
 				c.tinyoffset = off + size
+				// 本地mcache小块分配次数+1
 				c.local_tinyallocs++
+
+				//解锁
 				mp.mallocing = 0
 				releasem(mp)
 				return x
@@ -1091,15 +1112,16 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 			//从mspan快速找下一个空闲对象地址
 			v := nextFreeFast(span)
 			if v == 0 {
-				//失败，找下一个地址
+				//失败，再次找下一个地址，会向上级去拿，必须拿的到
 				v, _, shouldhelpgc = c.nextFree(tinySpanClass)
 			}
 			x = unsafe.Pointer(v)
+			//清零16B
 			(*[2]uint64)(x)[0] = 0
 			(*[2]uint64)(x)[1] = 0
-			// See if we need to replace the existing tiny block with the new one
-			// based on amount of remaining free space.
+			// See if we need to replace the existing tiny block with the new one based on amount of remaining free space.
 			if size < c.tinyoffset || c.tiny == 0 {
+				//更新基址和基址偏移量
 				c.tiny = uintptr(x)
 				c.tinyoffset = size
 			}
@@ -1107,15 +1129,17 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 		} else {
 			//小对象 mcache,mcentral,mheap
 			var sizeclass uint8
+			// <= 1024-8
 			if size <= smallSizeMax-8 {
+				// 8
 				sizeclass = size_to_class8[divRoundUp(size, smallSizeDiv)]
 			} else {
+				// 128
 				sizeclass = size_to_class128[divRoundUp(size-smallSizeMax, largeSizeDiv)]
 			}
 			size = uintptr(class_to_size[sizeclass])
 			spc := makeSpanClass(sizeclass, noscan)
-			//mcache中找mspan
-			//mcache.alloc
+			//mcache中找mspan mcache.alloc
 			span := c.alloc[spc]
 			v := nextFreeFast(span)
 			if v == 0 {
@@ -1131,7 +1155,7 @@ func mallocgc(size uintptr, typ *_type, needzero bool) unsafe.Pointer {
 		var s *mspan
 		shouldhelpgc = true
 		systemstack(func() {
-			//大对象分配
+			//大对象分配 alloc allocSpan grow sysAlloc
 			s = largeAlloc(size, needzero, noscan)
 		})
 		s.freeindex = 1

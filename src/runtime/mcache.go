@@ -19,7 +19,7 @@ import (
 type mcache struct {
 	// The following members are accessed on every malloc,
 	// so they are grouped here for better caching.
-	next_sample uintptr // trigger heap sample after allocating this many bytes
+	next_sample uintptr // 分配超过此字节，触发堆采样, 根据采样率随机生成的 trigger heap sample after allocating this many bytes
 	local_scan  uintptr // bytes of scannable heap allocated
 
 	// Allocator cache for tiny objects w/o pointers.
@@ -31,8 +31,8 @@ type mcache struct {
 	// tiny is a heap pointer堆指针. Since mcache is in non-GC'd memory,
 	// we handle it by clearing it in releaseAll during mark
 	// termination.
-	tiny             uintptr
-	tinyoffset       uintptr	//下一个空闲内存的偏移量
+	tiny             uintptr	//基址
+	tinyoffset       uintptr	// 相对于tiny的偏移量
 	local_tinyallocs uintptr 	// 分配对象个数 number of tiny allocs not counted in other stats
 
 	// The rest is not accessed on every malloc.
@@ -88,7 +88,7 @@ func allocmcache() *mcache {
 	var c *mcache
 	systemstack(func() {
 		lock(&mheap_.lock)
-		//分配切片空间
+		//分配 mcache对象
 		c = (*mcache)(mheap_.cachealloc.alloc())
 		c.flushGen = mheap_.sweepgen
 		unlock(&mheap_.lock)
@@ -128,6 +128,7 @@ func (c *mcache) refill(spc spanClass) {
 	// Return the current cached span to the central lists.
 	s := c.alloc[spc]
 
+	//必须是已满的
 	if uintptr(s.allocCount) != s.nelems {
 		throw("refill of span with free space remaining")
 	}

@@ -519,7 +519,7 @@ type m struct {
 	nextp         puintptr	// 恢复执行后，要运行的下一个p
 	oldp          puintptr // 上一个P, 进入系统调用时释放的p the p that was attached before executing a syscall
 	id            int64   //M id
-	mallocing     int32
+	mallocing     int32		//标记正在分配内存，防未完成分配的重入
 	throwing      int32
 	preemptoff    string // 关闭抢占 if != "", keep curg running on this m
 	locks         int32
@@ -633,7 +633,7 @@ type p struct {
 	sudogcache []*sudog		//缓存sudog
 	sudogbuf   [128]*sudog
 
-	// Cache of mspan objects from the heap.
+	// Cache of mspan objects from the heap. mspan结构体缓存
 	mspancache struct {
 		// We need an explicit length here because this field is used
 		// in allocation codepaths where write barriers are not allowed,
