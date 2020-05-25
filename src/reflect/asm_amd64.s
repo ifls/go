@@ -6,9 +6,9 @@
 #include "funcdata.h"
 
 // makeFuncStub is the code half of the function returned by MakeFunc.
-// See the comment on the declaration of makeFuncStub in makefunc.go
-// for more details.
+// See the comment on the declaration of makeFuncStub in makefunc.go for more details.
 // No arg size here; runtime pulls arg map out of the func value.
+// func makeFuncStub()
 TEXT ·makeFuncStub(SB),(NOSPLIT|WRAPPER),$32
 	NO_LOCAL_POINTERS
 	MOVQ	DX, 0(SP)
