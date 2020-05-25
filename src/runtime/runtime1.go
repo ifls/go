@@ -300,6 +300,7 @@ type dbgVar struct {
 // except for "memprofilerate" since there is an
 // existing int var for that value, which may
 // already have an initial value.
+// 全局变量, 保存GODEBUG
 var debug struct {
 	allocfreetrace     int32
 	cgocheck           int32
@@ -307,7 +308,7 @@ var debug struct {
 	efence             int32
 	gccheckmark        int32
 	gcpacertrace       int32
-	gcshrinkstackoff   int32
+	gcshrinkstackoff   int32	//关闭缩栈
 	gcstoptheworld     int32
 	gctrace            int32
 	invalidptr         int32

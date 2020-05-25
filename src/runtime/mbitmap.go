@@ -4,7 +4,7 @@
 
 // Garbage collector: type and heap bitmaps.
 //
-// Stack, data, and bss bitmaps
+// Stack, data, and bss bitmaps  bss segment: Block Started by Symbol segment
 //
 // Stack frames and global variables in the data and bss sections are described
 // by 1-bit bitmaps in which 0 means uninteresting and 1 means live pointer
@@ -13,8 +13,7 @@
 //
 // Heap bitmap
 //
-// The heap bitmap comprises 2 bits for each pointer-sized word in the heap,
-// stored in the heapArena metadata backing each heap arena.
+// The heap bitmap comprises包含 2 bits for each pointer-sized word in the heap, stored in the heapArena metadata backing each heap arena.
 // That is, if ha is the heapArena for the arena starting a start,
 // then ha.bitmap[0] holds the 2-bit entries for the four words start
 // through start+3*ptrSize, ha.bitmap[1] holds the entries for
@@ -81,14 +80,19 @@ import (
 )
 
 const (
+	//1
 	bitPointer = 1 << 0
+	// 16
 	bitScan    = 1 << 4
 
 	heapBitsShift      = 1     // shift offset between successive bitPointer or bitScan entries
+	// 4
 	wordsPerBitmapByte = 8 / 2 // heap words described by one bitmap byte
 
 	// all scan/pointer bits in a byte
+	//240 0b1111 0000
 	bitScanAll    = bitScan | bitScan<<heapBitsShift | bitScan<<(2*heapBitsShift) | bitScan<<(3*heapBitsShift)
+	// 15 0b 0000 1111
 	bitPointerAll = bitPointer | bitPointer<<heapBitsShift | bitPointer<<(2*heapBitsShift) | bitPointer<<(3*heapBitsShift)
 )
 
@@ -142,22 +146,20 @@ type heapBits struct {
 	bitp  *uint8
 	shift uint32
 	arena uint32 // Index of heap arena containing bitp
-	last  *uint8 // Last byte arena's bitmap
+	last  *uint8 // 指向最后一个字节 Last byte arena's bitmap
 }
 
-// Make the compiler check that heapBits.arena is large enough to hold
-// the maximum arena frame number.
+// Make the compiler check that heapBits.arena is large enough to hold the maximum arena frame number.
+//检查最大arena index
+//1^22-1 4M-1
 var _ = heapBits{arena: (1<<heapAddrBits)/heapArenaBytes - 1}
 
 // markBits provides access to the mark bit for an object in the heap.
 // bytep points to the byte holding the mark bit.
-// mask is a byte with a single bit set that can be &ed with *bytep
-// to see if the bit has been set.
+// mask is a byte with a single bit set that can be &ed with *bytep to see if the bit has been set.
 // *m.byte&m.mask != 0 indicates the mark bit is set.
-// index can be used along with span information to generate
-// the address of the object in the heap.
-// We maintain one set of mark bits for allocation and one for
-// marking purposes.
+// index can be used along with span information to generate the address of the object in the heap.
+// We maintain one set of mark bits for allocation and one for marking purposes.
 type markBits struct {
 	bytep *uint8
 	mask  uint8
@@ -172,9 +174,11 @@ func (s *mspan) allocBitsForIndex(allocBitIndex uintptr) markBits {
 
 // refillAllocCache takes 8 bytes s.allocBits starting at whichByte
 // and negates them so that ctz (count trailing zeros) instructions
-// can be used. It then places these 8 bytes into the cached 64 bit
-// s.allocCache.
+// can be used.
+// It then places these 8 bytes into the cached 64 bit s.allocCache.
+// 再次填充allocCache 用于快速分配
 func (s *mspan) refillAllocCache(whichByte uintptr) {
+	//指向第whichByte个字节开始的8字节
 	bytes := (*[8]uint8)(unsafe.Pointer(s.allocBits.bytep(whichByte)))
 	aCache := uint64(0)
 	aCache |= uint64(bytes[0])
@@ -185,35 +189,41 @@ func (s *mspan) refillAllocCache(whichByte uintptr) {
 	aCache |= uint64(bytes[5]) << (5 * 8)
 	aCache |= uint64(bytes[6]) << (6 * 8)
 	aCache |= uint64(bytes[7]) << (7 * 8)
-	s.allocCache = ^aCache
+	s.allocCache = ^aCache		//取反
 }
 
-// nextFreeIndex returns the index of the next free object in s at
-// or after s.freeindex.
-// There are hardware instructions that can be used to make this
-// faster if profiling warrants it.
+// nextFreeIndex returns the index of the next free object in s at or after s.freeindex.
+// There are hardware instructions that can be used to make this faster if profiling warrants担保 it.
 func (s *mspan) nextFreeIndex() uintptr {
 	sfreeindex := s.freeindex
 	snelems := s.nelems
+	//满了
 	if sfreeindex == snelems {
 		return sfreeindex
 	}
+	//异常
 	if sfreeindex > snelems {
 		throw("s.freeindex > s.nelems")
 	}
 
+	// do-while
 	aCache := s.allocCache
-
 	bitIndex := sys.Ctz64(aCache)
+	// 此64bit已分配完
 	for bitIndex == 64 {
 		// Move index to start of next cached bits.
+		//右移
 		sfreeindex = (sfreeindex + 64) &^ (64 - 1)
+		//超了
 		if sfreeindex >= snelems {
 			s.freeindex = snelems
 			return snelems
 		}
+
+		//计算是第几个字节上
 		whichByte := sfreeindex / 8
 		// Refill s.allocCache with the next 64 alloc bits.
+		//重新计算allocCache
 		s.refillAllocCache(whichByte)
 		aCache = s.allocCache
 		bitIndex = sys.Ctz64(aCache)
@@ -248,9 +258,11 @@ func (s *mspan) nextFreeIndex() uintptr {
 // been no preemption points since ensuring this (which could allow a
 // GC transition, which would allow the state to change).
 func (s *mspan) isFree(index uintptr) bool {
+	//之前的都已经被占用
 	if index < s.freeindex {
 		return false
 	}
+	//index >= s.freeindex
 	bytep, mask := s.allocBits.bitp(index)
 	return *bytep&mask == 0
 }
@@ -260,6 +272,7 @@ func (s *mspan) objIndex(p uintptr) uintptr {
 	if byteOffset == 0 {
 		return 0
 	}
+
 	if s.baseMask != 0 {
 		// s.baseMask is non-0, elemsize is a power of two, so shift by s.divShift
 		return byteOffset >> s.divShift
@@ -865,8 +878,8 @@ func (h heapBits) clearCheckmarkSpan(size, n, total uintptr) {
 	}
 }
 
-// countAlloc returns the number of objects allocated in span s by
-// scanning the allocation bitmap.
+// countAlloc returns the number of objects allocated in span s by scanning the allocation bitmap.
+// 计数已分配的对象
 func (s *mspan) countAlloc() int {
 	count := 0
 	bytes := divRoundUp(s.nelems, 8)
@@ -880,6 +893,7 @@ func (s *mspan) countAlloc() int {
 		// but that's OK. We only care about how many bits are 1, not
 		// about the order we discover them in.
 		mrkBits := *(*uint64)(unsafe.Pointer(s.gcmarkBits.bytep(i)))
+		//返回1bit的数量
 		count += sys.OnesCount64(mrkBits)
 	}
 	return count

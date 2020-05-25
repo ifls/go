@@ -142,6 +142,7 @@ import (
 const (
 	_DebugGC         = 0
 	_ConcurrentSweep = true
+	// 4k
 	_FinBlockSize    = 4 * 1024
 
 	// debugScanConservative enables debug logging for stack
@@ -151,6 +152,7 @@ const (
 	// sweepMinHeapDistance is a lower bound on the heap distance
 	// (in bytes) reserved for concurrent sweeping between GC
 	// cycles.
+	// 1m
 	sweepMinHeapDistance = 1024 * 1024
 )
 

@@ -3137,6 +3137,8 @@ func preemptPark(gp *g) {
 	if trace.enabled {
 		traceGoPark(traceEvGoBlock, 0)
 	}
+
+
 	status := readgstatus(gp)
 	if status&^_Gscan != _Grunning {
 		dumpgstatus(gp)
@@ -3702,6 +3704,7 @@ func beforefork() {
 	// Code between fork and exec must not allocate memory nor even try to grow stack.
 	// Here we spoil g->_StackGuard to reliably detect any attempts to grow stack.
 	// runtime_AfterFork will undo this in parent process, but not in child.
+	// 执行fork调用前, 标记fork，禁止扩栈
 	gp.stackguard0 = stackFork
 }
 

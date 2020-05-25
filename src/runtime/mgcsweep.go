@@ -308,6 +308,7 @@ func (s *mspan) ensureSwept() {
 		s.sweep(false)
 		return
 	}
+
 	// unfortunate condition, and we don't have efficient means to wait
 	for {
 		spangen := atomic.Load(&s.sweepgen)
@@ -320,11 +321,12 @@ func (s *mspan) ensureSwept() {
 
 // Sweep frees or collects finalizers for blocks not marked in the mark phase.
 // It clears the mark bits in preparation for the next GC round.
-// Returns true if the span was returned to heap.
-// If preserve=true, don't return it to heap nor relink in mcentral lists;
+// Returns true if the span was returned to heap. true表示已归还到堆
+// If preserve=true, don't return it to heap nor relink in mcentral lists; true 表示保留，不回收到上一级
 // caller takes care of it.
 func (s *mspan) sweep(preserve bool) bool {
 	if !go115NewMCentralImpl {
+		//使用老的方式
 		return s.oldSweep(preserve)
 	}
 	// It's critical that we enter this function with preemption disabled,
@@ -333,6 +335,7 @@ func (s *mspan) sweep(preserve bool) bool {
 	if _g_.m.locks == 0 && _g_.m.mallocing == 0 && _g_ != _g_.m.g0 {
 		throw("mspan.sweep: m is not locked")
 	}
+
 	sweepgen := mheap_.sweepgen
 	if state := s.state.get(); state != mSpanInUse || s.sweepgen != sweepgen-1 {
 		print("mspan.sweep: state=", state, " sweepgen=", s.sweepgen, " mheap.sweepgen=", sweepgen, "\n")
@@ -457,10 +460,12 @@ func (s *mspan) sweep(preserve bool) bool {
 
 	// gcmarkBits becomes the allocBits.
 	// get a fresh cleared gcmarkBits in preparation for next GC
+	//放回到已分配
 	s.allocBits = s.gcmarkBits
+	//重新分配
 	s.gcmarkBits = newMarkBits(s.nelems)
-
 	// Initialize alloc bits cache.
+	//重新天上分配缓存
 	s.refillAllocCache(0)
 
 	// The span must be in our exclusive ownership until we update sweepgen,
@@ -469,6 +474,7 @@ func (s *mspan) sweep(preserve bool) bool {
 		print("mspan.sweep: state=", state, " sweepgen=", s.sweepgen, " mheap.sweepgen=", sweepgen, "\n")
 		throw("mspan.sweep: bad span state after sweep")
 	}
+
 	if s.sweepgen == sweepgen+1 || s.sweepgen == sweepgen+3 {
 		throw("swept cached span")
 	}
@@ -501,11 +507,14 @@ func (s *mspan) sweep(preserve bool) bool {
 			// sweeping by updating sweepgen. If this span still is in
 			// an unswept set, then the mcentral will pop it off the
 			// set, check its sweepgen, and ignore it.
+			//完全空
 			if nalloc == 0 {
 				// Free totally free span directly back to the heap.
+				//放到堆里
 				mheap_.freeSpan(s)
 				return true
 			}
+			//否则放回中心缓存
 			// Return span back to the right mcentral list.
 			if uintptr(nalloc) == s.nelems {
 				mheap_.central[spc].mcentral.fullSwept(sweepgen).push(s)
@@ -514,7 +523,9 @@ func (s *mspan) sweep(preserve bool) bool {
 			}
 		}
 	} else if !preserve {
+		// 放回到上一级，大对象只能放回堆里
 		// Handle spans for large objects.
+		//是否了一些，有空
 		if nfreed != 0 {
 			// Free large object span to heap.
 
@@ -536,6 +547,7 @@ func (s *mspan) sweep(preserve bool) bool {
 				s.limit = 0 // prevent mlookup from finding this span
 				sysFault(unsafe.Pointer(s.base()), size)
 			} else {
+				//放回堆里
 				mheap_.freeSpan(s)
 			}
 			c.local_nlargefree++
@@ -544,6 +556,7 @@ func (s *mspan) sweep(preserve bool) bool {
 		}
 
 		// Add a large span directly onto the full+swept list.
+		//全满
 		mheap_.central[spc].mcentral.fullSwept(sweepgen).push(s)
 	}
 	return false

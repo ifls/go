@@ -43,8 +43,8 @@ type mcentral struct {
 	// to the appropriate swept list. As a result, the parts of the
 	// sweeper and mcentral that do consume from the unswept list may
 	// encounter swept spans, and these should be ignored.
-	partial [2]spanSet // list of spans with a free object
-	full    [2]spanSet // list of spans with no free objects
+	partial [2]spanSet // 部分空 list of spans with a free object
+	full    [2]spanSet // 全满 list of spans with no free objects
 
 	// nmalloc is the cumulative累积 count of objects allocated from
 	// this mcentral, assuming all spans in mcaches are

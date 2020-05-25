@@ -43,8 +43,8 @@ type mcache struct {
 	stackcache [_NumStackOrders]stackfreelist
 
 	// Local allocator stats, flushed during GC.
-	local_largefree  uintptr                  // bytes freed for large objects (>maxsmallsize)
-	local_nlargefree uintptr                  // number of frees for large objects (>maxsmallsize)
+	local_largefree  uintptr                  // 释放的大对象字节数 bytes freed for large objects (>maxsmallsize)
+	local_nlargefree uintptr                  // 释放的大对象 数量 number of frees for large objects (>maxsmallsize)
 	local_nsmallfree [_NumSizeClasses]uintptr // number of frees for small objects (<=maxsmallsize)
 
 	// flushGen indicates the sweepgen during which this mcache
@@ -118,9 +118,10 @@ func freemcache(c *mcache) {
 	})
 }
 
-// refill acquires a new span of span class spc for c from mcentral. This span will
-// have at least one free object. The current span in c must be full.
-//
+// refill acquires a new span of span class spc for c from mcentral.
+// This span will have at least one free object.
+// The current span in c must be full.
+// 满了就换一个新的，可分配的
 // Must run in a non-preemptible context since otherwise the owner of
 // c could change.
 func (c *mcache) refill(spc spanClass) {

@@ -19,6 +19,7 @@ const (
 	//
 	// Larger values reduce workbuf allocation overhead. Smaller
 	// values reduce heap fragmentation.
+	// 32k
 	workbufAlloc = 32 << 10
 )
 

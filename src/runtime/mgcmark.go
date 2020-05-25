@@ -814,11 +814,13 @@ func scanstack(gp *g, gcw *gcWork) {
 		throw("can't scan our own stack")
 	}
 
+	//如果缩栈安全
 	if isShrinkStackSafe(gp) {
 		// Shrink the stack if not much of it is being used.
 		shrinkstack(gp)
 	} else {
 		// Otherwise, shrink the stack at the next sync safe point.
+		//标记，等待下一个安全点缩栈
 		gp.preemptShrink = true
 	}
 

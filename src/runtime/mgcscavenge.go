@@ -79,6 +79,7 @@ const (
 
 	// maxPagesPerPhysPage is the maximum number of supported runtime pages per
 	// physical page, based on maxPhysPageSize.
+	// 2^19 / 2^ 13 = 2 ^ 6 = 64
 	maxPagesPerPhysPage = maxPhysPageSize / pageSize
 
 	// scavengeCostRatio is the approximate ratio between the costs of using previously
@@ -90,6 +91,7 @@ const (
 	//
 	// This ratio is used as part of multiplicative factor to help the scavenger account
 	// for the additional costs of using scavenged memory in its pacing.
+	//0
 	scavengeCostRatio = 0.7 * sys.GoosDarwin
 
 	// scavengeReservationShards determines the amount of memory the scavenger

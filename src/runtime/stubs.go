@@ -321,7 +321,7 @@ func alignDown(n, a uintptr) uintptr {
 	return n &^ (a - 1)
 }
 
-// divRoundUp returns ceil(n / a).
+// divRoundUp returns ceil(n / a). 向上取整
 func divRoundUp(n, a uintptr) uintptr {
 	// a is generally a power of two. This will get inlined and
 	// the compiler will optimize the division.

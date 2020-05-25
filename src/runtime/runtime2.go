@@ -429,7 +429,7 @@ type g struct {
 	m            *m      // current m; offset known to arm liblink
 	sched        gobuf   // 保存上下文
 
-	//  系统调用是，额外保存上下文地址
+	//  系统调用时，额外保存上下文地址
 	syscallsp    uintptr        // if status==Gsyscall, syscallsp = sched.sp to use during gc
 	syscallpc    uintptr        // if status==Gsyscall, syscallpc = sched.pc to use during gc
 
@@ -445,7 +445,7 @@ type g struct {
 
 	preempt       bool // 抢占信号 preemption signal, duplicates stackguard0 = stackpreempt
 	preemptStop   bool // transition to _Gpreempted on preemption; otherwise, just deschedule
-	preemptShrink bool // shrink stack是否锁栈 at synchronous safe point
+	preemptShrink bool // 表示是否在一个安全点缩栈 shrink stack at synchronous safe point
 
 	// asyncSafePoint is set if g is stopped at an asynchronous
 	// safe point. This means there are frames on the stack
@@ -455,7 +455,7 @@ type g struct {
 
 	paniconfault bool // panic (instead of crash) on unexpected fault address
 	gcscandone   bool // g has scanned stack; protected by _Gscan bit in status
-	throwsplit   bool // must not split stack
+	throwsplit   bool // true 表示一定不能扩栈 must not split stack
 	// activeStackChans indicates that there are unlocked channels
 	// pointing into this goroutine's stack. If true, stack
 	// copying needs to acquire channel locks to protect these
@@ -815,15 +815,15 @@ const (
 )
 
 // Layout of in-memory per-function information prepared by linker 链接器 函数信息 字段布局
-// See https://golang.org/s/go12symtab.
+// See TODO https://golang.org/s/go12symtab.
 // Keep in sync with linker (../cmd/link/internal/ld/pcln.go:/pclntab)
 // and with package debug/gosym and with symtab.go in package runtime.
 type _func struct {
 	entry   uintptr // start pc
 	nameoff int32   // function name
 
-	args        int32  // in/out args size
-	deferreturn uint32 // offset of start of a deferreturn call instruction from entry, if any.
+	args        int32  // in/out args size 输入参数和返回参数加起来
+	deferreturn uint32 // offset of start of a deferreturn call instruction from entry, if any.  deferreturn pc - entry
 
 	pcsp      int32		//栈指针
 	pcfile    int32		//所在文件
@@ -956,15 +956,15 @@ type _panic struct {
 
 // stack traces
 type stkframe struct {
-	fn       funcInfo   // function being run
+	fn       funcInfo   // symtab.go function being run
 	pc       uintptr    // program counter within fn
-	continpc uintptr    // program counter where execution can continue, or 0 if not
-	lr       uintptr    // program counter at caller aka link register
+	continpc uintptr    // continue pc. program counter where execution can continue, or 0 if not
+	lr       uintptr    // program counter at caller aka又称 link register
 	sp       uintptr    // stack pointer at pc
-	fp       uintptr    // stack pointer at caller aka frame pointer
-	varp     uintptr    // top of local variables
-	argp     uintptr    // pointer to function arguments
-	arglen   uintptr    // number of bytes at argp
+	fp       uintptr    // stack pointer at caller aka又称 frame pointer
+	varp     uintptr    // top of local variables 本地变量顶部
+	argp     uintptr    // pointer to function arguments 函数参数底部
+	arglen   uintptr    // number of bytes at argp   参数大小B
 	argmap   *bitvector // force use of this argmap
 }
 

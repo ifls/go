@@ -55,9 +55,13 @@ import (
 const (
 	// The size of a bitmap chunk, i.e. the amount of bits (that is, pages) to consider
 	// in the bitmap at once.
+	//1^9 512
 	pallocChunkPages    = 1 << logPallocChunkPages
+	// 2^13 * 2^9 = 2 ^ 22
 	pallocChunkBytes    = pallocChunkPages * pageSize
+
 	logPallocChunkPages = 9
+	// 22
 	logPallocChunkBytes = logPallocChunkPages + pageShift
 
 	// The number of radix bits for each level.
@@ -72,6 +76,7 @@ const (
 	//
 	// summaryLevels is an architecture-dependent value defined in mpagealloc_*.go.
 	summaryLevelBits = 3
+	// 48 - 22 - 12 = 14
 	summaryL0Bits    = heapAddrBits - logPallocChunkBytes - (summaryLevels-1)*summaryLevelBits
 
 	// pallocChunksL2Bits is the number of bits of the chunk index number
@@ -79,7 +84,9 @@ const (
 	//
 	// See (*pageAlloc).chunks for more details. Update the documentation
 	// there should this change.
+	// 48 - 22 - 13 = 13
 	pallocChunksL2Bits  = heapAddrBits - logPallocChunkBytes - pallocChunksL1Bits
+	// 13
 	pallocChunksL1Shift = pallocChunksL2Bits
 )
 

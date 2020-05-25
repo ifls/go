@@ -447,6 +447,7 @@ func sigtrampgo(sig uint32, info *siginfo, ctx unsafe.Pointer) {
 	setg(g.m.gsignal)
 
 	if g.stackguard0 == stackFork {
+		//throw
 		signalDuringFork(sig)
 	}
 

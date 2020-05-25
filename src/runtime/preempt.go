@@ -207,7 +207,7 @@ func suspendG(gp *g) suspendGState {
 				break
 			}
 
-			// Request synchronous preemption.
+			// Request synchronous preemption. 请求同步抢占 标记需要抢占
 			gp.preemptStop = true
 			gp.preempt = true
 			gp.stackguard0 = stackPreempt

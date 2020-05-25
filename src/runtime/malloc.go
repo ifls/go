@@ -109,32 +109,41 @@ import (
 const (
 	debugMalloc = false
 
+	//16
 	maxTinySize   = _TinySize
+	// 2
 	tinySizeClass = _TinySizeClass
+	// 2^15 32KB
 	maxSmallSize  = _MaxSmallSize
 
+	//13
 	pageShift = _PageShift
+	// 8K
 	pageSize  = _PageSize
+	// 8K-1 0b 0111 1111 1111
 	pageMask  = _PageMask
-	// By construction, single page spans of the smallest object class
-	// have the most objects per span.
+	// By construction通过构造, single page spans of the smallest object class have the most objects per span.
+	// 1k
 	maxObjsPerSpan = pageSize / 8
-
+	// true
 	concurrentSweep = _ConcurrentSweep
 
-	_PageSize = 1 << _PageShift 	//2 ^13 8KB
-	_PageMask = _PageSize - 1
+	_PageSize = 1 << _PageShift 	//2^13 8K
+	_PageMask = _PageSize - 1		// 8K-1 0b 0111 1111 1111
 
 	// _64bit = 1 on 64-bit systems, 0 on 32-bit systems
+	// 1
 	_64bit = 1 << (^uintptr(0) >> 63) / 2
 
 	// Tiny allocator parameters, see "Tiny allocator" comment in malloc.go.
 	_TinySize      = 16
 	_TinySizeClass = int8(2)
 
+	// 2^14 16K
 	_FixAllocChunk = 16 << 10 // Chunk size for FixAlloc
 
 	// Per-P, per order stack segment cache size. 23KB
+	// 32K
 	_StackCacheSize = 32 * 1024
 
 	// Number of orders that get caching. Order 0 is FixedStack
@@ -149,6 +158,7 @@ const (
 	//   windows/32       | 4KB        | 3
 	//   windows/64       | 8KB        | 2
 	//   plan9            | 4KB        | 3
+	// 4
 	_NumStackOrders = 4 - sys.PtrSize/4*sys.GoosWindows - 1*sys.GoosPlan9
 
 	// heapAddrBits is the number of bits in a heap address. On
@@ -206,13 +216,14 @@ const (
 	// arenaBaseOffset to offset into the top 4 GiB.
 	//
 	// WebAssembly currently has a limit of 4GB linear memory.
+	// 48 0x30 0b110000
 	heapAddrBits = (_64bit*(1-sys.GoarchWasm)*(1-sys.GoosDarwin*sys.GoarchArm64))*48 + (1-_64bit+sys.GoarchWasm)*(32-(sys.GoarchMips+sys.GoarchMipsle)) + 33*sys.GoosDarwin*sys.GoarchArm64
 
-	// maxAlloc is the maximum size of an allocation. On 64-bit,
-	// it's theoretically possible to allocate 1<<heapAddrBits bytes. On
-	// 32-bit, however, this is one less than 1<<32 because the
-	// number of bytes in the address space doesn't actually fit
-	// in a uintptr.
+	// maxAlloc is the maximum size of an allocation.
+	// On 64-bit, it's theoretically possible to allocate 1<<heapAddrBits bytes.
+	// On 32-bit, however, this is one less than 1<<32 because the
+	// number of bytes in the address space doesn't actually fit in a uintptr.
+	// 2^48
 	maxAlloc = (1 << heapAddrBits) - (1-_64bit)*1
 
 	// The number of bits in a heap address, the size of heap
@@ -241,21 +252,23 @@ const (
 	// This is particularly important with the race detector,
 	// since it significantly amplifies the cost of committed
 	// memory.
-	// 64MB
+	// 64M = 2^26
 	heapArenaBytes = 1 << logHeapArenaBytes
 
 	// logHeapArenaBytes is log_2 of heapArenaBytes. For clarity,
 	// prefer using heapArenaBytes where possible (we need the
 	// constant to compute some other constants).
+	// 26
 	logHeapArenaBytes = (6+20)*(_64bit*(1-sys.GoosWindows)*(1-sys.GoarchWasm)) + (2+20)*(_64bit*sys.GoosWindows) + (2+20)*(1-_64bit) + (2+20)*sys.GoarchWasm
 
 	// heapArenaBitmapBytes is the size of each heap arena's bitmap.
+	// 2M
 	heapArenaBitmapBytes = heapArenaBytes / (sys.PtrSize * 8 / 2)
 
+	//64M / 8K = 8K 一个arena 8k个页面
 	pagesPerArena = heapArenaBytes / pageSize
 
-	// arenaL1Bits is the number of bits of the arena number
-	// covered by the first level arena map.
+	// arenaL1Bits is the number of bits of the arena number covered by the first level arena map.
 	//
 	// This number should be small, since the first level arena
 	// map requires PtrSize*(1<<arenaL1Bits) of space in the
@@ -267,6 +280,7 @@ const (
 	// We use the L1 map on 64-bit Windows because the arena size
 	// is small, but the address space is still 48 bits, and
 	// there's a high cost to having a large L2.
+	// 0
 	arenaL1Bits = 6 * (_64bit * sys.GoosWindows)
 
 	// arenaL2Bits is the number of bits of the arena number
@@ -276,15 +290,18 @@ const (
 	// 1<<arenaL2Bits, so it's important that this not be too
 	// large. 48 bits leads to 32MB arena index allocations, which
 	// is about the practical threshold.
+	// 48 - 26 - 0 = 22
 	arenaL2Bits = heapAddrBits - logHeapArenaBytes - arenaL1Bits
 
 	// arenaL1Shift is the number of bits to shift an arena frame
 	// number by to compute an index into the first level arena map.
+	// 22
 	arenaL1Shift = arenaL2Bits
 
 	// arenaBits is the total bits in a combined arena map index.
 	// This is split between the index into the L1 arena map and
 	// the L2 arena map.
+	// 0 + 22
 	arenaBits = arenaL1Bits + arenaL2Bits
 
 	// arenaBaseOffset is the pointer value that corresponds to
@@ -306,17 +323,16 @@ const (
 	// 其他平台从0开始
 	arenaBaseOffset = sys.GoarchAmd64*(1<<47) + (^0x0a00000000000000+1)&uintptrMask*sys.GoosAix
 
-	// Max number of threads to run garbage collection.
-	// 2, 3, and 4 are all plausible maximums depending
-	// on the hardware details of the machine. The garbage
-	// collector scales well to 32 cpus.
+	// Max number of threads to run garbage collection. 运行垃圾回收的最大线程数量
+	// 2, 3, and 4 are all plausible可信的 maximums depending on the hardware details of the machine.
+	// The garbage collector scales well伸缩性好 to 32 cpus.
 	_MaxGcproc = 32
 
 	// minLegalPointer is the smallest possible legal pointer.
 	// This is the smallest possible architectural page size,
-	// since we assume that the first page is never mapped.
+	// since we assume that the first page is never mapped. 第一页从来不使用
 	//
-	// This should agree with minZeroPage in the compiler.
+	// This should agree with一致 minZeroPage in the compiler.
 	minLegalPointer uintptr = 4096
 )
 
@@ -324,8 +340,7 @@ const (
 // Mapping and unmapping operations must be done at multiples of  映射内存必须是物理页的整数倍
 // physPageSize.
 //
-// This must be set by the OS init code (typically in osinit) before
-// mallocinit.
+// This must be set by the OS init code (typically in osinit) before mallocinit.
 var physPageSize uintptr
 
 // physHugePageSize is the size in bytes of the OS's default physical huge
@@ -852,23 +867,25 @@ retry:
 }
 
 // base address for all 0-byte allocations
-var zerobase uintptr	//未分配空间的指针的应有值
+var zerobase uintptr	//未分配空间的指针的默认值
 
 // nextFreeFast returns the next free object if one is quickly available.
 // Otherwise it returns 0.
 func nextFreeFast(s *mspan) gclinkptr {
-	//count trail zero 如果都是0 返回64表示全都分配了，
+	//count trail zero 如果所有位都是0 返回64表示全都分配了，
 	theBit := sys.Ctz64(s.allocCache) // Is there a free object in the allocCache?
+	// bit == 1的位还有
 	if theBit < 64 {
 		result := s.freeindex + uintptr(theBit)
 		if result < s.nelems {
+			//result位被占用, freedix就是下一位
 			freeidx := result + 1
 			if freeidx%64 == 0 && freeidx != s.nelems {
 				return 0
 			}
-			//右移表示占用
+			//右移,让 所有位都是1, 全部都没有被占用
 			s.allocCache >>= uint(theBit + 1)
-			//更新 空闲对象起始地址
+			//更新 空闲对象起始地址为下一位
 			s.freeindex = freeidx
 			s.allocCount++
 			//result表示第几个, elumsize 元素占用字节，s.base() 基址偏移
@@ -892,15 +909,17 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 	shouldhelpgc = false
 	freeIndex := s.nextFreeIndex()
 	if freeIndex == s.nelems {
-		// The span is full.
+		// The span is full. 满了
+		//allocCount ！= nelems 状态不一致
 		if uintptr(s.allocCount) != s.nelems {
 			println("runtime: s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
 			throw("s.allocCount != s.nelems && freeIndex == s.nelems")
 		}
+		//换一个, 必须是可分配的
 		c.refill(spc)
 		shouldhelpgc = true
 		s = c.alloc[spc]
-
+		//函数里面会++
 		freeIndex = s.nextFreeIndex()
 	}
 

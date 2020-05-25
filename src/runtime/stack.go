@@ -64,33 +64,33 @@ functions to make sure that this limit cannot be violated.
 const (
 	// StackSystem is a number of additional bytes to add
 	// to each stack below the usual guard area for OS-specific
-	// purposes like signal handling. Used on Windows, Plan 9,
-	// and iOS because they do not use a separate stack.
+	// purposes like signal handling.
+	// Used on Windows, Plan 9, and iOS because they do not use a separate stack.
+	// linux 上是0
 	_StackSystem = sys.GoosWindows*512*sys.PtrSize + sys.GoosPlan9*512 + sys.GoosDarwin*sys.GoarchArm*1024 + sys.GoosDarwin*sys.GoarchArm64*1024
 
 	// The minimum size of stack used by Go code
 	_StackMin = 2048
 
 	// The minimum stack size to allocate.
-	// The hackery here rounds FixedStack0 up to a power of 2.
-	_FixedStack0 = _StackMin + _StackSystem
-	_FixedStack1 = _FixedStack0 - 1
-	_FixedStack2 = _FixedStack1 | (_FixedStack1 >> 1)
-	_FixedStack3 = _FixedStack2 | (_FixedStack2 >> 2)
-	_FixedStack4 = _FixedStack3 | (_FixedStack3 >> 4)
-	_FixedStack5 = _FixedStack4 | (_FixedStack4 >> 8)
-	_FixedStack6 = _FixedStack5 | (_FixedStack5 >> 16)
-	_FixedStack  = _FixedStack6 + 1
+	// The hackery黑客 here rounds FixedStack0 up to a power of 2.
+	_FixedStack0 = _StackMin + _StackSystem				//2k   0b 1000 0000 0000
+	_FixedStack1 = _FixedStack0 - 1						//2047 0b 0111 1111 1111
+	_FixedStack2 = _FixedStack1 | (_FixedStack1 >> 1)  	//2047 0b 0111 1111 1111
+	_FixedStack3 = _FixedStack2 | (_FixedStack2 >> 2)	//2047 0b 0111 1111 1111
+	_FixedStack4 = _FixedStack3 | (_FixedStack3 >> 4)  	//2047 0b 0111 1111 1111
+	_FixedStack5 = _FixedStack4 | (_FixedStack4 >> 8)	//2047 0b 0111 1111 1111
+	_FixedStack6 = _FixedStack5 | (_FixedStack5 >> 16)	//2047 0b 0111 1111 1111
+	_FixedStack  = _FixedStack6 + 1						//2k   0b 1000 0000 0000
 
 	// Functions that need frames bigger than this use an extra
 	// instruction to do the stack split check, to avoid overflow
 	// in case SP - framesize wraps below zero.
-	// This value can be no bigger than the size of the unmapped
-	// space at zero.
+	// This value can be no bigger than the size of the unmapped space at zero.
 	_StackBig = 4096
 
-	// The stack guard is a pointer this many bytes above the
-	// bottom of the stack.
+	// The stack guard is a pointer this many bytes above the bottom of the stack.
+	// 928 + 2048
 	_StackGuard = 928*sys.StackGuardMultiplier + _StackSystem
 
 	// After a stack split check the SP is allowed to be this
@@ -98,19 +98,20 @@ const (
 	// in the checking sequence for tiny frames.
 	_StackSmall = 128
 
-	// The maximum number of bytes that a chain of NOSPLIT
-	// functions can use.
+	// The maximum number of bytes that a chain of NOSPLIT functions can use.
+	// 800
 	_StackLimit = _StackGuard - _StackSystem - _StackSmall
 )
 
 const (
+	// 栈操作 日志级别
 	// stackDebug == 0: no logging
 	//            == 1: logging of per-stack operations
 	//            == 2: logging of per-frame operations
 	//            == 3: logging of per-word updates
 	//            == 4: logging of per-word reads
 	stackDebug       = 0
-	stackFromSystem  = 0 // allocate stacks from system memory instead of the heap
+	stackFromSystem  = 0 // 从系统分配栈内存 allocate stacks from system memory instead of the heap
 	stackFaultOnFree = 0 // old stacks are mapped noaccess to detect use after free
 	stackPoisonCopy  = 0 // fill stack that should not be accessed with garbage, to detect bad dereferences during copy
 	stackNoCache     = 0 // disable per-P small stack caches
@@ -120,21 +121,23 @@ const (
 )
 
 const (
+	// 0xffffffffffff
 	uintptrMask = 1<<(8*sys.PtrSize) - 1
 
-	// Goroutine preemption request.
+	// Goroutine preemption request. 被标记为抢占
 	// Stored into g->stackguard0 to cause split stack check failure.
 	// Must be greater than any real sp. 比任何实际sp都大，必然进入morestack函数
-	// 0xfffffade in hex.
+	// 0xFFFFFFFFFFFFFADE in hex.
 	stackPreempt = uintptrMask & -1314
 
-	// Thread is forking.
-	// Stored into g->stackguard0 to cause split stack check failure.
+	// Thread is forking. 表示正在fork
+	// Stored into g->stackguard0 to cause split stack check failure. 无法栈扩容
 	// Must be greater than any real sp.
+	// 0xFFFFFFFFFFFFFB2E
 	stackFork = uintptrMask & -1234
 )
 
-// Global pool of spans that have free stacks.
+// Global pool of spans that have free stacks. 全局空闲栈池
 // Stacks are assigned an order according to size.
 //     order = log_2(size/FixedStack)
 // There is a free list for each order.
@@ -153,6 +156,7 @@ type stackpoolItem struct {
 // 全局 的 大栈 缓存
 var stackLarge struct {
 	lock mutex
+	//48-13 = 35
 	free [heapAddrBits - pageShift]mSpanList // free lists by log_2(s.npages)
 }
 
@@ -160,17 +164,19 @@ func stackinit() {
 	if _StackCacheSize&_PageMask != 0 {
 		throw("cache size must be a multiple of page size")
 	}
+	//初始化栈缓存
 	for i := range stackpool {
 		stackpool[i].item.span.init()
 		lockInit(&stackpool[i].item.mu, lockRankStackpool)
 	}
+
 	for i := range stackLarge.free {
 		stackLarge.free[i].init()
 		lockInit(&stackLarge.lock, lockRankStackLarge)
 	}
 }
 
-// stacklog2 returns ⌊log_2(n)⌋.
+// stacklog2 快速计算returns ⌊log_2(n)⌋.
 func stacklog2(n uintptr) int {
 	log2 := 0
 	for n > 1 {
@@ -184,8 +190,11 @@ func stacklog2(n uintptr) int {
 // stackpool[order].item.mu held.
 func stackpoolalloc(order uint8) gclinkptr {
 	list := &stackpool[order].item.span
+	//头
 	s := list.first
+
 	lockWithRankMayAcquire(&mheap_.lock, lockRankMheap)
+
 	if s == nil {
 		// no free stacks. Allocate another span worth.
 		s = mheap_.allocManual(_StackCacheSize>>_PageShift, &memstats.stacks_inuse)
@@ -198,25 +207,32 @@ func stackpoolalloc(order uint8) gclinkptr {
 		if s.manualFreeList.ptr() != nil {
 			throw("bad manualFreeList")
 		}
+		//linux 上为空
 		osStackAlloc(s)
+
 		s.elemsize = _FixedStack << order
 		for i := uintptr(0); i < _StackCacheSize; i += s.elemsize {
 			x := gclinkptr(s.base() + i)
 			x.ptr().next = s.manualFreeList
 			s.manualFreeList = x
 		}
+		//拿到了新的，插入链表
 		list.insert(s)
 	}
+
 	x := s.manualFreeList
 	if x.ptr() == nil {
 		throw("span has no free stacks")
 	}
+
 	s.manualFreeList = x.ptr().next
 	s.allocCount++
+
 	if s.manualFreeList.ptr() == nil {
 		// all stacks in s are allocated.
 		list.remove(s)
 	}
+
 	return x
 }
 
@@ -228,14 +244,15 @@ func stackpoolfree(x gclinkptr, order uint8) {
 	}
 	if s.manualFreeList.ptr() == nil {
 		// s will now have a free stack
+		//放回缓冲池
 		stackpool[order].item.span.insert(s)
 	}
 	x.ptr().next = s.manualFreeList
 	s.manualFreeList = x
 	s.allocCount--
 	if gcphase == _GCoff && s.allocCount == 0 {
-		// Span is completely free. Return it to the heap
-		// immediately if we're sweeping.
+		//
+		// Span is completely free. Return it to the heap immediately if we're sweeping.
 		//
 		// If GC is active, we delay the free until the end of
 		// GC to avoid the following type of situation:
@@ -249,16 +266,17 @@ func stackpoolfree(x gclinkptr, order uint8) {
 		//    pointer into a free span.
 		//
 		// By not freeing, we prevent step #4 until GC is done.
-		stackpool[order].item.span.remove(s)
+		stackpool[order].item.span.remove(s)	//拿出来
 		s.manualFreeList = 0
-		osStackFree(s)
+		osStackFree(s)	//linux上为空函数
+		//放回堆里
 		mheap_.freeManual(s, &memstats.stacks_inuse)
 	}
 }
 
 // stackcacherefill/stackcacherelease implement a global pool of stack segments.
 // The pool is required to prevent unlimited growth of per-thread caches.
-//
+// mcache.stackcache
 //go:systemstack
 func stackcacherefill(c *mcache, order uint8) {
 	if stackDebug >= 1 {
@@ -342,6 +360,7 @@ func stackalloc(n uint32) stack {
 		print("stackalloc ", n, "\n")
 	}
 
+	//从系统分配栈
 	if debug.efence != 0 || stackFromSystem != 0 {
 		n = uint32(alignUp(uintptr(n), physPageSize))
 		//系统调用分配一块内存，不进入堆管理之中
@@ -355,14 +374,14 @@ func stackalloc(n uint32) stack {
 	}
 
 	// Small stacks are allocated with a fixed-size free-list allocator.
-	// If we need a stack of a bigger size, we fall back on allocating
-	// a dedicated span.
+	// If we need a stack of a bigger size, we fall back on重新回到 allocating a dedicated span.
 	var v unsafe.Pointer
-	// n < 32K
+	// n < 32K && n < 32K
 	if n < _FixedStack<<_NumStackOrders && n < _StackCacheSize {
 		//小栈分配
 		order := uint8(0)
 		n2 := n
+		// 2k
 		for n2 > _FixedStack {
 			order++
 			n2 >>= 1
@@ -374,7 +393,7 @@ func stackalloc(n uint32) stack {
 			// Just get a stack from the global pool.
 			// Also don't touch stackcache during gc as it's flushed concurrently.
 			lock(&stackpool[order].item.mu)
-			//free poll 里分配栈空间
+			//stackpoll 里分配栈空间
 			x = stackpoolalloc(order)
 			unlock(&stackpool[order].item.mu)
 		} else {
@@ -392,6 +411,7 @@ func stackalloc(n uint32) stack {
 	} else {
 		//大栈分配
 		var s *mspan
+		// n / 8K 算得页数
 		npage := uintptr(n) >> _PageShift
 		log2npage := stacklog2(npage)
 
@@ -408,13 +428,14 @@ func stackalloc(n uint32) stack {
 
 		if s == nil {
 			// Allocate a new stack from the heap.
-			//从堆上分配 mspan
+			//从堆上分配手动管理的mspan
 			s = mheap_.allocManual(npage, &memstats.stacks_inuse)
 			if s == nil {
 				throw("out of memory")
 			}
 			// 空函数
 			osStackAlloc(s)
+			//元素大小以栈为单位
 			s.elemsize = uintptr(n)
 		}
 		v = unsafe.Pointer(s.base())
@@ -511,7 +532,7 @@ func stackfree(stk stack) {
 	}
 }
 
-//1M
+//1M 初始化时被设置为1G
 var maxstacksize uintptr = 1 << 20 // enough until runtime.main sets it for real 实际
 
 var ptrnames = []string{
@@ -519,16 +540,16 @@ var ptrnames = []string{
 	1: "ptr",
 }
 
-// Stack frame layout
+// Stack frame layout 栈帧布局
 //
 // (x86)
 // +------------------+
 // | args from caller |
-// +------------------+ <- frame->argp
+// +------------------+ <- frame->argp 参数指针
 // |  return address  |
 // +------------------+
-// |  caller's BP (*) | (*) if framepointer_enabled && varp < sp
-// +------------------+ <- frame->varp
+// |  caller's BP (*) | (*) 条件是 if framepointer_enabled && varp < sp
+// +------------------+ <- frame->varp 本地变量指针
 // |     locals       |
 // +------------------+
 // |  args to callee  |
@@ -578,7 +599,7 @@ type bitvector struct {
 	bytedata *uint8
 }
 
-// ptrbit returns the i'th bit in bv.
+// ptrbit returns the i'th bit in bv. bitvector
 // ptrbit is less efficient than iterating directly over bitvector bits,
 // and should only be used in non-performance-critical code.
 // See adjustpointers for an example of a high-efficiency walk of a bitvector.
@@ -782,6 +803,7 @@ func adjustsudogs(gp *g, adjinfo *adjustinfo) {
 	}
 }
 
+//用 b 填充 栈空间
 func fillstack(stk stack, b byte) {
 	for p := stk.lo; p < stk.hi; p++ {
 		*(*byte)(unsafe.Pointer(p)) = b
@@ -852,22 +874,29 @@ func syncadjustsudogs(gp *g, used uintptr, adjinfo *adjustinfo) uintptr {
 }
 
 // Copies gp's stack to a new stack of a different size.
-// Caller must have changed gp status to Gcopystack.
+// Caller must have changed gp status to Gcopystack. 调用方一定要先切换状态
 func copystack(gp *g, newsize uintptr) {
+	//表示正在进行系统调用
 	if gp.syscallsp != 0 {
 		throw("stack growth not allowed in system call")
 	}
+
 	old := gp.stack
+	//表示未分配栈空间
 	if old.lo == 0 {
 		throw("nil stackbase")
 	}
+	//[sp, hi] 已使用
 	used := old.hi - gp.sched.sp
 
 	// allocate new stack
 	new := stackalloc(uint32(newsize))
+
 	if stackPoisonCopy != 0 {
+		//清栈
 		fillstack(new, 0xfd)
 	}
+
 	if stackDebug >= 1 {
 		print("copystack gp=", gp, " [", hex(old.lo), " ", hex(old.hi-used), " ", hex(old.hi), "]", " -> [", hex(new.lo), " ", hex(new.hi-used), " ", hex(new.hi), "]/", newsize, "\n")
 	}
@@ -897,11 +926,13 @@ func copystack(gp *g, newsize uintptr) {
 	}
 
 	// Copy the stack (or the rest of it) to the new location
+	// 拷贝栈
 	memmove(unsafe.Pointer(new.hi-ncopy), unsafe.Pointer(old.hi-ncopy), ncopy)
 
 	// Adjust remaining structures that have pointers into stacks.
 	// We have to do most of these before we traceback the new
 	// stack because gentraceback uses them.
+	//调整栈相关的指针
 	adjustctxt(gp, &adjinfo)
 	adjustdefers(gp, &adjinfo)
 	adjustpanics(gp, &adjinfo)
@@ -911,7 +942,7 @@ func copystack(gp *g, newsize uintptr) {
 
 	// Swap out old stack for new one
 	gp.stack = new
-	gp.stackguard0 = new.lo + _StackGuard // NOTE: might clobber a preempt request
+	gp.stackguard0 = new.lo + _StackGuard // NOTE: might clobber击倒 a preempt request
 	gp.sched.sp = new.hi - used
 	gp.stktopsp += adjinfo.delta
 
@@ -920,13 +951,15 @@ func copystack(gp *g, newsize uintptr) {
 
 	// free old stack
 	if stackPoisonCopy != 0 {
+		//填充标记
 		fillstack(old, 0xfc)
 	}
-	//栈拷贝完成后 释放旧的栈空间
+	//释放旧的栈空间
 	stackfree(old)
 }
 
 // round x up to a power of 2.
+// 2^n > x
 func round2(x int32) int32 {
 	s := uint(0)
 	for 1<<s < x {
@@ -949,10 +982,13 @@ func round2(x int32) int32 {
 //go:nowritebarrierrec
 func newstack() {
 	thisg := getg()
+
 	// TODO: double check all gp. shouldn't be getg().
+	//fork时不能调整栈
 	if thisg.m.morebuf.g.ptr().stackguard0 == stackFork {
 		throw("stack growth after fork")
 	}
+
 	if thisg.m.morebuf.g.ptr() != thisg.m.curg {
 		print("runtime: newstack called from g=", hex(thisg.m.morebuf.g), "\n"+"\tm=", thisg.m, " m->curg=", thisg.m.curg, " m->g0=", thisg.m.g0, " m->gsignal=", thisg.m.gsignal, "\n")
 		morebuf := thisg.m.morebuf
@@ -962,6 +998,7 @@ func newstack() {
 
 	gp := thisg.m.curg
 
+	//抛出异常然后退出
 	if thisg.m.curg.throwsplit {
 		// Update syscallsp, syscallpc in case traceback uses them.
 		morebuf := thisg.m.morebuf
@@ -995,7 +1032,7 @@ func newstack() {
 	// 是抢占请求，而不是扩栈
 	preempt := atomic.Loaduintptr(&gp.stackguard0) == stackPreempt
 
-	// Be conservative about where we preempt.
+	// Be conservative保守 about where we preempt.
 	// We are interested in preempting user Go code, not runtime code.
 	// If we're holding locks, mallocing, or preemption is disabled, don't
 	// preempt.
@@ -1012,26 +1049,31 @@ func newstack() {
 		if !canPreemptM(thisg.m) {
 			// Let the goroutine keep running for now.
 			// gp->preempt is set, so it will be preempted next time.
-			//恢复栈地址
+			//恢复栈标志
 			gp.stackguard0 = gp.stack.lo + _StackGuard
-			//重新进入调度循环
+			//重新执行自己的任务
 			gogo(&gp.sched) // never return
 		}
 	}
 
+	//没有分配栈
 	if gp.stack.lo == 0 {
 		throw("missing stack in newstack")
 	}
+
 	sp := gp.sched.sp
 	if sys.ArchFamily == sys.AMD64 || sys.ArchFamily == sys.I386 || sys.ArchFamily == sys.WASM {
 		// The call to morestack cost a word.
 		sp -= sys.PtrSize
 	}
+
+
 	if stackDebug >= 1 || sp < gp.stack.lo {
 		print("runtime: newstack sp=", hex(sp), " stack=[", hex(gp.stack.lo), ", ", hex(gp.stack.hi), "]\n",
 			"\tmorebuf={pc:", hex(morebuf.pc), " sp:", hex(morebuf.sp), " lr:", hex(morebuf.lr), "}\n",
 			"\tsched={pc:", hex(gp.sched.pc), " sp:", hex(gp.sched.sp), " lr:", hex(gp.sched.lr), " ctxt:", gp.sched.ctxt, "}\n")
 	}
+
 	if sp < gp.stack.lo {
 		print("runtime: gp=", gp, ", goid=", gp.goid, ", gp->status=", hex(readgstatus(gp)), "\n ")
 		print("runtime: split stack overflow: ", hex(sp), " < ", hex(gp.stack.lo), "\n")
@@ -1039,31 +1081,35 @@ func newstack() {
 	}
 
 	if preempt {
+		//不能抢占g0
 		if gp == thisg.m.g0 {
 			throw("runtime: preempt g0")
 		}
+
 		if thisg.m.p == 0 && thisg.m.locks == 0 {
 			throw("runtime: g is running but p is not")
 		}
 
 		if gp.preemptShrink {
-			// We're at a synchronous safe point now, so
-			// do the pending stack shrink.
+			// We're at a synchronous safe point now, so do the pending stack shrink.
+			//到达安全点, 处理缩栈请求
 			gp.preemptShrink = false
 			shrinkstack(gp)
 		}
 
 		if gp.preemptStop {
+			//执行抢占，切到其他g
 			preemptPark(gp) // never returns
 		}
 
 		// Act like goroutine called runtime.Gosched.
-		//抢占
+		// 让出
 		gopreempt_m(gp) // never return
 	}
 
 	// Allocate a bigger segment and move the stack.
 	oldsize := gp.stack.hi - gp.stack.lo
+	//翻倍
 	newsize := oldsize * 2
 
 	// Make sure we grow at least as much as needed to fit the new frame.
@@ -1072,10 +1118,12 @@ func newstack() {
 	if f := findfunc(gp.sched.pc); f.valid() {
 		max := uintptr(funcMaxSPDelta(f))
 		for newsize-oldsize < max+_StackGuard {
+			//太小继续翻倍
 			newsize *= 2
 		}
 	}
 
+	//栈太大
 	if newsize > maxstacksize {
 		print("runtime: goroutine stack exceeds ", maxstacksize, "-byte limit\n")
 		print("runtime: sp=", hex(sp), " stack=[", hex(gp.stack.lo), ", ", hex(gp.stack.hi), "]\n")
@@ -1095,12 +1143,13 @@ func newstack() {
 	}
 	//退出栈拷贝
 	casgstatus(gp, _Gcopystack, _Grunning)
+	//恢复执行用户代码
 	gogo(&gp.sched)
 }
 
 //go:nosplit
 func nilfunc() {
-	*(*uint8)(nil) = 0
+	*(*uint8)(nil) = 0	//奔溃
 }
 
 // adjust Gobuf as if it executed a call to fn
@@ -1129,6 +1178,7 @@ func isShrinkStackSafe(gp *g) bool {
 	// We also can't copy the stack if we're at an asynchronous
 	// safe-point because we don't have precise pointer maps for
 	// all frames.
+	// 不在进行系统调用，不是异步安全点
 	return gp.syscallsp == 0 && !gp.asyncSafePoint
 }
 
@@ -1140,10 +1190,9 @@ func shrinkstack(gp *g) {
 	if gp.stack.lo == 0 {
 		throw("missing stack in shrinkstack")
 	}
+
 	if s := readgstatus(gp); s&_Gscan == 0 {
-		// We don't own the stack via _Gscan. We could still
-		// own it if this is our own user G and we're on the
-		// system stack.
+		// We don't own the stack via _Gscan. We could still own it if this is our own user G and we're on the system stack.
 		if !(gp == getg().m.curg && getg() != getg().m.curg && s == _Grunning) {
 			// We don't own the stack.
 			throw("bad status in shrinkstack")
@@ -1162,6 +1211,8 @@ func shrinkstack(gp *g) {
 	if debug.gcshrinkstackoff > 0 {
 		return
 	}
+
+	//symtab.go
 	f := findfunc(gp.startpc)
 	if f.valid() && f.funcID == funcID_gcBgMarkWorker {
 		// We're not allowed to shrink the gcBgMarkWorker
@@ -1170,9 +1221,9 @@ func shrinkstack(gp *g) {
 	}
 
 	oldsize := gp.stack.hi - gp.stack.lo
-	newsize := oldsize / 2
-	// Don't shrink the allocation below the minimum-sized stack
-	// allocation.
+	newsize := oldsize / 2	// 1/2
+	// Don't shrink the allocation below the minimum-sized stack allocation.
+	//不能小于2k
 	if newsize < _FixedStack {
 		return
 	}
@@ -1182,6 +1233,7 @@ func shrinkstack(gp *g) {
 	// down to the SP plus the stack guard space that ensures
 	// there's room for nosplit functions.
 	avail := gp.stack.hi - gp.stack.lo
+	//预先保留一串nosplit函数的占用空间 使用超过1/4 不缩栈
 	if used := gp.stack.hi - gp.sched.sp + _StackLimit; used >= avail/4 {
 		return
 	}
@@ -1194,18 +1246,21 @@ func shrinkstack(gp *g) {
 }
 
 // freeStackSpans frees unused stack spans at the end of GC.
+// called from gcMarkTermination
 func freeStackSpans() {
-
 	// Scan stack pools for empty stack spans.
 	for order := range stackpool {
 		lock(&stackpool[order].item.mu)
+
 		list := &stackpool[order].item.span
 		for s := list.first; s != nil; {
 			next := s.next
+			//没有一个分配
 			if s.allocCount == 0 {
 				list.remove(s)
 				s.manualFreeList = 0
 				osStackFree(s)
+				//放回堆
 				mheap_.freeManual(s, &memstats.stacks_inuse)
 			}
 			s = next
@@ -1215,15 +1270,18 @@ func freeStackSpans() {
 
 	// Free large stack spans.
 	lock(&stackLarge.lock)
+
 	for i := range stackLarge.free {
 		for s := stackLarge.free[i].first; s != nil; {
 			next := s.next
 			stackLarge.free[i].remove(s)
 			osStackFree(s)
+			//放回堆
 			mheap_.freeManual(s, &memstats.stacks_inuse)
 			s = next
 		}
 	}
+
 	unlock(&stackLarge.lock)
 }
 
@@ -1333,14 +1391,14 @@ func getStackMap(frame *stkframe, cache *pcvalueCache, debug bool) (locals, args
 // This record must match the generator code in cmd/compile/internal/gc/ssa.go:emitStackObjects.
 type stackObjectRecord struct {
 	// offset in frame
-	// if negative, offset from varp
-	// if non-negative, offset from argp
+	// if negative, offset from varp 变量在下面
+	// if non-negative, offset from argp 参数在上面
 	off int
 	typ *_type
 }
 
 // This is exported as ABI0 via linkname so obj can call it.
-//
+// 导出的二进制接口
 //go:nosplit
 //go:linkname morestackc
 func morestackc() {
