@@ -320,25 +320,23 @@ func setMNoWB(mp **m, new *m) {
 
 type gobuf struct {
 	// The offsets of sp, pc, and g are known to (hard-coded in) libmach.
-	//
-	// ctxt is unusual不一样 with respect to GC: it may be a
-	// heap-allocated funcval, so GC needs to track it, but it
-	// needs to be set and cleared from assembly, where it's
-	// difficult to have write barriers. However, ctxt is really a
-	// saved, live register, and we only ever exchange it between
-	// the real register and the gobuf. Hence, we treat it as a
-	// root during stack scanning, which means assembly that saves
-	// and restores it doesn't need write barriers. It's still
-	// typed as a pointer so that any other writes from Go get
-	// write barriers.
+	// 已经硬编码, 不能单独修改
+	// ctxt is unusual不一样 with respect to关于 GC:
+	// it may be a heap-allocated funcval 闭包, so GC needs to track it,
+	// but it needs to be set and cleared from assembly, where it's
+	// difficult to have write barriers.
+	// However, ctxt is really a saved, live register, and we only ever exchange it between the real register and the gobuf.
+	// Hence, we treat it as a root当做根对象 during stack scanning,
+	// which means assembly that saves and restores it doesn't need write barriers.
+	// It's still typed as a pointer so that any other writes from Go get write barriers.
 	sp   uintptr
 	pc   uintptr
 	g    guintptr
-	ctxt unsafe.Pointer
-	//保持返回值
-	ret  sys.Uintreg	//uint64
-	lr   uintptr
-	bp   uintptr // basepointer for GOEXPERIMENT=framepointer
+	ctxt unsafe.Pointer	//函数闭包指针
+
+	ret  sys.Uintreg	//uint64 保持返回值 目前go代码被赋值，汇编里被使用过
+	lr   uintptr	//stack.go
+	bp   uintptr // basepointer for GOEXPERIMENT=framepointer 还是实验特性 只是调整了下偏移
 }
 
 // sudog represents a g in a wait list 等待链表, such as for sending/receiving
@@ -402,7 +400,7 @@ type wincallbackcontext struct {
 // The bounds of the stack are exactly [lo, hi),
 // with no implicit隐藏的 data structures on either side.
 type stack struct {
-	lo uintptr		//栈顶在下
+	lo uintptr		//栈顶指针在下
 	hi uintptr
 }
 
@@ -906,17 +904,17 @@ func extendRandom(r []byte, n int) {
 // initialize them are not required. All defers must be manually scanned,
 // and for heap defers, marked.
 type _defer struct {
-	siz     int32 // includes both arguments and results
-	started bool
-	heap    bool
+	siz     int32 // 函数参数大小 includes both arguments and results
+	started bool	//defer是否已经开始
+	heap    bool	//堆上分配的，需要手动释放
 	// openDefer indicates that this _defer is for a frame with open-coded
 	// defers. We have only one defer record for the entire frame (which may
 	// currently have 0, 1, or more defers active).
 	openDefer bool
-	sp        uintptr  // sp at time of defer
+	sp        uintptr  // 储存代用defer的函数的栈顶 sp at time of defer
 	pc        uintptr  // pc at time of defer
-	fn        *funcval // can be nil for open-coded defers
-	_panic    *_panic  // 导致defer执行的panic panic that is running defer
+	fn        *funcval // 闭包 can be nil for open-coded defers
+	_panic    *_panic  // 正在执行defer的panic panic that is running defer
 	link      *_defer	//链表
 
 	// If openDefer is true, the fields below record values about the stack

@@ -3,19 +3,15 @@
 // license that can be found in the LICENSE file.
 
 // Semaphore implementation exposed to Go.
-// Intended use is provide a sleep and wakeup
-// primitive that can be used in the contended case
-// of other synchronization primitives.
+// Intended use is provide a sleep and wakeup primitive that can be used in the contended case竞争情况 of other synchronization primitives.
 // Thus it targets the same goal as Linux's futex,
-// but it has much simpler semantics.
+// but it has much simpler semantics语义.
 //
 // That is, don't think of these as semaphores.
-// Think of them as a way to implement sleep and wakeup
-// such that every sleep is paired with a single wakeup,
-// even if, due to races, the wakeup happens before the sleep.
+// Think of them as a way to implement sleep and wakeup such that every sleep is paired with a single wakeup,
+// even if, due to因为 races, the wakeup happens before the sleep. 即是wakeup先于sleep
 //
-// See Mullender and Cox, ``Semaphores in Plan 9,''
-// https://swtch.com/semaphore.pdf
+// See Mullender and Cox, ``Semaphores in Plan 9,'' TODO https://swtch.com/semaphore.pdf
 
 package runtime
 
@@ -38,16 +34,16 @@ import (
 // before we introduced the second level of list, and test/locklinear.go
 // for a test that exercises this.
 type semaRoot struct {
-	lock  mutex
-	treap *sudog // root of balanced tree of unique waiters.
+	lock  mutex		//基于linux futex fast user exclusive 实现
+	treap *sudog // root of balanced tree of unique waiters.  树堆，既是二叉搜索树也是小顶堆
 	nwait uint32 // Number of waiters. Read w/o the lock.
 }
 
 // Prime to not correlate with any user patterns.
 const semTabSize = 251
-
+// sudog按照地址hash刀 [0,250]其中一个
 var semtable [semTabSize]struct {
-	root semaRoot
+	root semaRoot	//都有一颗treap树, 系统地址上的sudog会形成一个链表
 	pad  [cpu.CacheLinePadSize - unsafe.Sizeof(semaRoot{})]byte
 }
 
@@ -95,6 +91,7 @@ func semacquire(addr *uint32) {
 	semacquire1(addr, false, 0, 0)
 }
 
+// p -1
 func semacquire1(addr *uint32, lifo bool, profile semaProfileFlags, skipframes int) {
 	gp := getg()
 	if gp != gp.m.curg {
@@ -108,8 +105,8 @@ func semacquire1(addr *uint32, lifo bool, profile semaProfileFlags, skipframes i
 
 	// Harder case:
 	//	increment waiter count
-	//	try cansemacquire one more time, return if succeeded
-	//	enqueue itself as a waiter
+	//	try cansemacquire one more time,再多尝试一次 return if succeeded
+	//	enqueue itself as a waiter 把g入队，当做一个等待者
 	//	sleep
 	//	(waiter descriptor is dequeued by signaler)
 	s := acquireSudog()
@@ -130,7 +127,7 @@ func semacquire1(addr *uint32, lifo bool, profile semaProfileFlags, skipframes i
 	}
 	for {
 		lockWithRank(&root.lock, lockRankRoot)
-		// Add ourselves to nwait to disable "easy case" in semrelease.
+		// Add ourselves to nwait to disable "easy case" in semrelease. 禁止semrelease进入easy case
 		atomic.Xadd(&root.nwait, 1)
 		// Check cansemacquire to avoid missed wakeup.
 		if cansemacquire(addr) {
@@ -140,7 +137,8 @@ func semacquire1(addr *uint32, lifo bool, profile semaProfileFlags, skipframes i
 		}
 		// Any semrelease after the cansemacquire knows we're waiting
 		// (we set nwait above), so go to sleep.
-		root.queue(addr, s, lifo)
+		root.queue(addr, s, lifo)		//s.g = getg()
+		//暂停当前g，进入等待状态
 		goparkunlock(&root.lock, waitReasonSemacquire, traceEvGoBlockSync, 4+skipframes)
 		if s.ticket != 0 || cansemacquire(addr) {
 			break
@@ -163,24 +161,29 @@ func semrelease1(addr *uint32, handoff bool, skipframes int) {
 	// Easy case: no waiters?
 	// This check must happen after the xadd, to avoid a missed wakeup
 	// (see loop in semacquire).
+	// 没有等待者，无需唤醒
 	if atomic.Load(&root.nwait) == 0 {
 		return
 	}
 
 	// Harder case: search for a waiter and wake it.
 	lockWithRank(&root.lock, lockRankRoot)
+
+	//加锁后再次验证
 	if atomic.Load(&root.nwait) == 0 {
 		// The count is already consumed by another goroutine,
 		// so no need to wake up another goroutine.
 		unlock(&root.lock)
 		return
 	}
+
 	s, t0 := root.dequeue(addr)
 	if s != nil {
 		atomic.Xadd(&root.nwait, -1)
 	}
 	unlock(&root.lock)
-	if s != nil { // May be slow or even yield, so unlock first
+
+	if s != nil { // May be slow or even yield, so unlock first 可能很慢，甚至让出cpu
 		acquiretime := s.acquiretime
 		if acquiretime != 0 {
 			mutexevent(t0-acquiretime, 3+skipframes)
@@ -192,6 +195,7 @@ func semrelease1(addr *uint32, handoff bool, skipframes int) {
 			s.ticket = 1
 		}
 		readyWithTime(s, 5+skipframes)
+
 		if s.ticket == 1 && getg().m.locks == 0 {
 			// Direct G handoff
 			// readyWithTime has added the waiter G as runnext in the
@@ -231,6 +235,7 @@ func cansemacquire(addr *uint32) bool {
 }
 
 // queue adds s to the blocked goroutines in semaRoot.
+// 把s加到对应地址的sudog treap上
 func (root *semaRoot) queue(addr *uint32, s *sudog, lifo bool) {
 	s.g = getg()
 	s.elem = unsafe.Pointer(addr)
@@ -443,8 +448,8 @@ func (root *semaRoot) rotateRight(y *sudog) {
 	}
 }
 
-// notifyList is a ticket-based notification list used to implement sync.Cond.
-//
+// notifyList is a ticket-based notification list used to implement sync.Cond. 条件变量
+// 
 // It must be kept in sync with the sync package.
 type notifyList struct {
 	// wait is the ticket number of the next waiter. It is atomically

@@ -14,11 +14,10 @@ import "syscall"
 // Wrapper around the accept system call that marks the returned file
 // descriptor as nonblocking and close-on-exec.
 func accept(s int) (int, syscall.Sockaddr, string, error) {
+	// syscall.Accept4
 	ns, sa, err := Accept4Func(s, syscall.SOCK_NONBLOCK|syscall.SOCK_CLOEXEC)
-	// On Linux the accept4 system call was introduced in 2.6.28
-	// kernel and on FreeBSD it was introduced in 10 kernel. If we
-	// get an ENOSYS error on both Linux and FreeBSD, or EINVAL
-	// error on Linux, fall back to using accept.
+	// On Linux the accept4 system call was introduced in 2.6.28 kernel and on FreeBSD it was introduced in 10 kernel.
+	// If we get an ENOSYS error on both Linux and FreeBSD, or EINVAL error on Linux, fall back to using accept. 退回到老方式
 	switch err {
 	case nil:
 		return ns, sa, "", nil
@@ -42,6 +41,7 @@ func accept(s int) (int, syscall.Sockaddr, string, error) {
 	if err != nil {
 		return -1, nil, "accept", err
 	}
+	// syscall.FCNTL
 	if err = syscall.SetNonblock(ns, true); err != nil {
 		CloseFunc(ns)
 		return -1, nil, "setnonblock", err

@@ -81,6 +81,7 @@ TEXT _rt0_amd64_lib_go(SB),NOSPLIT,$0
 	MOVQ	_rt0_amd64_lib_argv<>(SB), SI
 	JMP	runtime·rt0_go(SB)
 
+// <> 类似 c里的static 文件内未导出全局变量
 DATA _rt0_amd64_lib_argc<>(SB)/8, $0
 GLOBL _rt0_amd64_lib_argc<>(SB),NOPTR, $8
 DATA _rt0_amd64_lib_argv<>(SB)/8, $0
@@ -98,9 +99,9 @@ TEXT runtime·rt0_go(SB),NOSPLIT,$0
 
 	// create istack out of the given (operating system) stack.
 	// _cgo_init may update stackguard.
-	MOVQ	$runtime·g0(SB), DI
+	MOVQ	$runtime·g0(SB), DI		//DI = &g0    g0是全局变量
 	LEAQ	(-64*1024+104)(SP), BX	//将地址放在BX
-	MOVQ	BX, g_stackguard0(DI)
+	MOVQ	BX, g_stackguard0(DI)	//g.stackguard0
 	MOVQ	BX, g_stackguard1(DI)
 	MOVQ	BX, (g_stack+stack_lo)(DI)	//栈顶 < 栈底
 	MOVQ	SP, (g_stack+stack_hi)(DI)  //栈底
@@ -183,52 +184,54 @@ needtls:
 	JMP ok
 #endif
 
-	LEAQ	runtime·m0+m_tls(SB), DI
-	CALL	runtime·settls(SB)
+	LEAQ	runtime·m0+m_tls(SB), DI	// DI = &runtime.m0.tls
+	CALL	runtime·settls(SB)			//设置m.tls 关联 线程的状态
 
 	// store through it, to make sure it works
 	//验证tls
-	get_tls(BX)
-	MOVQ	$0x123, g(BX)
-	MOVQ	runtime·m0+m_tls(SB), AX
-	CMPQ	AX, $0x123
-	JEQ 2(PC)
-	CALL	runtime·abort(SB)
+	get_tls(BX)		//bx = m.tls
+	MOVQ	$0x123, g(BX)				// *tls.g = 0x123
+	MOVQ	runtime·m0+m_tls(SB), AX	//ax = runtime.m0.tls
+	CMPQ	AX, $0x123					//  比较 m0.tls 存放的就是 &g
+	JEQ 2(PC)	// jmp if equal 跳过下面
+	CALL	runtime·abort(SB)		//终止程序
 ok:
 	// set the per-goroutine and per-mach机器 "registers"
-	get_tls(BX)		//g0放到tls里
-	LEAQ	runtime·g0(SB), CX
-	MOVQ	CX, g(BX)
-	LEAQ	runtime·m0(SB), AX
+	get_tls(BX)		// bx = m.tls
+	LEAQ	runtime·g0(SB), CX		//cx = runtime.g0
+	MOVQ	CX, g(BX)				//tls.g = g0
+	LEAQ	runtime·m0(SB), AX		//ax = &runtime.g0
 
 
 	//g0与m0绑定
 	// save m->g0 = g0
-	MOVQ	CX, m_g0(AX)
+	MOVQ	CX, m_g0(AX)  	//m0.g0 = cx = runtime.g0
 	// save m0 to g0->m
-	MOVQ	AX, g_m(CX)
+	MOVQ	AX, g_m(CX)     //g0.m = runtime.m0
 
 	CLD				// convention惯例 is D is always left cleared
-	CALL	runtime·check(SB)
+	CALL	runtime·check(SB)		//检查类型和其他
 
+	//移动argc参数和argv参数指针
 	MOVL	16(SP), AX		// copy argc
-	MOVL	AX, 0(SP)
+	MOVL	AX, 0(SP)		// *sp = *(sp+8)
 	MOVQ	24(SP), AX		// copy argv
-	MOVQ	AX, 8(SP)
+	MOVQ	AX, 8(SP)		// *(sp+8) = *(sp+24)
 	CALL	runtime·args(SB)	//解析命令行参数
-	CALL	runtime·osinit(SB)	//ncpu 赋值
+
+	CALL	runtime·osinit(SB)	//ncpu 赋值, 获取物理页大小, 和主机名
 	CALL	runtime·schedinit(SB) //初始化 内存分配器、栈，P，垃圾回收
 
 	// create a new goroutine to start program
-	MOVQ	$runtime·mainPC(SB), AX		// entry 就是runtime.main 参考下方DATA
-	PUSHQ	AX			// 参数fn 表示的函数指针，结构体地址也是函数第一个字段的地址
-	PUSHQ	$0			// 参数siz arg size 0表示 没有参数
-	CALL	runtime·newproc(SB)		//启动新的g来执行runtime.main
-	POPQ	AX
-	POPQ	AX
+	MOVQ	$runtime·mainPC(SB), AX		// ax = runtime.mainPC entry 就是runtime.main 参考下方DATA
+	PUSHQ	AX			// 第2个参数压到栈上 参数fn 表示的函数指针，结构体地址也是函数第一个字段的地址
+	PUSHQ	$0			// 第1个参数压到栈上 参数siz arg size 0表示 没有参数
+	CALL	runtime·newproc(SB)		//启动新的g结构 放入队列 执行的函数是runtime.main
+	POPQ	AX			//退栈
+	POPQ	AX			// 保存runtime.mainPC
 
 	// start this M
-	CALL	runtime·mstart(SB)		//mstart是每个m或者说线程的入口函数
+	CALL	runtime·mstart(SB)		//mstart是每个m或者说线程的入口函数, 会进入调度循环, 不会返回
 
 	CALL	runtime·abort(SB)	// 执行系统调用SYS_CLOSE = 3 mstart should never return
 	RET
@@ -237,9 +240,9 @@ ok:
 	// intended to be called by debuggers.
 	MOVQ	$runtime·debugCallV1(SB), AX
 	RET
-
-DATA	runtime·mainPC+0(SB)/8,$runtime·main(SB)
-GLOBL	runtime·mainPC(SB),RODATA,$8
+// 全局变量 格式是 symbol+offset(SB)/width, value    symbol+offset(SB) 定义内存位置
+DATA	runtime·mainPC+0(SB)/8,$runtime·main(SB)  // runtime.mainPC = runtime.main
+GLOBL	runtime·mainPC(SB),RODATA,$8		//8B read only data
 
 //recover会用到
 TEXT runtime·breakpoint(SB),NOSPLIT,$0-0
@@ -597,14 +600,14 @@ TEXT ·publicationBarrier(SB),NOSPLIT,$0-0
 // called from deferreturn.
 // 1. pop the caller
 // 2. sub 5 bytes from the callers return
-// 3. jmp to the argument
+// 3. jmp to the argument fv 执行
 // 执行defer
 TEXT runtime·jmpdefer(SB), NOSPLIT, $0-16
-	MOVQ	fv+0(FP), DX	// fn
+	MOVQ	fv+0(FP), DX	// fn defer要执行的函数地址
 	MOVQ	argp+8(FP), BX	// caller sp
-	LEAQ	-8(BX), SP	// caller sp after CALL
+	LEAQ	-8(BX), SP	// caller sp after CALL 在framepointer开启的时候，不影响栈的结构
 	MOVQ	-8(SP), BP	// restore BP as if deferreturn returned (harmless if framepointers not in use)
-	SUBQ	$5, (SP)	// return to CALL again
+	SUBQ	$5, (SP)	// return to CALL again call指令的长度是5, 将sp-5 使代码返回到调用deferreturn的函数，重新执行deferreturn
 	MOVQ	0(DX), BX
 	JMP	BX	// but first run the deferred function
 
@@ -860,7 +863,7 @@ settls:
 	MOVQ	AX, 0x28(GS)
 #endif
 	get_tls(CX)
-	MOVQ	BX, g(CX)
+	MOVQ	BX, g(CX)	// *g = *gg
 	RET
 
 // void setg_gcc(G*); set g called from gcc.
@@ -870,6 +873,7 @@ TEXT setg_gcc<>(SB),NOSPLIT,$0
 	RET
 
 //结束程序
+// func abort()
 TEXT runtime·abort(SB),NOSPLIT,$0-0
 	INT	$3		// 系统调用3 SYS_CLOSE = 3
 loop:
@@ -1391,7 +1395,7 @@ TEXT _cgo_topofstack(SB),NOSPLIT,$0
 // The top-most function running on a goroutine
 // returns to goexit+PCQuantum.
 TEXT runtime·goexit(SB),NOSPLIT,$0-0
-	BYTE	$0x90	// NOP
+	BYTE	$0x90	// NOP		go汇编不支持所有x86指令, 可以使用BYTE填充字节, 模拟对应的二进制命令 x86 CPU上的NOP指令实质上是XCHG EAX, EAX（操作码同为0x90）--无任何作用的指令
 	CALL	runtime·goexit1(SB)	// does not return
 	// traceback from goexit1 must hit code range of goexit
 	BYTE	$0x90	// NOP
@@ -1544,7 +1548,7 @@ TEXT runtime·gcWriteBarrierR9(SB),NOSPLIT,$0
 	CALL runtime·gcWriteBarrier(SB)
 	XCHGQ R9, AX
 	RET
-
+//DATA
 DATA	debugCallFrameTooLarge<>+0x00(SB)/20, $"call frame too large"
 GLOBL	debugCallFrameTooLarge<>(SB), RODATA, $20	// Size duplicated below
 

@@ -29,17 +29,20 @@ func runtime_pollUnblock(ctx uintptr)
 func runtime_isPollServerDescriptor(fd uintptr) bool
 
 type pollDesc struct {
-	runtimeCtx uintptr
+	runtimeCtx uintptr		//内部同名对象的指针 *runtime.pollDecs
 }
 
 var serverInit sync.Once
 
+// 将socket fd 加入到轮询
 func (pd *pollDesc) init(fd *FD) error {
 	serverInit.Do(runtime_pollServerInit)
+	// 创建 pollDesc 加入到轮询
 	ctx, errno := runtime_pollOpen(uintptr(fd.Sysfd))
 	if errno != 0 {
 		if ctx != 0 {
 			runtime_pollUnblock(ctx)
+			//出错 关闭轮询
 			runtime_pollClose(ctx)
 		}
 		return errnoErr(syscall.Errno(errno))
@@ -48,10 +51,13 @@ func (pd *pollDesc) init(fd *FD) error {
 	return nil
 }
 
+// called from FD.destory
+//关闭轮询
 func (pd *pollDesc) close() {
 	if pd.runtimeCtx == 0 {
 		return
 	}
+	// 关闭轮询
 	runtime_pollClose(pd.runtimeCtx)
 	pd.runtimeCtx = 0
 }
@@ -146,9 +152,11 @@ func (fd *FD) SetWriteDeadline(t time.Time) error {
 	return setDeadlineImpl(fd, t, 'w')
 }
 
+// mode = 'w' || mode = 'r'
 func setDeadlineImpl(fd *FD, t time.Time, mode int) error {
 	var d int64
 	if !t.IsZero() {
+		//计算时间
 		d = int64(time.Until(t))
 		if d == 0 {
 			d = -1 // don't confuse deadline right now with no deadline

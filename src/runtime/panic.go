@@ -217,7 +217,7 @@ func panicmem() {
 // Create a new deferred function fn with siz bytes of arguments.
 // The compiler turns a defer statement into a call to this.
 //go:nosplit
-func deferproc(siz int32, fn *funcval) { // arguments of fn follow fn
+func deferproc(siz int32, fn *funcval) { // arguments of fn follow fn 函数的参数放在fn后面
 	gp := getg()
 	if gp.m.curg != gp {
 		// go code on the system stack can't defer
@@ -230,24 +230,29 @@ func deferproc(siz int32, fn *funcval) { // arguments of fn follow fn
 	// to somewhere safe. The memmove below does that.
 	// Until the copy completes, we can only call nosplit routines.
 	sp := getcallersp()
+	//函数指针+8 的上面就是此函数的参数
 	argp := uintptr(unsafe.Pointer(&fn)) + unsafe.Sizeof(fn)
-	callerpc := getcallerpc()
+	callerpc := getcallerpc()	//call deferproc 的下一条指令
 
 	d := newdefer(siz)
 	if d._panic != nil {
 		throw("deferproc: d.panic != nil after newdefer")
 	}
+
+	//插入链表
 	d.link = gp._defer
 	gp._defer = d
 	d.fn = fn
 	d.pc = callerpc
 	d.sp = sp
+
 	switch siz {
 	case 0:
 		// Do nothing.
 	case sys.PtrSize:
 		*(*uintptr)(deferArgs(d)) = *(*uintptr)(unsafe.Pointer(argp))
 	default:
+		// 从栈上拷贝参数到defer
 		memmove(deferArgs(d), unsafe.Pointer(argp), uintptr(siz))
 	}
 
@@ -257,12 +262,12 @@ func deferproc(siz int32, fn *funcval) { // arguments of fn follow fn
 	// the code the compiler generates always
 	// checks the return value and jumps to the
 	// end of the function if deferproc returns != 0.
-	return0()
+	return0()	// ax = 0 ret //模拟c语言 return 0的效果 go不一样，go的返回值不放在寄存器里返回
 	// No code can go here - the C return register has
 	// been set and must not be clobbered.
 }
 
-// deferprocStack queues a new deferred function with a defer record on the stack.
+// deferprocStack queues a new deferred function with a defer record on the stack. 特别记录在栈上的defer
 // The defer record must have its siz and fn fields initialized.
 // All other fields can contain junk.
 // The defer record must be immediately followed in memory by
@@ -280,7 +285,7 @@ func deferprocStack(d *_defer) {
 	// The other fields are junk on entry to deferprocStack and
 	// are initialized here.
 	d.started = false
-	d.heap = false
+	d.heap = false	//不在堆上
 	d.openDefer = false
 	d.sp = getcallersp()
 	d.pc = getcallerpc()
@@ -379,17 +384,18 @@ func init() {
 }
 
 // Allocate a Defer, usually using per-P pool.
-// Each defer must be released with freedefer.  The defer is not
-// added to any defer chain yet.
+// Each defer must be released with freedefer.
+// The defer is not added to any defer chain yet.
 //
 // This must not grow the stack because there may be a frame without
 // stack map information when this is called.
-//
+// 与freedefer配对
 //go:nosplit
 func newdefer(siz int32) *_defer {
 	var d *_defer
 	sc := deferclass(uintptr(siz))
 	gp := getg()
+	// 从p的缓冲池里拿
 	if sc < uintptr(len(p{}.deferpool)) {
 		pp := gp.m.p.ptr()
 		if len(pp.deferpool[sc]) == 0 && sched.deferpool[sc] != nil {
@@ -412,16 +418,20 @@ func newdefer(siz int32) *_defer {
 			pp.deferpool[sc] = pp.deferpool[sc][:n-1]
 		}
 	}
+
+	//分配defer + 参数大小的内存空间
 	if d == nil {
 		// Allocate new defer+args.
 		systemstack(func() {
 			total := roundupsize(totaldefersize(uintptr(siz)))
 			d = (*_defer)(mallocgc(total, deferType, true))
 		})
+
 		if debugCachedWork {
 			// Duplicate the tail below so if there's a
 			// crash in checkPut we can tell if d was just
 			// allocated or came from the pool.
+			//调试代码
 			d.siz = siz
 			d.link = gp._defer
 			gp._defer = d
@@ -523,21 +533,25 @@ func freedeferfn() {
 // Declared as nosplit, because the function should not be preempted once we start
 // modifying the caller's frame in order to reuse the frame to call the deferred
 // function.
-// 有编译器生成对此函数的调用
+// 由编译器生成汇编代码进行对此函数的调用， 触发defer函数的执行
 // The single argument isn't actually used - it just has its address
 // taken so it can be matched against pending defers.
-// 如果遍历执行defer链表？
+// 如何遍历执行defer链表？
 //go:nosplit
 func deferreturn(arg0 uintptr) {
 	gp := getg()
 	d := gp._defer
+
+	//没有defer函数直接返回
 	if d == nil {
 		return
 	}
 	sp := getcallersp()
+	//只执行同一函数内的defer
 	if d.sp != sp {
 		return
 	}
+
 	if d.openDefer {
 		done := runOpenDeferFrame(gp, d)
 		if !done {
@@ -562,9 +576,12 @@ func deferreturn(arg0 uintptr) {
 	default:
 		memmove(unsafe.Pointer(&arg0), deferArgs(d), uintptr(d.siz))
 	}
+
 	fn := d.fn
+	// 下一个
 	d.fn = nil
 	gp._defer = d.link
+	//放回defer池
 	freedefer(d)
 	// If the defer function pointer is nil, force the seg fault to happen
 	// here rather than in jmpdefer. gentraceback() throws an error if it is
@@ -890,6 +907,7 @@ func reflectcallSave(p *_panic, fn, arg unsafe.Pointer, argsize uint32) {
 
 // The implementation of the predeclared function panic.
 func gopanic(e interface{}) {
+	// 获取当前g 必须是用户g, 否则抛出异常退出
 	gp := getg()
 	if gp.m.curg != gp {
 		print("panic: ")
@@ -898,12 +916,15 @@ func gopanic(e interface{}) {
 		throw("panic on system stack")
 	}
 
+	//不能是正在分配内存
 	if gp.m.mallocing != 0 {
 		print("panic: ")
 		printany(e)
 		print("\n")
 		throw("panic during malloc")
 	}
+
+	//不能是在gc导致的关闭抢占状态
 	if gp.m.preemptoff != "" {
 		print("panic: ")
 		printany(e)
@@ -913,6 +934,8 @@ func gopanic(e interface{}) {
 		print("\n")
 		throw("panic during preemptoff")
 	}
+
+	// m不能被锁
 	if gp.m.locks != 0 {
 		print("panic: ")
 		printany(e)
@@ -920,15 +943,18 @@ func gopanic(e interface{}) {
 		throw("panic holding locks")
 	}
 
+	//分配一个_panic结构体变量
 	var p _panic
+	//赋值
 	p.arg = e
 	p.link = gp._panic
+	// noescape？？？
 	gp._panic = (*_panic)(noescape(unsafe.Pointer(&p)))
 
+	//统计
 	atomic.Xadd(&runningPanicDefers, 1)
 
-	// By calculating getcallerpc/getcallersp here, we avoid scanning the
-	// gopanic frame (stack scanning is slow...)
+	// By calculating getcallerpc/getcallersp here, we avoid scanning the gopanic frame (stack scanning is slow... 栈扫描很慢)
 	addOneOpenDeferFrame(gp, getcallerpc(), unsafe.Pointer(getcallersp()))
 
 	for {
@@ -957,14 +983,15 @@ func gopanic(e interface{}) {
 			}
 		}
 
-		// Mark defer as started, but keep on list, so that traceback
-		// can find and update the defer's argument frame if stack growth
-		// or a garbage collection happens before reflectcall starts executing d.fn.
+		// Mark defer as started, but keep on list,
+		// so that traceback can find and update the defer's argument frame
+		// if stack growth or a garbage collection happens before reflectcall starts executing d.fn.
 		d.started = true
 
 		// Record the panic that is running the defer.
 		// If there is a new panic during the deferred call, that panic
 		// will find d in the list and will mark d._panic (this panic) aborted.
+		// next = p
 		d._panic = (*_panic)(noescape(unsafe.Pointer(&p)))
 
 		done := true
@@ -983,6 +1010,7 @@ func gopanic(e interface{}) {
 		if gp._defer != d {
 			throw("bad defer entry in panic")
 		}
+		//remove
 		d._panic = nil
 
 		// trigger shrinkage to test stack copy. See stack_test.go:TestStackPanic
@@ -995,11 +1023,14 @@ func gopanic(e interface{}) {
 			gp._defer = d.link
 			freedefer(d)
 		}
+
+		//执行recover函数会设置为true
 		if p.recovered {
 			gp._panic = p.link
 			if gp._panic != nil && gp._panic.goexit && gp._panic.aborted {
 				// A normal recover would bypass/abort the Goexit.  Instead,
 				// we return to the processing loop of the Goexit.
+				// pc是 call deferproc 的下一条指令
 				gp.sigcode0 = uintptr(gp._panic.sp)
 				gp.sigcode1 = uintptr(gp._panic.pc)
 				mcall(recovery)
@@ -1047,9 +1078,11 @@ func gopanic(e interface{}) {
 			for gp._panic != nil && gp._panic.aborted {
 				gp._panic = gp._panic.link
 			}
-			if gp._panic == nil { // must be done with signal
+			if gp._panic == nil { // 必须已处理完signal must be done with signal
 				gp.sig = 0
 			}
+
+			//传递pc和sp用于恢复，
 			// Pass information about recovering frame to recovery.
 			gp.sigcode0 = uintptr(sp)
 			gp.sigcode1 = pc
@@ -1094,7 +1127,9 @@ func gorecover(argp uintptr) interface{} {
 	gp := getg()
 	p := gp._panic
 	if p != nil && !p.goexit && !p.recovered && argp == uintptr(p.argp) {
+		//就是改标记
 		p.recovered = true
+		//拿到顶部panic 的参数
 		return p.arg
 	}
 	return nil
@@ -1135,15 +1170,15 @@ var panicking uint32
 // so that two concurrent panics don't overlap their output.
 var paniclk mutex
 
-// Unwind the stack after a deferred function calls recover
-// after a panic. Then arrange to continue running as though
-// the caller of the deferred function returned normally.
+// Unwind the stack after a deferred function calls recover after a panic.
+// Then arrange to continue running as though the caller of the deferred function returned normally.
 func recovery(gp *g) {
 	// Info about defer passed in G struct.
 	sp := gp.sigcode0
 	pc := gp.sigcode1
 
 	// d's arguments need to be in the stack.
+	//检查sp在栈上
 	if sp != 0 && (sp < gp.stack.lo || gp.stack.hi < sp) {
 		print("recover: ", hex(sp), " not in [", hex(gp.stack.lo), ", ", hex(gp.stack.hi), "]\n")
 		throw("bad recovery")
@@ -1159,7 +1194,7 @@ func recovery(gp *g) {
 	gp.sched.pc = pc
 	gp.sched.lr = 0
 	gp.sched.ret = 1
-	gogo(&gp.sched)
+	gogo(&gp.sched)		//move ret -> ax
 }
 
 // fatalthrow implements an unrecoverable runtime throw. It freezes the

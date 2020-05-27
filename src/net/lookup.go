@@ -18,6 +18,7 @@ import (
 // See https://www.iana.org/assignments/protocol-numbers
 //
 // On Unix, this map is augmented by readProtocols via lookupProtocol.
+// 传输层协议区分
 var protocols = map[string]int{
 	"icmp":      1,
 	"igmp":      2,
@@ -32,6 +33,7 @@ var protocols = map[string]int{
 // See https://www.iana.org/assignments/service-names-port-numbers
 //
 // On Unix, this map is augmented by readServices via goLookupPort.
+// 区分默认端口
 var services = map[string]map[string]int{
 	"udp": {
 		"domain": 53,

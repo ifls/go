@@ -192,6 +192,7 @@ func (c *TCPConn) SetNoDelay(noDelay bool) error {
 
 func newTCPConn(fd *netFD) *TCPConn {
 	c := &TCPConn{conn{fd}}
+	// 即使发送, 不要合并发送
 	setNoDelay(c.fd, true)
 	return c
 }
@@ -252,8 +253,9 @@ func (l *TCPListener) AcceptTCP() (*TCPConn, error) {
 	return c, nil
 }
 
-// Accept implements the Accept method in the Listener interface; it
-// waits for the next call and returns a generic Conn.
+// Accept implements the Accept method in the Listener interface;
+// it waits for the next call and returns a generic Conn.
+// // tcp accept 还有unix accept
 func (l *TCPListener) Accept() (Conn, error) {
 	if !l.ok() {
 		return nil, syscall.EINVAL
@@ -317,12 +319,12 @@ func (l *TCPListener) File() (f *os.File, err error) {
 // The network must be a TCP network name; see func Dial for details.
 //
 // If the IP field of laddr is nil or an unspecified IP address,
-// ListenTCP listens on all available unicast and anycast IP addresses
-// of the local system.
-// If the Port field of laddr is 0, a port number is automatically
-// chosen.
+// ListenTCP listens on all available unicast and anycast IP addresses of the local system. 未指定就是 0.0.0.0
+// If the Port field of laddr is 0, a port number is automatically chosen. 没设置就是自动选一个
+// sysListener.listenTCP
 func ListenTCP(network string, laddr *TCPAddr) (*TCPListener, error) {
 	switch network {
+	//只认这3种
 	case "tcp", "tcp4", "tcp6":
 	default:
 		return nil, &OpError{Op: "listen", Net: network, Source: nil, Addr: laddr.opAddr(), Err: UnknownNetworkError(network)}

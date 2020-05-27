@@ -83,8 +83,8 @@ var modinfo string
 // for nmspinning manipulation.
 
 var (
-	m0           m
-	g0           g
+	m0           m		//主线程 第一个线程
+	g0           g		// m0.g0
 	mcache0      *mcache
 	//竞争检测初始虎，返回的参数
 	raceprocctx0 uintptr
@@ -117,7 +117,7 @@ var mainStarted bool
 var runtimeInitTime int64
 
 // Value to use for signal mask for newly created M's.
-// 信号掩码
+// 保存m0的信号掩码
 var initSigmask sigset
 
 // 主协程 第一个协程 The main goroutine.
@@ -146,7 +146,7 @@ func main() {
 
 	if GOARCH != "wasm" { // no threads on wasm yet, so no sysmon
 		systemstack(func() {
-			//启动系统监控
+			//新建线程启动执行系统监控
 			newm(sysmon, nil)
 		})
 	}
@@ -592,7 +592,7 @@ func cpuinit() {
 //
 // The new G calls runtime·main.
 func schedinit() {
-	//初始化锁为指定优先级
+	//给锁指定优先级
 	lockInit(&sched.lock, lockRankSched)
 	lockInit(&sched.deferlock, lockRankDefer)
 	lockInit(&sched.sudoglock, lockRankSudog)
@@ -617,40 +617,41 @@ func schedinit() {
 
 	//最大m数量
 	sched.maxmcount = 10000
-	//初始化 tracback.go 一个常量
+	//初始化 tracback.go 保持一个nop函数的全局地址
 	tracebackinit()
-	//初始化模块 symtab.go
+	//初始化模块 symtab.go 一些校验
 	moduledataverify()
-	//栈缓存初始化 stack.go
+	//栈缓存初始化 stack.go stackpoll stackLarge
 	stackinit()
 	//内存分配初始化 malloc.go
 	mallocinit()
 	//随机序列初始化
 	fastrandinit() // must run before mcommoninit
-	//m0初始化
+	//m0的一些字段初始化
 	mcommoninit(_g_.m)
 	//初始化cpu和系统属性
 	cpuinit()       // must run before alginit
-	//算法初始化 alg.go
+	//算法初始化 alg.go 哈希相关的依赖初始化， 用于map
 	alginit()       // maps must not be used before this call
-	//模块初始化 symtab.go
+	//plugin相关初始化 symtab.go
 	modulesinit()   // provides activeModules
 	//扫描其他模块的类型 type.go
 	typelinksinit() // uses maps, activeModules
 	//iface.go
 	itabsinit()     // uses activeModules
 
-	//保持当前线程的信号掩码 signal_unix.go
+	//保持当前线程的信号掩码 signal_unix.go 最终只进行了系统调用 SYS_rt_sigprocmask
 	msigsave(_g_.m)
+	//保存 m0.sigmark 传递给之后新建的m
 	initSigmask = _g_.m.sigmask
 
-	//参数 runtime1.go
+	//用go全局变量保存argv runtime1.go
 	goargs()
 	//读取储存环境变量 os_linux.go
 	goenvs()
 	//解析出GODEBUG 环境变量 runtime1.go
 	parsedebugvars()
-	//垃圾回收初始化 mgc.go
+	//垃圾回收初始化 mgc.go 设置gcpercent 和几个变量的初始化
 	gcinit()
 
 	//time_nofake.go
@@ -1192,7 +1193,7 @@ func startTheWorldWithSema(emitTraceEvent bool) int64 {
 			//唤醒
 			notewakeup(&mp.park)
 		} else {
-			//新搞一个m来
+			//没有m 新创建一个m来绑定p
 			// Start M to run P.  Do not start another M below.
 			newm(nil, p)
 		}
@@ -1221,14 +1222,14 @@ func startTheWorldWithSema(emitTraceEvent bool) int64 {
 //
 // May run during STW (because it doesn't have a P yet), so write
 // barriers are not allowed.
-//
+////新建线程，入口函数 called from newm1
 //go:nosplit
 //go:nowritebarrierrec
 func mstart() {
-	//新建线程，一开始就是g0
+	//在g0栈上执行
 	_g_ := getg()
 
-	//计算栈
+	// == 0 表示未分配栈, 使用的是系统栈, 例如m0.g0就是系统线程栈
 	osStack := _g_.stack.lo == 0
 	if osStack {
 		// Initialize stack bounds from system stack.
@@ -1275,9 +1276,9 @@ func mstart1() {
 	// so other calls can reuse the current frame.
 	//保持pc和sp 为了作为mcall的栈顶使用调用方来结束线程
 	save(getcallerpc(), getcallersp())
-	//stubs.go
+	//stubs.go linux上是空函数
 	asminit()
-	//初始化m的信号 和 m.procid
+	//初始化m的信号处理 和 m.procid
 	minit()
 
 	// Install signal handlers; after minit so that minit can
@@ -1288,14 +1289,15 @@ func mstart1() {
 	}
 
 	if fn := _g_.m.mstartfn; fn != nil {
-		//执行启动函数
+		//执行启动函数, m0没有
 		fn()
 	}
 
-	//非主线程
+	//非主线程, m0不需要绑定p0
 	if _g_.m != &m0 {
 		//获取一个p执行
 		acquirep(_g_.m.nextp.ptr())
+		//已使用过, reset
 		_g_.m.nextp = 0
 	}
 
@@ -1328,7 +1330,7 @@ func mstartm0() {
 //
 // It is entered with m.p != nil, so write barriers are allowed. It
 // will release the P before exiting.
-//
+// linux 只有m0退出是系统栈
 //go:yeswritebarrierrec
 func mexit(osStack bool) {
 	g := getg()
@@ -1394,7 +1396,7 @@ found:
 		// freeWait is 0. Note that the free list must not be linked
 		// through alllink because some functions walk allm without
 		// locking, so may be using alllink.
-		//插入到freem
+		//非系统栈的m插入到sched.freem 空闲链表重用
 		m.freelink = sched.freem
 		sched.freem = m
 	}
@@ -1416,6 +1418,7 @@ found:
 		// Return from mstart and let the system thread
 		// library free the g0 stack and terminate the thread.
 		//让系统线程库 释放g0栈，终止线程
+		// 启动函数m0 会ret退出到 _rt_g0 runtime.abort结束,
 		return
 	}
 
@@ -1423,7 +1426,7 @@ found:
 	// return to. Exit the thread directly. exitThread will clear
 	// m.freeWait when it's done with the stack and the m can be
 	// reaped.
-	//线程退出 stubs2.go
+	//非主线程退出 stubs2.go
 	exitThread(&m.freeWait)
 }
 
@@ -1577,7 +1580,7 @@ func allocm(_p_ *p, fn func()) *m {
 	//锁定m
 	acquirem() // disable GC because it can be called from sysmon
 	if _g_.m.p == 0 {
-		//绑定m和p
+		//绑定m和p  _p_ 可能 == nil
 		acquirep(_p_) // temporarily borrow p for mallocs in this function
 	}
 
@@ -1622,9 +1625,11 @@ func allocm(_p_ *p, fn func()) *m {
 	//g0.m = m
 	mp.g0.m = mp
 
+	// 释放当前的p
 	if _p_ == _g_.m.p.ptr() {
 		releasep()
 	}
+	//解锁m
 	releasem(_g_.m)
 
 	return mp
@@ -1731,6 +1736,7 @@ var earlycgocallback = []byte("fatal error: cgo callback before cgo call\n")
 // newextram allocates m's and puts them on the extra list. 分配 一个m放到 extra m 列表
 // It is called with a working local m, so that it can do things
 // like call schedlock and allocate.
+// 和cgo 和 race检测有关
 func newextram() {
 	c := atomic.Xchg(&extraMWaiters, 0)
 	if c > 0 {
@@ -1748,14 +1754,14 @@ func newextram() {
 }
 
 // oneNewExtraM allocates an m and puts it on the extra list.
-// 放在extram
+// called from newextram()
 func oneNewExtraM() {
 	// Create extra goroutine locked to extra m.
 	// The goroutine is the context in which the cgo callback will run.
 	// The sched.pc will never be returned to, but setting it to
 	// goexit makes clear to the traceback routines where
 	// the goroutine stack ends.
-	//创建m
+	//创建m{}
 	mp := allocm(nil, nil)
 	//分配g
 	gp := malg(4096)
@@ -1914,6 +1920,7 @@ var execLock rwmutex
 // 包含需要新建线程的m列表
 // This is used by newm in situations where newm itself can't safely
 // start an OS thread.
+// 全局变量
 var newmHandoff struct {
 	lock mutex
 
@@ -1936,20 +1943,22 @@ var newmHandoff struct {
 // Create a new m bind with _p_. It will start off开始 with a call to fn, or else the scheduler.
 // fn needs to be static and not a heap allocated closure.
 // May run with m.p==nil, so write barriers are not allowed.
+// one called from startm()
 //go:nowritebarrierrec
 func newm(fn func(), _p_ *p) {
-	//分配一个m对象
+	//分配一个m{}对象
 	mp := allocm(_p_, fn)
+	//设置接下来要绑定的p
 	mp.nextp.set(_p_)
+	// 复制m0的sigmask
 	mp.sigmask = initSigmask
 
+	//
 	if gp := getg(); gp != nil && gp.m != nil && (gp.m.lockedExt != 0 || gp.m.incgo) && GOOS != "plan9" {
-		// We're on a locked M or a thread that may have been
-		// started by C. The kernel state of this thread may
-		// be strange (the user may have locked it for that
-		// purpose). We don't want to clone that into another
-		// thread. Instead, ask a known-good thread to create
-		// the thread for us.
+		// We're on a locked M or a thread that may have been started by C.
+		// The kernel state of this thread may be strange (the user may have locked it for that purpose).
+		// We don't want to clone that into another thread.
+		// Instead, ask a known-good thread to create the thread for us.
 		//
 		// This is disabled on Plan 9. See golang.org/issue/22227.
 		//
@@ -1959,8 +1968,10 @@ func newm(fn func(), _p_ *p) {
 		if newmHandoff.haveTemplateThread == 0 {
 			throw("on a locked thread with no template thread")
 		}
+		//插入到 newmHandoff 链表
 		mp.schedlink = newmHandoff.newm
 		newmHandoff.newm.set(mp)
+
 		if newmHandoff.waiting {
 			newmHandoff.waiting = false
 			notewakeup(&newmHandoff.wake)
@@ -1968,7 +1979,8 @@ func newm(fn func(), _p_ *p) {
 		unlock(&newmHandoff.lock)
 		return
 	}
-	//
+
+	//创建系统线程
 	newm1(mp)
 }
 
@@ -1999,7 +2011,8 @@ func newm1(mp *m) {
 
 // startTemplateThread starts the template thread if it is not already
 // running. 还未准备开始运行
-//  启动模板线程
+//  启动模板线程 
+// one called from LockOsThread()
 // The calling thread must itself be in a known-good state.
 func startTemplateThread() {
 	if GOARCH == "wasm" { // no threads on wasm yet
@@ -2008,6 +2021,7 @@ func startTemplateThread() {
 	if !atomic.Cas(&newmHandoff.haveTemplateThread, 0, 1) {
 		return
 	}
+	//新建线程 执行创建线程的逻辑
 	newm(templateThread, nil)
 }
 
@@ -2021,7 +2035,7 @@ func startTemplateThread() {
 //
 // templateThread runs on an M without a P, so it must not have write
 // barriers.
-//
+// 专门负责创建新的m或者说线程
 //go:nowritebarrierrec
 func templateThread() {
 	lock(&sched.lock)
@@ -2092,6 +2106,7 @@ func mspinning() {
 // May run with m.p==nil, so write barriers are not allowed.
 // If spinning is set, the caller has incremented nmspinning and startm will
 // either decrement nmspinning or set m.spinning in the newly started M.
+// handoffp() wakep() sysmon() injectlist()
 //go:nowritebarrierrec
 func startm(_p_ *p, spinning bool) {
 	lock(&sched.lock)
@@ -2121,7 +2136,7 @@ func startm(_p_ *p, spinning bool) {
 			// The caller incremented nmspinning, so set m.spinning in the new M.
 			fn = mspinning
 		}
-		// new a m to run p
+		// 创建一个线程m new a m to run p
 		newm(fn, _p_)
 		return
 	}

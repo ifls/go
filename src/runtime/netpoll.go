@@ -45,8 +45,9 @@ const (
 	pollErrNotPollable = 3 // general error polling descriptor
 )
 
-// pollDesc contains 2 binary semaphores, rg and wg, to park reader and writer
-// goroutines respectively. The semaphore can be in the following states:
+// pollDesc contains 2 binary semaphores,
+// rg and wg, to park reader and writer goroutines respectively.
+//The semaphore can be in the following states:
 // pdReady - io readiness notification is pending;
 //           a goroutine consumes the notification by changing the state to nil.
 // pdWait - a goroutine prepares to park on the semaphore, but not yet parked;
@@ -61,6 +62,7 @@ const (
 	pdReady uintptr = 1
 	pdWait  uintptr = 2
 )
+
 //4K
 const pollBlockSize = 4 * 1024
 
@@ -84,11 +86,14 @@ type pollDesc struct {
 	closing bool
 	everr   bool    // marks event scanning error happened
 	user    uint32  // user settable cookie 用户可变cookie
+
 	rseq    uintptr // protects from stale旧的 read timers
 	rg      uintptr // pdReady, pdWait, G waiting for read or nil 等待读的g 值为 pdReady标记，pdWait标记，*g, nil 之一
 	rt      timer   // read deadline timer (set if rt.f != nil)
 	rd      int64   // read deadline
-	wseq    uintptr // protects from stale write timers
+
+	wseq    uintptr // protects from stale过期的 write timers
+
 	wg      uintptr // pdReady, pdWait, G waiting for write or nil 等待写的g
 	wt      timer   // write deadline timer
 	wd      int64   // write deadline
@@ -165,10 +170,12 @@ func poll_runtime_pollOpen(fd uintptr) (*pollDesc, int) {
 	unlock(&pd.lock)
 
 	var errno int32
+	//加入到轮询里
 	errno = netpollopen(fd, pd)
 	return pd, int(errno)
 }
 
+// 关闭轮询
 //go:linkname poll_runtime_pollClose internal/poll.runtime_pollClose
 func poll_runtime_pollClose(pd *pollDesc) {
 	if !pd.closing {
@@ -180,7 +187,9 @@ func poll_runtime_pollClose(pd *pollDesc) {
 	if pd.rg != 0 && pd.rg != pdReady {
 		throw("runtime: blocked read on closing polldesc")
 	}
+	//移出epoll监听
 	netpollclose(pd.fd)
+	// pollDesc{} 放回缓存
 	pollcache.free(pd)
 }
 
@@ -223,6 +232,8 @@ func poll_runtime_pollWait(pd *pollDesc, mode int) int {
 	if GOOS == "solaris" || GOOS == "illumos" || GOOS == "aix" {
 		netpollarm(pd, mode)
 	}
+
+	// gopark
 	for !netpollblock(pd, int32(mode), false) {
 		errcode = netpollcheckerr(pd, int32(mode))
 		if errcode != pollNoError {
@@ -286,12 +297,14 @@ func poll_runtime_pollSetDeadline(pd *pollDesc, d int64, mode int) {
 		if pd.rd > 0 {
 			modtimer(&pd.rt, pd.rd, 0, rtf, pd, pd.rseq)
 		} else {
+			//删除当前的
 			deltimer(&pd.rt)
 			pd.rt.f = nil
 		}
 	}
 	if pd.wt.f == nil {
 		if pd.wd > 0 && !combo {
+			// 设置回调函数
 			pd.wt.f = netpollWriteDeadline
 			pd.wt.arg = pd
 			pd.wt.seq = pd.wseq
@@ -307,6 +320,7 @@ func poll_runtime_pollSetDeadline(pd *pollDesc, d int64, mode int) {
 		}
 	}
 	// If we set the new deadline in the past, unblock currently pending IO if any.
+	// 如果新时间直接超时, 直接唤醒g
 	var rg, wg *g
 	if pd.rd < 0 || pd.wd < 0 {
 		atomic.StorepNoWB(noescape(unsafe.Pointer(&wg)), nil) // full memory barrier between stores to rd/wd and load of rg/wg in netpollunblock
@@ -319,6 +333,7 @@ func poll_runtime_pollSetDeadline(pd *pollDesc, d int64, mode int) {
 	}
 	unlock(&pd.lock)
 	if rg != nil {
+		// 放入运行队列
 		netpollgoready(rg, 3)
 	}
 	if wg != nil {
@@ -326,12 +341,14 @@ func poll_runtime_pollSetDeadline(pd *pollDesc, d int64, mode int) {
 	}
 }
 
+// fd close 函数中调用
 //go:linkname poll_runtime_pollUnblock internal/poll.runtime_pollUnblock
 func poll_runtime_pollUnblock(pd *pollDesc) {
 	lock(&pd.lock)
 	if pd.closing {
 		throw("runtime: unblock on closing polldesc")
 	}
+	//标记关闭
 	pd.closing = true
 	pd.rseq++
 	pd.wseq++
@@ -339,6 +356,8 @@ func poll_runtime_pollUnblock(pd *pollDesc) {
 	atomic.StorepNoWB(noescape(unsafe.Pointer(&rg)), nil) // full memory barrier between store to closing and read of rg/wg in netpollunblock
 	rg = netpollunblock(pd, 'r', false)
 	wg = netpollunblock(pd, 'w', false)
+
+	//删除定时器
 	if pd.rt.f != nil {
 		deltimer(&pd.rt)
 		pd.rt.f = nil
@@ -349,6 +368,7 @@ func poll_runtime_pollUnblock(pd *pollDesc) {
 	}
 	unlock(&pd.lock)
 	if rg != nil {
+		//加入到 运行队列
 		netpollgoready(rg, 3)
 	}
 	if wg != nil {
@@ -363,6 +383,7 @@ func poll_runtime_pollUnblock(pd *pollDesc) {
 // whether the fd is ready for reading or writing or both.
 //
 // This may run while the world is stopped, so write barriers are not allowed.
+// pd.rg -> toRun
 //go:nowritebarrier
 func netpollready(toRun *gList, pd *pollDesc, mode int32) {
 	var rg, wg *g
@@ -439,6 +460,7 @@ func netpollblock(pd *pollDesc, mode int32, waitio bool) bool {
 	// this is necessary because runtime_pollUnblock/runtime_pollSetDeadline/deadlineimpl
 	// do the opposite: store to closing/rd/wd, membarrier, load of rg/wg
 	if waitio || netpollcheckerr(pd, mode) == 0 {
+		// 挂起g
 		gopark(netpollblockcommit, unsafe.Pointer(gpp), waitReasonIOWait, traceEvGoBlockNet, 5)
 	}
 	// be careful to not lose concurrent pdReady notification
@@ -449,6 +471,7 @@ func netpollblock(pd *pollDesc, mode int32, waitio bool) bool {
 	return old == pdReady
 }
 
+// 原子修改状态 把pd 里的 rd 或者 wg拿出来
 func netpollunblock(pd *pollDesc, mode int32, ioready bool) *g {
 	gpp := &pd.rg
 	if mode == 'w' {
@@ -511,6 +534,7 @@ func netpolldeadlineimpl(pd *pollDesc, seq uintptr, read, write bool) {
 	}
 	unlock(&pd.lock)
 	if rg != nil {
+		//唤醒 到运行队列
 		netpollgoready(rg, 0)
 	}
 	if wg != nil {
@@ -518,6 +542,7 @@ func netpolldeadlineimpl(pd *pollDesc, seq uintptr, read, write bool) {
 	}
 }
 
+// fd read/write 超时回调
 func netpollDeadline(arg interface{}, seq uintptr) {
 	netpolldeadlineimpl(arg.(*pollDesc), seq, true, true)
 }

@@ -166,6 +166,7 @@ type Conn interface {
 	SetWriteDeadline(t time.Time) error
 }
 
+// 被 TcpConn IpConn 内嵌使用
 type conn struct {
 	fd *netFD
 }
@@ -367,7 +368,7 @@ var listenerBacklogCache struct {
 	val int
 }
 
-// listenerBacklog is a caching wrapper around maxListenerBacklog.
+// listenerBacklog is a caching wrapper around maxListenerBacklog. backlog是什么？
 func listenerBacklog() int {
 	listenerBacklogCache.Do(func() { listenerBacklogCache.val = maxListenerBacklog() })
 	return listenerBacklogCache.val

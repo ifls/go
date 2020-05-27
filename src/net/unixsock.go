@@ -253,6 +253,7 @@ func (l *UnixListener) AcceptUnix() (*UnixConn, error) {
 
 // Accept implements the Accept method in the Listener interface.
 // Returned connections will be of type *UnixConn.
+// unix Accept 与 tcp accept 对称
 func (l *UnixListener) Accept() (Conn, error) {
 	if !l.ok() {
 		return nil, syscall.EINVAL

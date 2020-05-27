@@ -14,8 +14,8 @@ func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
 }
 
 // getg returns the pointer to the current g.
-// The compiler rewrites calls to this function into instructions 将此函数的调用重写为指令，就是内联
-// that fetch the g directly (from TLS or from the dedicated专门的 register).
+// The compiler rewrites calls to this function into instructions 编译器将此函数的调用重写为指令，就是内联
+// that fetch the g directly (from TLS or from the dedicated专门的 register). 直接获取g指针
 func getg() *g
 
 // mcall switches from the g to the g0 stack and invokes fn(g), 切换到g0栈执行，不应该返回，而是要调度其他协程运行
@@ -161,6 +161,7 @@ func gosave(buf *gobuf)
 
 //go:noescape
 func jmpdefer(fv *funcval, argp uintptr)
+// linux 上是直接ret
 func asminit()
 func setg(gg *g)
 func breakpoint()

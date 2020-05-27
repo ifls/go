@@ -150,7 +150,7 @@ func newosproc(mp *m) {
 	// with signals disabled. It will enable them in minit.
 	var oset sigset
 	sigprocmask(_SIG_SETMASK, &sigset_all, &oset)
-	//new sys thread stk是栈底，mp, g0, mstart
+	//new sys thread stk是栈底，mp, g0, 设置入口函数mstart
 	ret := clone(cloneFlags, stk, unsafe.Pointer(mp), unsafe.Pointer(mp.g0), unsafe.Pointer(funcPC(mstart)))
 	sigprocmask(_SIG_SETMASK, &oset, nil)
 
@@ -299,9 +299,9 @@ func getHugePageSize() uintptr {
 func osinit() {
 	//cpu核心数
 	ncpu = getproccount()
-	//物理页大小
+	//获取物理页大小
 	physHugePageSize = getHugePageSize()
-	//uts 主机名 版本号等信息
+	//获取uts 主机名 版本号等信息
 	osArchInit()
 }
 

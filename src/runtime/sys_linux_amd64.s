@@ -670,7 +670,7 @@ TEXT runtime·sigaltstack(SB),NOSPLIT,$-8
 	MOVL	$0xf1, 0xf1  // crash
 	RET
 
-// set tls base to DI
+// set tls base to DI 从Di开始的地址 设置 线程
 // func settls() stubs_amd64.go
 TEXT runtime·settls(SB),NOSPLIT,$32
 #ifdef GOOS_android
@@ -681,7 +681,7 @@ TEXT runtime·settls(SB),NOSPLIT,$32
 #endif
 	MOVQ	DI, SI
 	MOVQ	$0x1002, DI	// ARCH_SET_FS
-	MOVQ	$SYS_arch_prctl, AX
+	MOVQ	$SYS_arch_prctl, AX		//设置线程状态
 	SYSCALL
 	CMPQ	AX, $0xfffffffffffff001
 	JLS	2(PC)
@@ -690,7 +690,7 @@ TEXT runtime·settls(SB),NOSPLIT,$32
 
 //os_linux.go func osyield()
 TEXT runtime·osyield(SB),NOSPLIT,$0
-	MOVL	$SYS_sched_yield, AX
+	MOVL	$SYS_sched_yield, AX	//让出cpu
 	SYSCALL
 	RET
 

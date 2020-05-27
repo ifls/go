@@ -12,7 +12,7 @@ var (
 	testHookDialChannel  = func() {} // for golang.org/issue/5349
 	testHookCanceledDial = func() {} // for golang.org/issue/16523
 
-	// Placeholders for socket system calls.
+	// Placeholders for socket system calls. 通用函数 可以注入不同函数用于测试
 	socketFunc        func(int, int, int) (int, error)  = syscall.Socket
 	connectFunc       func(int, syscall.Sockaddr) error = syscall.Connect
 	listenFunc        func(int, int) error              = syscall.Listen

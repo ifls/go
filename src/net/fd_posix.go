@@ -29,11 +29,14 @@ type netFD struct {
 func (fd *netFD) setAddr(laddr, raddr Addr) {
 	fd.laddr = laddr
 	fd.raddr = raddr
+	//可以这样获取方法指针？
 	runtime.SetFinalizer(fd, (*netFD).Close)
 }
 
 func (fd *netFD) Close() error {
+	//取消析构回调
 	runtime.SetFinalizer(fd, nil)
+	//关闭轮询
 	return fd.pfd.Close()
 }
 

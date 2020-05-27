@@ -14,7 +14,7 @@ import (
 )
 
 func unixSocket(ctx context.Context, net string, laddr, raddr sockaddr, mode string, ctrlFn func(string, string, syscall.RawConn) error) (*netFD, error) {
-	var sotype int
+	var sotype int	//unix socket 具体类型
 	switch net {
 	case "unix":
 		sotype = syscall.SOCK_STREAM
@@ -41,7 +41,7 @@ func unixSocket(ctx context.Context, net string, laddr, raddr sockaddr, mode str
 	default:
 		return nil, errors.New("unknown mode: " + mode)
 	}
-
+	// AF_UNIX 家族 proto无需设置
 	fd, err := socket(ctx, net, syscall.AF_UNIX, sotype, 0, false, laddr, raddr, ctrlFn)
 	if err != nil {
 		return nil, err

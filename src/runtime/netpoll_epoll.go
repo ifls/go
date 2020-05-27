@@ -65,7 +65,7 @@ func netpollinit() {
 	netpollBreakWr = uintptr(w)
 }
 
-//是epoll 使用的文件描述符吗
+//是epoll对象本身的文件描述符
 func netpollIsPollDescriptor(fd uintptr) bool {
 	return fd == uintptr(epfd) || fd == netpollBreakRd || fd == netpollBreakWr
 }

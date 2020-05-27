@@ -97,8 +97,8 @@ func (mu *fdMutex) increfAndClose() bool {
 	}
 }
 
-// decref removes a reference from mu.
-// It reports whether there is no remaining reference.
+// decref removes a reference from mu. 减少引用
+// It reports whether there is no remaining reference.   返回是否没有引用
 func (mu *fdMutex) decref() bool {
 	for {
 		old := atomic.LoadUint64(&mu.state)
@@ -209,7 +209,9 @@ func (fd *FD) incref() error {
 // It also closes fd when the state of fd is set to closed and there
 // is no remaining reference.
 func (fd *FD) decref() error {
+	//true 表示没有引用
 	if fd.fdmu.decref() {
+		// 关闭
 		return fd.destroy()
 	}
 	return nil
@@ -224,9 +226,9 @@ func (fd *FD) readLock() error {
 	return nil
 }
 
-// readUnlock removes a reference from fd and unlocks fd for reading.
-// It also closes fd when the state of fd is set to closed and there
-// is no remaining reference.
+// readUnlock removes a reference from fd and unlocks fd for reading. 减少一个引用
+// It also closes fd when the state of fd is set to closed and there is no remaining reference. 没有引用时关闭
+// read 函数返回时 在defer里调用 减少引用
 func (fd *FD) readUnlock() {
 	if fd.fdmu.rwunlock(true) {
 		fd.destroy()
@@ -242,9 +244,9 @@ func (fd *FD) writeLock() error {
 	return nil
 }
 
-// writeUnlock removes a reference from fd and unlocks fd for writing.
-// It also closes fd when the state of fd is set to closed and there
-// is no remaining reference.
+// writeUnlock removes a reference from fd and unlocks fd for writing. 减少一个引用
+// It also closes fd when the state of fd is set to closed and there is no remaining reference. 没有引用时关闭
+// write 函数返回时 在defer里调用 减少引用
 func (fd *FD) writeUnlock() {
 	if fd.fdmu.rwunlock(false) {
 		fd.destroy()

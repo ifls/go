@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // +build aix darwin dragonfly freebsd js,wasm linux netbsd openbsd solaris
-
+// unix平台
 package poll
 
 import (
@@ -13,11 +13,12 @@ import (
 	"syscall"
 )
 
-// FD is a file descriptor. The net and os packages use this type as a
+// FD is a file descriptor.
+// The net and os packages use this type as a
 // field of a larger type representing a network connection or OS file.
 type FD struct {
 	// Lock sysfd and serialize access to Read and Write methods.
-	fdmu fdMutex	//保护读写的锁
+	fdmu fdMutex	//保护读写api操作的锁
 
 	// System file descriptor. Immutable until Close.
 	Sysfd int
@@ -32,32 +33,31 @@ type FD struct {
 	csema uint32
 
 	// Non-zero if this file has been set to blocking mode.
-	isBlocking uint32
+	isBlocking uint32		// != 0 true 表示 是阻塞模式
 
-	// Whether this is a streaming descriptor, as opposed to a
-	// packet-based descriptor like a UDP socket. Immutable.
+	// Whether this is a streaming descriptor, as opposed to a packet-based descriptor like a UDP socket. Immutable.
+	// 流式 tcp 还是 包 packet
 	IsStream bool
 
-	// Whether a zero byte read indicates EOF. This is false for a
-	// message based socket connection.
+	// Whether a zero byte read indicates EOF. 是否读到0字节数据表示EOF
+	// This is false for a message based socket connection. 基于消息的 socket 是false
 	ZeroReadIsEOF bool
 
 	// Whether this is a file rather than a network socket.
-	isFile bool
+	isFile bool		//true 表示只是个普通文件
 }
 
 // Init initializes the FD. The Sysfd field should already be set.
 // This can be called multiple times on a single FD.
-// The net argument is a network name from the net package (e.g., "tcp"),
-// or "file".
-// Set pollable to true if fd should be managed by runtime netpoll.
+// The net argument is a network name from the net package (e.g., "tcp"), or "file".  net表示网络类型
+// Set pollable to true if fd should be managed by runtime netpoll. 网络fd 都是设置 pollable = true
 func (fd *FD) Init(net string, pollable bool) error {
 	// We don't actually care about the various network types.
 	if net == "file" {
-		fd.isFile = true
+		fd.isFile = true 	//标记是文件
 	}
 	if !pollable {
-		fd.isBlocking = 1
+		fd.isBlocking = 1	//非可poll, 就是阻塞访问的
 		return nil
 	}
 	err := fd.pd.init(fd)
@@ -74,7 +74,9 @@ func (fd *FD) Init(net string, pollable bool) error {
 func (fd *FD) destroy() error {
 	// Poller may want to unregister fd in readiness notification mechanism,
 	// so this must be executed before CloseFunc.
+	//关闭轮询
 	fd.pd.close()
+	// SYS_CLOSE
 	err := CloseFunc(fd.Sysfd)
 	fd.Sysfd = -1
 	runtime_Semrelease(&fd.csema)
@@ -94,10 +96,11 @@ func (fd *FD) Close() error {
 	// the final decref will close fd.sysfd. This should happen
 	// fairly quickly, since all the I/O is non-blocking, and any
 	// attempts to block in the pollDesc will return errClosing(fd.isFile).
+	//从轮询中排除 并唤醒等待的g
 	fd.pd.evict()
 
-	// The call to decref will call destroy if there are no other
-	// references.
+	// The call to decref will call destroy if there are no other references.
+	//减引用 == 0 才释放
 	err := fd.decref()
 
 	// Wait until the descriptor is closed. If this was the only
@@ -154,10 +157,13 @@ func (fd *FD) Read(p []byte) (int, error) {
 		p = p[:maxRW]
 	}
 	for {
+		//系统调用
 		n, err := syscall.Read(fd.Sysfd, p)
 		if err != nil {
 			n = 0
 			if err == syscall.EAGAIN && fd.pd.pollable() {
+				//读不到数据, 需要之后再读
+				// 阻塞
 				if err = fd.pd.waitRead(fd.isFile); err == nil {
 					continue
 				}
@@ -252,11 +258,14 @@ func (fd *FD) Write(p []byte) (int, error) {
 		return 0, err
 	}
 	var nn int
+
+	//循环写直到写完
 	for {
 		max := len(p)
 		if fd.IsStream && max-nn > maxRW {
 			max = nn + maxRW
 		}
+		// 系统调用
 		n, err := syscall.Write(fd.Sysfd, p[nn:max])
 		if n > 0 {
 			nn += n
@@ -265,6 +274,7 @@ func (fd *FD) Write(p []byte) (int, error) {
 			return nn, err
 		}
 		if err == syscall.EAGAIN && fd.pd.pollable() {
+			//阻塞
 			if err = fd.pd.waitWrite(fd.isFile); err == nil {
 				continue
 			}
@@ -365,7 +375,9 @@ func (fd *FD) Accept() (int, syscall.Sockaddr, string, error) {
 	if err := fd.pd.prepareRead(fd.isFile); err != nil {
 		return -1, nil, "", err
 	}
+	// 循环
 	for {
+		// sock_cloexec.go
 		s, rsa, errcall, err := accept(fd.Sysfd)
 		if err == nil {
 			return s, rsa, "", err
@@ -373,6 +385,7 @@ func (fd *FD) Accept() (int, syscall.Sockaddr, string, error) {
 		switch err {
 		case syscall.EAGAIN:
 			if fd.pd.pollable() {
+				// park 暂停g
 				if err = fd.pd.waitRead(fd.isFile); err == nil {
 					continue
 				}
@@ -490,7 +503,7 @@ func (fd *FD) WaitWrite() error {
 	return fd.pd.waitWrite(fd.isFile)
 }
 
-// WriteOnce is for testing only. It makes a single write call.
+// WriteOnce is for testing only. It makes a single write call. 只用于测试
 func (fd *FD) WriteOnce(p []byte) (int, error) {
 	if err := fd.writeLock(); err != nil {
 		return 0, err

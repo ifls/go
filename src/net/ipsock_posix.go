@@ -13,9 +13,8 @@ import (
 	"syscall"
 )
 
-// Probe probes IPv4, IPv6 and IPv4-mapped IPv6 communication
-// capabilities which are controlled by the IPV6_V6ONLY socket option
-// and kernel configuration.
+// Probe probes IPv4, IPv6 and IPv4-mapped IPv6 communication capabilities
+// which are controlled by the IPV6_V6ONLY socket option and kernel configuration.
 //
 // Should we try to use the IPv4 socket interface if we're only
 // dealing with IPv4 sockets? As long as the host system understands
@@ -133,11 +132,15 @@ func favoriteAddrFamily(network string, laddr, raddr sockaddr, mode string) (fam
 	return syscall.AF_INET6, false
 }
 
+// tcpsock_posix.go iprawsock_posix.go udpsock_posix.go
+// listen dial listenMulticastUdp
 func internetSocket(ctx context.Context, net string, laddr, raddr sockaddr, sotype, proto int, mode string, ctrlFn func(string, string, syscall.RawConn) error) (fd *netFD, err error) {
 	if (runtime.GOOS == "aix" || runtime.GOOS == "windows" || runtime.GOOS == "openbsd") && mode == "dial" && raddr.isWildcard() {
 		raddr = raddr.toLocal(net)
 	}
 	family, ipv6only := favoriteAddrFamily(net, laddr, raddr, mode)
+	//family AF_INET AF_INET6
+	// type sock SOCK_RAW SOCK_STREAM SOCK_DGRAM
 	return socket(ctx, net, family, sotype, proto, ipv6only, laddr, raddr, ctrlFn)
 }
 

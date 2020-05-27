@@ -617,8 +617,8 @@ type ListenConfig struct {
 
 // Listen announces on the local network address.
 //
-// See func Listen for a description of the network and address
-// parameters.
+// See func Listen for a description of the network and address parameters.
+// sysListener.listenTCP
 func (lc *ListenConfig) Listen(ctx context.Context, network, address string) (Listener, error) {
 	addrs, err := DefaultResolver.resolveAddrList(ctx, "listen", network, address, nil)
 	if err != nil {

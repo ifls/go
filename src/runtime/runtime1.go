@@ -135,6 +135,7 @@ func testAtomic64() {
 	}
 }
 
+// 类型检查以及其他检查
 func check() {
 	var (
 		a     int8

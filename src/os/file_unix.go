@@ -120,6 +120,7 @@ func newFile(fd uintptr, name string, kind newFileKind) *File {
 		stdoutOrErr: fdi == 1 || fdi == 2,
 	}}
 
+	//true 表示 被netpoll 管理
 	pollable := kind == kindOpenFile || kind == kindPipe || kind == kindNonBlock
 
 	// If the caller passed a non-blocking filedes (kindNonBlock),

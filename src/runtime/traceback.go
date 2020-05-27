@@ -40,8 +40,7 @@ var skipPC uintptr
 func tracebackinit() {
 	// Go variable initialization happens late during runtime startup.
 	// Instead of initializing the variables above in the declarations,
-	// schedinit calls this function so that the variables are
-	// initialized and available earlier in the startup sequence.
+	// schedinit calls this function so that the variables are initialized and available earlier in the startup sequence.
 	skipPC = funcPC(skipPleaseUseCallersFrames)
 }
 

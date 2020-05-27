@@ -7,6 +7,7 @@ package net
 import "syscall"
 
 func maxListenerBacklog() int {
+	// 只能通过修改这个文件的内容 改backlog的内容
 	fd, err := open("/proc/sys/net/core/somaxconn")
 	if err != nil {
 		return syscall.SOMAXCONN

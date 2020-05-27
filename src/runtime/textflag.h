@@ -12,17 +12,17 @@
 #define NOPROF	1
 // It is ok for the linker to get multiple of these symbols. It will
 // pick one of the duplicates to use.
-#define DUPOK	2
+#define DUPOK	2		//允许一个符号多个副本
 // Don't insert stack check preamble.
-#define NOSPLIT	4
+#define NOSPLIT	4		//不插入预先检查的代码
 // Put this data in a read-only section.
 #define RODATA	8
 // This data contains no pointers.
-#define NOPTR	16
+#define NOPTR	16		//无指针不需要进行垃圾回收
 // This is a wrapper function and should not count as disabling 'recover'.
-#define WRAPPER 32
+#define WRAPPER 32		//包装函数
 // This function uses its incoming context register.
-#define NEEDCTXT 64
+#define NEEDCTXT 64		//闭包
 // Allocate a word of thread local storage and store the offset from the
 // thread local base to the thread local storage in this variable.
 #define TLSBSS	256
@@ -31,7 +31,7 @@
 // TODO(mwhudson): only implemented for ppc64x at present.
 #define NOFRAME 512
 // Function can call reflect.Type.Method or reflect.Type.MethodByName.
-#define REFLECTMETHOD 1024
-// Function is the top of the call stack. Call stack unwinders should stop
+#define REFLECTMETHOD 1024		//
+// Function is the top of the call stack. Call stack unwinders回退 should stop
 // at this function.
-#define TOPFRAME 2048
+#define TOPFRAME 2048		//调用栈顶部

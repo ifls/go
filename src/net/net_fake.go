@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Fake networking for js/wasm. It is intended to allow tests of other package to pass.
-
+// 意在允许其他其他包的测试通过
 // +build js,wasm
 
 package net

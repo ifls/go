@@ -140,6 +140,7 @@ func (ln *TCPListener) accept() (*TCPConn, error) {
 	if err != nil {
 		return nil, err
 	}
+	//包装fd
 	tc := newTCPConn(fd)
 	if ln.lc.KeepAlive >= 0 {
 		setKeepAlive(fd, true)
@@ -164,6 +165,7 @@ func (ln *TCPListener) file() (*os.File, error) {
 	return f, nil
 }
 
+// net/dial.go/Listen   net/tcpsock.go/ListenTCP
 func (sl *sysListener) listenTCP(ctx context.Context, laddr *TCPAddr) (*TCPListener, error) {
 	fd, err := internetSocket(ctx, sl.network, laddr, nil, syscall.SOCK_STREAM, 0, "listen", sl.ListenConfig.Control)
 	if err != nil {

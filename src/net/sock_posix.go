@@ -15,7 +15,10 @@ import (
 
 // socket returns a network file descriptor that is ready for
 // asynchronous I/O using the network poller.
+// ipsock_posix.go unixsock_posix.go
+// 创建 绑定 监听 三合一体 并且支持拨号
 func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only bool, laddr, raddr sockaddr, ctrlFn func(string, string, syscall.RawConn) error) (fd *netFD, err error) {
+	// s 就是 socket fd
 	s, err := sysSocket(family, sotype, proto)
 	if err != nil {
 		return nil, err
@@ -50,16 +53,16 @@ func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only
 	// from stream or datagram listeners when laddr is not nil but
 	// raddr is nil. Otherwise we assume it's just for dialers or
 	// the other connection holders.
-
+	// 只有本地地址就是listen
 	if laddr != nil && raddr == nil {
 		switch sotype {
-		case syscall.SOCK_STREAM, syscall.SOCK_SEQPACKET:
+		case syscall.SOCK_STREAM, syscall.SOCK_SEQPACKET:	//流式
 			if err := fd.listenStream(laddr, listenerBacklog(), ctrlFn); err != nil {
 				fd.Close()
 				return nil, err
 			}
 			return fd, nil
-		case syscall.SOCK_DGRAM:
+		case syscall.SOCK_DGRAM:		//数据报
 			if err := fd.listenDatagram(laddr, ctrlFn); err != nil {
 				fd.Close()
 				return nil, err
@@ -67,6 +70,8 @@ func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only
 			return fd, nil
 		}
 	}
+
+	//否则就是dial
 	if err := fd.dial(ctx, laddr, raddr, ctrlFn); err != nil {
 		fd.Close()
 		return nil, err
@@ -190,12 +195,15 @@ func (fd *netFD) listenStream(laddr sockaddr, backlog int, ctrlFn func(string, s
 			return err
 		}
 	}
+	//绑定地址 SYS_BIND
 	if err = syscall.Bind(fd.pfd.Sysfd, lsa); err != nil {
 		return os.NewSyscallError("bind", err)
 	}
+	// SYS_LISTEN
 	if err = listenFunc(fd.pfd.Sysfd, backlog); err != nil {
 		return os.NewSyscallError("listen", err)
 	}
+	// 加入到轮询
 	if err = fd.init(); err != nil {
 		return err
 	}

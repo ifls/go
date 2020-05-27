@@ -7,7 +7,8 @@
 #endif
 
 #ifdef GOARCH_amd64
-#define	get_tls(r)	MOVQ TLS, r
+#define	get_tls(r)	MOVQ TLS, r		//64位是MOVQ
+// r + TLS * 1 + 0    1是比例因子1,2,4,8  r是某个寄存器 AX,BX,CX等等
 #define	g(r)	0(r)(TLS*1)
 #endif
 
