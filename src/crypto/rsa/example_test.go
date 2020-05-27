@@ -16,33 +16,29 @@ import (
 	"os"
 )
 
-// RSA is able to encrypt only a very limited amount of data. In order
-// to encrypt reasonable amounts of data a hybrid scheme is commonly
-// used: RSA is used to encrypt a key for a symmetric primitive like
-// AES-GCM.
+// RSA is able to encrypt only a very limited amount of data. rsa用来加密少量数据
+// In order to encrypt reasonable amounts of data a hybrid scheme is commonly used: 通常这样用
+// RSA is used to encrypt a key for a symmetric primitive like AES-GCM.
 //
-// Before encrypting, data is “padded” by embedding it in a known
-// structure. This is done for a number of reasons, but the most
-// obvious is to ensure that the value is large enough that the
-// exponentiation is larger than the modulus. (Otherwise it could be
-// decrypted with a square-root.)
+// Before encrypting, data is “padded” by embedding it in a known structure.
+// This is done for a number of reasons, but the most obvious is to ensure that
+// the value is large enough that the exponentiation幂运算 is larger than the modulus模数.
+// (Otherwise it could be decrypted解密 with a square-root平方根.)
 //
-// In these designs, when using PKCS#1 v1.5, it's vitally important to
-// avoid disclosing whether the received RSA message was well-formed
-// (that is, whether the result of decrypting is a correctly padded
-// message) because this leaks secret information.
+// In these designs, when using PKCS#1 v1.5, it's vitally极其重要的 important to
+// avoid disclosing公开 whether the received RSA message was well-formed
+// (that is, whether the result of decrypting is a correctly padded message)
+// because this leaks secret information.
 // DecryptPKCS1v15SessionKey is designed for this situation and copies
 // the decrypted, symmetric key (if well-formed) in constant-time over
-// a buffer that contains a random key. Thus, if the RSA result isn't
-// well-formed, the implementation uses a random key in constant time.
+// a buffer that contains a random key.
+// Thus, if the RSA result isn't well-formed完整的, the implementation uses a random key in constant time 常数时间.
 func ExampleDecryptPKCS1v15SessionKey() {
-	// crypto/rand.Reader is a good source of entropy for blinding the RSA
-	// operation.
+	// crypto/rand.Reader is a good source of entropy嫡变 for blinding the RSA operation.
 	rng := rand.Reader
 
-	// The hybrid scheme should use at least a 16-byte symmetric key. Here
-	// we read the random key that will be used if the RSA decryption isn't
-	// well-formed.
+	// The hybrid scheme should use at least a 16-byte symmetric key.
+	// Here we read the random key that will be used if the RSA decryption isn't well-formed.
 	key := make([]byte, 32)
 	if _, err := io.ReadFull(rng, key); err != nil {
 		panic("RNG failure")

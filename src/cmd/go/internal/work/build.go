@@ -24,13 +24,13 @@ var CmdBuild = &base.Command{
 	UsageLine: "go build [-o output] [-i] [build flags] [packages]",
 	Short:     "compile packages and dependencies",
 	Long: `
-Build compiles the packages named by the import paths,
-along with their dependencies, but it does not install the results.
+Build compiles the packages named by the import paths, along with their dependencies, 
+but it does not install the results. 不安装
 
 If the arguments to build are a list of .go files from a single directory,
 build treats them as a list of source files specifying a single package.
 
-When compiling packages, build ignores files that end in '_test.go'.
+When compiling packages, build ignores忽略 files that end in '_test.go'.
 
 When compiling a single main package, build writes
 the resulting executable to an output file named after
@@ -42,40 +42,36 @@ When compiling multiple packages or a single non-main package,
 build compiles the packages but discards the resulting object,
 serving only as a check that the packages can be built.
 
-The -o flag forces build to write the resulting executable or object
-to the named output file or directory, instead of the default behavior described
-in the last two paragraphs. If the named output is a directory that exists,
-then any resulting executables will be written to that directory.
+The -o flag forces build to write the resulting executable or object to the named output file or directory,
+instead of the default behavior described in the last two paragraphs. 
+If the named output is a directory that exists, then any resulting executables will be written to that directory.
 
 The -i flag installs the packages that are dependencies of the target.
 
-The build flags are shared by the build, clean, get, install, list, run,
-and test commands:
+The build flags are shared by the build, clean, get, install, list, run, and test commands:
 
 	-a
-		force rebuilding of packages that are already up-to-date.
+		force rebuilding of packages that are already up-to-date. 强制
 	-n
-		print the commands but do not run them.
+		print the commands but do not run them. 
 	-p n
 		the number of programs, such as build commands or
-		test binaries, that can be run in parallel.
+		test binaries, that can be run in parallel. 控制并行
 		The default is the number of CPUs available.
-	-race
+	-race 开启竞争监测
 		enable data race detection.
 		Supported only on linux/amd64, freebsd/amd64, darwin/amd64, windows/amd64,
 		linux/ppc64le and linux/arm64 (only for 48-bit VMA).
 	-msan
-		enable interoperation with memory sanitizer.
-		Supported only on linux/amd64, linux/arm64
-		and only with Clang/LLVM as the host C compiler.
-		On linux/arm64, pie build mode will be used.
+		enable interoperation with memory sanitizer消毒.
+		Supported only on linux/amd64, linux/arm64 and only with Clang/LLVM as the host C compiler.
+		On linux/arm64, pie饼 build mode will be used.
 	-v
-		print the names of packages as they are compiled.
+		print the names of packages as they are compiled. 打印编译的包名
 	-work
-		print the name of the temporary work directory and
-		do not delete it when exiting.
+		print the name of the temporary work directory and do not delete it when exiting.
 	-x
-		print the commands.
+		print the commands. 
 
 	-asmflags '[pattern=]arg list'
 		arguments to pass on each go tool asm invocation.

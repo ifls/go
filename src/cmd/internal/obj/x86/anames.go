@@ -4,6 +4,7 @@ package x86
 
 import "cmd/internal/obj"
 
+//汇编指令别名
 var Anames = []string{
 	obj.A_ARCHSPECIFIC: "AAA",
 	"AAD",

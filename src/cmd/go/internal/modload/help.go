@@ -12,12 +12,11 @@ var HelpModules = &base.Command{
 	UsageLine: "modules",
 	Short:     "modules, module versions, and more",
 	Long: `
-A module is a collection of related Go packages.
-Modules are the unit of source code interchange and versioning.
+A module is a collection of related Go packages. 模块是相关go包的集合
+Modules are the unit of source code interchange可交换的 and versioning可版本化.
 The go command has direct support for working with modules,
 including recording and resolving dependencies on other modules.
-Modules replace the old GOPATH-based approach to specifying
-which source files are used in a given build.
+Modules replace the old GOPATH-based approach to specifying which source files are used in a given build.
 
 Module support
 

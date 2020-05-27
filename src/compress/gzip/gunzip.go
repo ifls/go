@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package gzip implements reading and writing of gzip format compressed files,
-// as specified in RFC 1952.
+// Package gzip implements reading and writing of gzip format compressed files 读写gzip压缩文件, as specified in RFC 1952.
+// 是对deflate压缩内容 加上头尾进行的封装
 package gzip
 
 import (

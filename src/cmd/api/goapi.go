@@ -3,6 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Binary api computes the exported API of a set of Go packages.
+// Usage:
+//	go tool api
 package main
 
 import (
