@@ -43,8 +43,7 @@ func checkptrArithmetic(p unsafe.Pointer, originals []unsafe.Pointer) {
 	throw("checkptr: pointer arithmetic result points to invalid allocation")
 }
 
-// checkptrBase returns the base address for the allocation containing
-// the address p.
+// checkptrBase returns the base address for the allocation containing the address p.
 //
 // Importantly, if p1 and p2 point into the same variable, then
 // checkptrBase(p1) == checkptrBase(p2). However, the converse/inverse

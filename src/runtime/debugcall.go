@@ -18,9 +18,8 @@ const (
 func debugCallV1()
 func debugCallPanicked(val interface{})
 
-// debugCallCheck checks whether it is safe to inject a debugger
-// function call with return PC pc. If not, it returns a string
-// explaining why.
+// debugCallCheck checks whether it is safe to inject a debugger function call with return PC pc.
+// If not, it returns a string explaining why.
 //
 //go:nosplit
 func debugCallCheck(pc uintptr) string {

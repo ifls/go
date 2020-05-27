@@ -11,6 +11,7 @@ package runtime
 // first 25 bits of the mantissa. The top 5 bits of the mantissa are
 // used to load limits from a table of constants and the rest are used
 // to scale linearly between them.
+// 快速计算 log2x
 func fastlog2(x float64) float64 {
 	const fastlogScaleBits = 20
 	const fastlogScaleRatio = 1.0 / (1 << fastlogScaleBits)

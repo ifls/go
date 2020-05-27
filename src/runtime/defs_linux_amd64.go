@@ -114,6 +114,7 @@ func (tv *timeval) set_usec(x int32) {
 	tv.tv_usec = int64(x)
 }
 
+// 信号注册结构体
 type sigactiont struct {
 	sa_handler  uintptr
 	sa_flags    uint64
@@ -228,6 +229,7 @@ type ucontext struct {
 	__fpregs_mem fpstate
 }
 
+// 信号处理上下文
 type sigcontext struct {
 	r8          uint64
 	r9          uint64

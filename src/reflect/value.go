@@ -2798,6 +2798,7 @@ func typedmemclrpartial(t *rtype, ptr unsafe.Pointer, off, size uintptr)
 //go:noescape
 func typedslicecopy(elemType *rtype, dst, src unsafeheader.Slice) int
 
+// reflect_typehash
 //go:noescape
 func typehash(t *rtype, p unsafe.Pointer, h uintptr) uintptr
 

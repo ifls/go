@@ -377,6 +377,7 @@ func convTstring(val string) (x unsafe.Pointer) {
 	return
 }
 
+// slice 转 interface{}
 func convTslice(val []byte) (x unsafe.Pointer) {
 	// Note: this must work for any element type, not just byte.
 	if (*slice)(unsafe.Pointer(&val)).array == nil {

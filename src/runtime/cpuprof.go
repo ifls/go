@@ -4,10 +4,9 @@
 
 // CPU profiling.
 //
-// The signal handler for the profiling clock tick adds a new stack trace
-// to a log of recent traces. The log is read by a user goroutine that
-// turns it into formatted profile data. If the reader does not keep up
-// with the log, those writes will be recorded as a count of lost records.
+// The signal handler (for the profiling clock tick) adds a new stack trace to a log of recent traces.
+// The log is read by a user goroutine that turns it into转换 formatted profile data.
+// If the reader does not keep up with the log, those writes will be recorded as a count of lost records.
 // The actual profile buffer is in profbuf.go.
 
 package runtime

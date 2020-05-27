@@ -32,7 +32,7 @@
 // 内存移动，考虑 区间有覆盖的情况，最好是从后复制，这汇编函数好复杂
 // func memmove(to, from unsafe.Pointer, n uintptr)
 TEXT runtime·memmove(SB), NOSPLIT, $0-24
-
+	// 拷贝参数到寄存器
 	MOVQ	to+0(FP), DI
 	MOVQ	from+8(FP), SI
 	MOVQ	n+16(FP), BX
@@ -358,7 +358,7 @@ avxUnaligned:
 	// Aligned memory copying there
 gobble_128_loop:
 	VMOVDQU	(SI), Y0
-	VMOVDQU	0x20(SI), Y1
+	VMOVDQU	0x20(SI), Y1		//内存拷贝指令
 	VMOVDQU	0x40(SI), Y2
 	VMOVDQU	0x60(SI), Y3
 	ADDQ	AX, SI

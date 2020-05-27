@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// 原子指针操作
 package runtime
 
 import (
@@ -10,7 +11,7 @@ import (
 )
 
 // These functions cannot have go:noescape annotations,
-// because while虽然 ptr does not escape, new does 但是new分配的会逃逸到堆上.
+// because while虽然 ptr does not escape逃脱, new does 但是new分配的会逃逸到堆上.
 // If new is marked as not escaping, the compiler will make incorrect
 // escape analysis decisions about the pointer value being stored.
 

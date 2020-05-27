@@ -11,16 +11,16 @@ import (
 )
 
 // The constant is known to the compiler.
-// There is no fundamental theory behind this number.
+// There is no fundamental theory behind this number. 没有理论支持
 const tmpStringBufSize = 32
 
 type tmpBuf [tmpStringBufSize]byte
 
 // concatstrings implements a Go string concatenation x+y+z+...
 // The operands are passed in the slice a.
-// If buf != nil, the compiler has determined that the result does not
-// escape the calling function, so the string data can be stored in buf
-// if small enough.
+// If buf != nil, the compiler has determined that the result does not escape the calling function,
+// so the string data can be stored in buf if small enough.
+// string + string
 func concatstrings(buf *tmpBuf, a []string) string {
 	idx := 0
 	l := 0
@@ -73,10 +73,9 @@ func concatstring5(buf *tmpBuf, a [5]string) string {
 
 // slicebytetostring converts a byte slice to a string.
 // It is inserted by the compiler into generated code.
-// ptr is a pointer to the first element of the slice;
-// n is the length of the slice.
-// Buf is a fixed-size buffer for the result,
-// it is not nil if the result does not escape.
+// ptr is a pointer to the first element of the slice; n is the length of the slice.
+// Buf is a fixed-size buffer for the result, it is not nil if the result does not escape.
+// []byte -> string
 func slicebytetostring(buf *tmpBuf, ptr *byte, n int) (str string) {
 	if n == 0 {
 		// Turns out to be a relatively common case.
@@ -115,8 +114,8 @@ func slicebytetostring(buf *tmpBuf, ptr *byte, n int) (str string) {
 	return
 }
 
-// stringDataOnStack reports whether the string's data is
-// stored on the current goroutine's stack.
+// stringDataOnStack reports whether the string's data is stored on the current goroutine's stack.
+// 判断 string底层数据 在当前g栈上
 func stringDataOnStack(s string) bool {
 	ptr := uintptr(stringStructOf(&s).str)
 	stk := getg().stack
@@ -162,6 +161,7 @@ func slicebytetostringtmp(ptr *byte, n int) (str string) {
 	return
 }
 
+// string -> []byte
 func stringtoslicebyte(buf *tmpBuf, s string) []byte {
 	var b []byte
 	if buf != nil && len(s) <= len(buf) {
@@ -174,6 +174,7 @@ func stringtoslicebyte(buf *tmpBuf, s string) []byte {
 	return b
 }
 
+// string -> []rune
 func stringtoslicerune(buf *[tmpStringBufSize]rune, s string) []rune {
 	// two passes.
 	// unlike slicerunetostring, no race because strings are immutable.
@@ -198,6 +199,7 @@ func stringtoslicerune(buf *[tmpStringBufSize]rune, s string) []rune {
 	return a
 }
 
+// []rune -> string
 func slicerunetostring(buf *tmpBuf, a []rune) string {
 	if raceenabled && len(a) > 0 {
 		racereadrangepc(unsafe.Pointer(&a[0]),
@@ -225,6 +227,7 @@ func slicerunetostring(buf *tmpBuf, a []rune) string {
 	return s[:size2]
 }
 
+// 字符串 内部头结构
 type stringStruct struct {
 	str unsafe.Pointer
 	len int
@@ -236,10 +239,12 @@ type stringStructDWARF struct {
 	len int
 }
 
+// 转换为内部实现类型
 func stringStructOf(sp *string) *stringStruct {
 	return (*stringStruct)(unsafe.Pointer(sp))
 }
 
+//
 func intstring(buf *[4]byte, v int64) (s string) {
 	var b []byte
 	if buf != nil {
@@ -255,10 +260,10 @@ func intstring(buf *[4]byte, v int64) (s string) {
 	return s[:n]
 }
 
-// rawstring allocates storage for a new string. The returned
-// string and byte slice both refer to the same storage.
-// The storage is not zeroed. Callers should use
-// b to set the string contents and then drop b.
+// rawstring allocates storage for a new string.
+// The returned string and byte slice both refer to the same storage.
+// The storage is not zeroed.
+// Callers should use b to set the string contents and then drop b.
 func rawstring(size int) (s string, b []byte) {
 	p := mallocgc(uintptr(size), nil, false)
 
@@ -270,7 +275,7 @@ func rawstring(size int) (s string, b []byte) {
 	return
 }
 
-// rawbyteslice allocates a new byte slice. The byte slice is not zeroed.
+// rawbyteslice allocates a new byte[] slice. The byte slice is not zeroed.
 func rawbyteslice(size int) (b []byte) {
 	cap := roundupsize(uintptr(size))
 	p := mallocgc(cap, nil, false)
@@ -282,7 +287,7 @@ func rawbyteslice(size int) (b []byte) {
 	return
 }
 
-// rawruneslice allocates a new rune slice. The rune slice is not zeroed.
+// rawruneslice allocates a new rune[] slice. The rune slice is not zeroed.
 func rawruneslice(size int) (b []rune) {
 	if uintptr(size) > maxAlloc/4 {
 		throw("out of memory")
@@ -335,6 +340,7 @@ func gostringn(p *byte, l int) string {
 	return s
 }
 
+// 返回 t在s中出现的第一个index
 func index(s, t string) int {
 	if len(t) == 0 {
 		return 0
@@ -408,8 +414,7 @@ func atoi(s string) (int, bool) {
 	return n, true
 }
 
-// atoi32 is like atoi but for integers
-// that fit into an int32.
+// atoi32 is like atoi but for integers that fit into an int32.
 func atoi32(s string) (int32, bool) {
 	if n, ok := atoi(s); n == int(int32(n)) {
 		return int32(n), ok
@@ -500,9 +505,8 @@ func gostringw(strw *uint16) string {
 	return s[:n2]
 }
 
-// parseRelease parses a dot-separated version number. It follows the
-// semver syntax, but allows the minor and patch versions to be
-// elided.
+// parseRelease parses a dot-separated version number.  解析版本号
+// It follows the semver syntax, but allows the minor and patch versions to be elided省略.
 func parseRelease(rel string) (major, minor, patch int, ok bool) {
 	// Strip anything after a dash or plus.
 	for i := 0; i < len(rel); i++ {

@@ -10,13 +10,14 @@ import (
 	"unsafe"
 )
 
+// []type 内部头
 type slice struct {
 	array unsafe.Pointer
 	len   int
 	cap   int
 }
 
-// A notInHeapSlice is a slice backed by go:notinheap memory.
+// A notInHeapSlice is a slice backed by依靠 go:notinheap memory.
 type notInHeapSlice struct {
 	array *notInHeap
 	len   int
@@ -31,7 +32,7 @@ func panicmakeslicecap() {
 	panic(errorString("makeslice: cap out of range"))
 }
 
-// makeslicecopy allocates a slice of "tolen" elements of type "et",
+// makeslicecopy allocates a slice of "tolen" elements of type "et", 分配一个新的切片，再拷贝
 // then copies "fromlen" elements of type "et" into that new allocation from "from".
 func makeslicecopy(et *_type, tolen int, fromlen int, from unsafe.Pointer) unsafe.Pointer {
 	var tomem, copymem uintptr
@@ -80,6 +81,8 @@ func makeslicecopy(et *_type, tolen int, fromlen int, from unsafe.Pointer) unsaf
 	return to
 }
 
+// make([]type, n)
+// 只返回底层数组指针, slice对象由编译器生成代码处理
 func makeslice(et *_type, len, cap int) unsafe.Pointer {
 	mem, overflow := math.MulUintptr(et.size, uintptr(cap))
 	if overflow || mem > maxAlloc || len < 0 || len > cap {
@@ -98,6 +101,7 @@ func makeslice(et *_type, len, cap int) unsafe.Pointer {
 	return mallocgc(mem, et, true)
 }
 
+// 64位 make([]type, n)
 func makeslice64(et *_type, len64, cap64 int64) unsafe.Pointer {
 	len := int(len64)
 	if int64(len) != len64 {
@@ -264,6 +268,7 @@ func slicecopy(toPtr unsafe.Pointer, toLen int, fmPtr unsafe.Pointer, fmLen int,
 		n = toLen
 	}
 
+	//类型尺寸， == 0不需要拷贝，直接成功
 	if width == 0 {
 		return n
 	}
@@ -279,9 +284,11 @@ func slicecopy(toPtr unsafe.Pointer, toLen int, fmPtr unsafe.Pointer, fmLen int,
 		msanwrite(toPtr, uintptr(n*int(width)))
 	}
 
+	//计算总大小
 	size := uintptr(n) * width
 	if size == 1 { // common case worth about 2x to do here
 		// TODO: is this still worth it with new memmove impl?
+		//直接拷贝单个字节
 		*(*byte)(toPtr) = *(*byte)(fmPtr) // known to be a byte pointer
 	} else {
 		//内存移动
@@ -290,6 +297,7 @@ func slicecopy(toPtr unsafe.Pointer, toLen int, fmPtr unsafe.Pointer, fmLen int,
 	return n
 }
 
+//针对 string 拷贝
 func slicestringcopy(toPtr *byte, toLen int, fm string) int {
 	if len(fm) == 0 || toLen == 0 {
 		return 0
