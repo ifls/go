@@ -4,30 +4,24 @@
 
 // Package regexp implements regular expression search.
 //
-// The syntax of the regular expressions accepted is the same
-// general syntax used by Perl, Python, and other languages.
-// More precisely, it is the syntax accepted by RE2 and described at
-// https://golang.org/s/re2syntax, except for \C.
+// The syntax of the regular expressions accepted is the same general syntax used by Perl, Python, and other languages.
+// More precisely, it is the syntax accepted by RE2 and described at TODO https://golang.org/s/re2syntax, except for \C.
 // For an overview of the syntax, run
 //   go doc regexp/syntax
 //
-// The regexp implementation provided by this package is
-// guaranteed to run in time linear in the size of the input.
-// (This is a property not guaranteed by most open source
-// implementations of regular expressions.) For more information
-// about this property, see
-//	https://swtch.com/~rsc/regexp/regexp1.html
-// or any book about automata theory.
+// The regexp implementation provided by this package is guaranteed to run in time linear线性时间 in the size of the input.
+// (This is a property not guaranteed by most open source implementations of regular expressions.)
+// For more information about this property, see https://swtch.com/~rsc/regexp/regexp1.html or any book about automata自动 theory.
 //
 // All characters are UTF-8-encoded code points.
 //
-// There are 16 methods of Regexp that match a regular expression and identify
-// the matched text. Their names are matched by this regular expression:
+// There are 16 methods of Regexp that match撇屁 a regular expression and identify标识 the matched text.
+// Their names are matched by this regular expression:
 //
 //	Find(All)?(String)?(Submatch)?(Index)?
 //
-// If 'All' is present, the routine matches successive non-overlapping
-// matches of the entire expression. Empty matches abutting a preceding
+// If 'All' is present, the routine matches successive non-overlapping matches of the entire expression.
+// Empty matches abutting a preceding
 // match are ignored. The return value is a slice containing the successive
 // return values of the corresponding non-'All' routine. These routines take
 // an extra integer argument, n. If n >= 0, the function returns at most n
@@ -77,10 +71,9 @@ import (
 )
 
 // Regexp is the representation of a compiled regular expression.
-// A Regexp is safe for concurrent use by multiple goroutines,
-// except for configuration methods, such as Longest.
+// A Regexp is safe for concurrent use by multiple goroutines, 出了配置性的方法，其他都是并发安全 except for configuration methods, such as Longest.
 type Regexp struct {
-	expr           string       // as passed to Compile
+	expr           string       // 原始正则表达式 as passed to Compile
 	prog           *syntax.Prog // compiled program
 	onepass        *onePassProg // onepass program or nil
 	numSubexp      int
@@ -102,6 +95,7 @@ type Regexp struct {
 }
 
 // String returns the source text used to compile the regular expression.
+// 返回正则表达式字符串
 func (re *Regexp) String() string {
 	return re.expr
 }
@@ -114,6 +108,7 @@ func (re *Regexp) String() string {
 // As of Go 1.12, using Copy is no longer necessary to avoid lock contention.
 // Copy may still be appropriate if the reason for its use is to make
 // two copies with different Longest settings.
+// 返回一份拷贝
 func (re *Regexp) Copy() *Regexp {
 	re2 := *re
 	return &re2
@@ -129,6 +124,7 @@ func (re *Regexp) Copy() *Regexp {
 // that Perl, Python, and other implementations use, although this
 // package implements it without the expense of backtracking.
 // For POSIX leftmost-longest matching, see CompilePOSIX.
+// 返回一个正则表达式
 func Compile(expr string) (*Regexp, error) {
 	return compile(expr, syntax.Perl, false)
 }
@@ -162,6 +158,7 @@ func CompilePOSIX(expr string) (*Regexp, error) {
 // it chooses a match that is as long as possible.
 // This method modifies the Regexp and may not be called concurrently
 // with any other methods.
+// 设置值
 func (re *Regexp) Longest() {
 	re.longest = true
 }
@@ -229,8 +226,7 @@ var (
 )
 
 // get returns a machine to use for matching re.
-// It uses the re's machine cache if possible, to avoid
-// unnecessary allocation.
+// It uses the re's machine cache if possible, to avoid unnecessary allocation.
 func (re *Regexp) get() *machine {
 	m, ok := matchPool[re.mpool].Get().(*machine)
 	if !ok {
@@ -331,7 +327,7 @@ func quote(s string) string {
 	return strconv.Quote(s)
 }
 
-// NumSubexp returns the number of parenthesized subexpressions in this Regexp.
+// NumSubexp returns the number of parenthesized subexpressions in this Regexp. (subexpress)的数量
 func (re *Regexp) NumSubexp() int {
 	return re.numSubexp
 }
@@ -339,8 +335,8 @@ func (re *Regexp) NumSubexp() int {
 // SubexpNames returns the names of the parenthesized subexpressions
 // in this Regexp. The name for the first sub-expression is names[1],
 // so that if m is a match slice, the name for m[i] is SubexpNames()[i].
-// Since the Regexp as a whole cannot be named, names[0] is always
-// the empty string. The slice should not be modified.
+// Since the Regexp as a whole cannot be named, names[0] is always the empty string.
+// The slice should not be modified.
 func (re *Regexp) SubexpNames() []string {
 	return re.subexpNames
 }
@@ -513,14 +509,12 @@ func (re *Regexp) LiteralPrefix() (prefix string, complete bool) {
 	return re.prefix, re.prefixComplete
 }
 
-// MatchReader reports whether the text returned by the RuneReader
-// contains any match of the regular expression re.
+// MatchReader reports whether the text returned by the RuneReader contains any match任何匹配 of the regular expression re.
 func (re *Regexp) MatchReader(r io.RuneReader) bool {
 	return re.doMatch(r, nil, "")
 }
 
-// MatchString reports whether the string s
-// contains any match of the regular expression re.
+// MatchString reports whether the string s contains any任何 match of the regular expression re.
 func (re *Regexp) MatchString(s string) bool {
 	return re.doMatch(nil, nil, s)
 }
@@ -564,9 +558,9 @@ func Match(pattern string, b []byte) (matched bool, err error) {
 	return re.Match(b), nil
 }
 
-// ReplaceAllString returns a copy of src, replacing matches of the Regexp
-// with the replacement string repl. Inside repl, $ signs are interpreted as
-// in Expand, so for instance $1 represents the text of the first submatch.
+// ReplaceAllString returns a copy of src, replacing matches of the Regexp with the replacement string repl.
+// Inside repl, $ signs are interpreted as in Expand, so for instance $1 represents the text of the first submatch. 支持变量拓展
+// 替换所有匹配
 func (re *Regexp) ReplaceAllString(src, repl string) string {
 	n := 2
 	if strings.Contains(repl, "$") {
@@ -579,8 +573,8 @@ func (re *Regexp) ReplaceAllString(src, repl string) string {
 }
 
 // ReplaceAllLiteralString returns a copy of src, replacing matches of the Regexp
-// with the replacement string repl. The replacement repl is substituted directly,
-// without using Expand.
+// with the replacement string repl.
+// The replacement repl is substituted directly, without using Expand. 直接文本替换没有拓展
 func (re *Regexp) ReplaceAllLiteralString(src, repl string) string {
 	return string(re.replaceAll(nil, src, 2, func(dst []byte, match []int) []byte {
 		return append(dst, repl...)
@@ -588,9 +582,9 @@ func (re *Regexp) ReplaceAllLiteralString(src, repl string) string {
 }
 
 // ReplaceAllStringFunc returns a copy of src in which all matches of the
-// Regexp have been replaced by the return value of function repl applied
-// to the matched substring. The replacement returned by repl is substituted
-// directly, without using Expand.
+// Regexp have been replaced by the return value of function repl applied to the matched substring.
+// The replacement returned by repl is substituted directly, without using Expand.
+// 自定义替换
 func (re *Regexp) ReplaceAllStringFunc(src string, repl func(string) string) string {
 	b := re.replaceAll(nil, src, 2, func(dst []byte, match []int) []byte {
 		return append(dst, repl(src[match[0]:match[1]])...)
@@ -598,6 +592,7 @@ func (re *Regexp) ReplaceAllStringFunc(src string, repl func(string) string) str
 	return string(b)
 }
 
+//
 func (re *Regexp) replaceAll(bsrc []byte, src string, nmatch int, repl func(dst []byte, m []int) []byte) []byte {
 	lastMatchEnd := 0 // end position of the most recent match
 	searchPos := 0    // position where we next look for a match
@@ -663,9 +658,8 @@ func (re *Regexp) replaceAll(bsrc []byte, src string, nmatch int, repl func(dst 
 	return buf
 }
 
-// ReplaceAll returns a copy of src, replacing matches of the Regexp
-// with the replacement text repl. Inside repl, $ signs are interpreted as
-// in Expand, so for instance $1 represents the text of the first submatch.
+// ReplaceAll returns a copy of src, replacing matches of the Regexp with the replacement text repl.
+// Inside repl, $ signs are interpreted as in Expand, so for instance $1 represents the text of the first submatch.
 func (re *Regexp) ReplaceAll(src, repl []byte) []byte {
 	n := 2
 	if bytes.IndexByte(repl, '$') >= 0 {
@@ -694,6 +688,7 @@ func (re *Regexp) ReplaceAllLiteral(src, repl []byte) []byte {
 // Regexp have been replaced by the return value of function repl applied
 // to the matched byte slice. The replacement returned by repl is substituted
 // directly, without using Expand.
+// 针对 []byte 而不是string
 func (re *Regexp) ReplaceAllFunc(src []byte, repl func([]byte) []byte) []byte {
 	return re.replaceAll(src, "", 2, func(dst []byte, match []int) []byte {
 		return append(dst, repl(src[match[0]:match[1]])...)
@@ -714,9 +709,8 @@ func init() {
 	}
 }
 
-// QuoteMeta returns a string that escapes all regular expression metacharacters
-// inside the argument text; the returned string is a regular expression matching
-// the literal text.
+// QuoteMeta returns a string that escapes all regular expression metacharacters inside the argument text;
+// the returned string is a regular expression matching the literal text.
 func QuoteMeta(s string) string {
 	// A byte loop is correct because all metacharacters are ASCII.
 	var i int
@@ -822,8 +816,8 @@ func (re *Regexp) Find(b []byte) []byte {
 }
 
 // FindIndex returns a two-element slice of integers defining the location of
-// the leftmost match in b of the regular expression. The match itself is at
-// b[loc[0]:loc[1]].
+// the leftmost match in b of the regular expression.
+// The match itself is at b[loc[0]:loc[1]].
 // A return value of nil indicates no match.
 func (re *Regexp) FindIndex(b []byte) (loc []int) {
 	a := re.doExecute(nil, b, "", 0, 2, nil)
