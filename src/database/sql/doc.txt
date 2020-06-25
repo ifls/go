@@ -1,16 +1,13 @@
 Goals of the sql and sql/driver packages:
 
-* Provide a generic database API for a variety of SQL or SQL-like
-  databases.  There currently exist Go libraries for SQLite, MySQL,
-  and Postgres, but all with a very different feel, and often
-  a non-Go-like feel.
+* Provide a generic database API for a variety of SQL or SQL-like databases.
+  There currently exist Go libraries for SQLite, MySQL, and Postgres, but all with a very different feel感觉, and often a non-Go-like feel.
 
 * Feel like Go.
 
-* Care mostly about the common cases. Common SQL should be portable.
-  SQL edge cases or db-specific extensions can be detected and
-  conditionally used by the application.  It is a non-goal to care
-  about every particular db's extension or quirk.
+* Care考虑 mostly about the common cases. Common SQL should be portable.
+  SQL edge cases or db-specific extensions can be detected and conditionally used by the application.
+  It is a non-goal to care about every particular db's extension or quirk.
 
 * Separate out the basic implementation of a database driver
   (implementing the sql/driver interfaces) vs the implementation
@@ -20,13 +17,11 @@ Goals of the sql and sql/driver packages:
   User Code ---> sql package (concrete types) ---> sql/driver (interfaces)
   Database Driver -> sql (to register) + sql/driver (implement interfaces)
 
-* Make type casting/conversions consistent between all drivers. To
-  achieve this, most of the conversions are done in the sql package,
-  not in each driver. The drivers then only have to deal with a
-  smaller set of types.
+* Make type casting/conversions consistent between all drivers.
+  To achieve this, most of the conversions are done in the sql package, not in each driver.
+  The drivers then only have to deal with a smaller set of types.
 
-* Be flexible with type conversions, but be paranoid about silent
-  truncation or other loss of precision.
+* Be flexible with type conversions, but be paranoid about silent truncation or other loss of precision.
 
 * Handle concurrency well.  Users shouldn't need to care about the
   database's per-connection thread safety issues (or lack thereof),
