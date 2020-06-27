@@ -225,6 +225,7 @@ type QueryerContext interface {
 // Conn is assumed to be stateful.
 type Conn interface {
 	// Prepare returns a prepared statement, bound to this connection.
+	// 准备一个预处理的语句,绑定此连接
 	Prepare(query string) (Stmt, error)
 
 	// Close invalidates and potentially stops any current
