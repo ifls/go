@@ -196,7 +196,7 @@ type mheap struct {
 	// add more heap arenas. This is initially populated with a
 	// set of general hint addresses, and grown with the bounds of
 	// actual heap arena ranges.
-	arenaHints *arenaHint		//链接 分配的 arenaHint
+	arenaHints *arenaHint //链接 分配的 arenaHint
 
 	// arena is a pre-reserved space预留空间 for allocating heap arenas
 	// (the actual arenas). This is only used on 32-bit.
@@ -274,7 +274,7 @@ type heapArena struct {
 	// known to contain in-use or stack spans. This means there
 	// must not be a safe-point between establishing that an
 	// address is live and looking it up in the spans array.
-	spans [pagesPerArena]*mspan		//一个arena中所有的mspan
+	spans [pagesPerArena]*mspan //一个arena中所有的mspan
 
 	// pageInUse is a bitmap位图 that indicates which spans are in
 	// state mSpanInUse. This bitmap is indexed by page number,
@@ -417,7 +417,7 @@ type mspan struct {
 
 	startAddr uintptr // 起始地址 address of first byte of span aka又称 s.base()
 	npages    uintptr // 此span中有多少系统内存页，每页8KB number of pages in span
-	
+
 	//待分配的 object链表
 	manualFreeList gclinkptr // list of free objects in mSpanManual spans
 
@@ -445,7 +445,7 @@ type mspan struct {
 	// allocCache holds the complement of allocBits, thus allowing ctz (count trailing zero) to use it directly.
 	// allocCache may contain bits beyond s.nelems; the caller must ignore these.
 	// 位1表示未分配
-	allocCache uint64	//allocBits 补码，用于快速查找内存中未使用的内存 位图
+	allocCache uint64 //allocBits 补码，用于快速查找内存中未使用的内存 位图
 
 	// allocBits and gcmarkBits hold pointers to a span's mark and allocation bits.
 	// The pointers are 8 byte aligned.
@@ -469,8 +469,8 @@ type mspan struct {
 	// The sweep will free the old allocBits and set allocBits to the
 	// gcmarkBits. The gcmarkBits are replaced with a fresh zeroed
 	// out memory.
-	allocBits  *gcBits	//标记占用 多字节 bitmap
-	gcmarkBits *gcBits	//标记回收
+	allocBits  *gcBits //标记占用 多字节 bitmap
+	gcmarkBits *gcBits //标记回收
 
 	// sweep generation:
 	// if sweepgen == h->sweepgen - 2, the span needs sweeping
@@ -563,7 +563,7 @@ const (
 	//134
 	numSpanClasses = _NumSizeClasses << 1
 	// 5
-	tinySpanClass  = spanClass(tinySizeClass<<1 | 1)
+	tinySpanClass = spanClass(tinySizeClass<<1 | 1)
 )
 
 //储存大小和noscan标记，noscan 表示是否包含指针
@@ -592,6 +592,7 @@ func (sc spanClass) noscan() bool {
 //
 //go:nosplit
 func arenaIndex(p uintptr) arenaIdx {
+	return arenaIdx((p - arenaBaseOffset) / heapArenaBytes)
 	//arena区基址 / 64M linux 不是从0开始，因为基址是1<<47 从中间开始
 	return arenaIdx((p + arenaBaseOffset) / heapArenaBytes)
 }
@@ -599,7 +600,7 @@ func arenaIndex(p uintptr) arenaIdx {
 // arenaBase returns the low address of the region covered by heap
 // arena i.
 func arenaBase(i arenaIdx) uintptr {
-	return uintptr(i)*heapArenaBytes - arenaBaseOffset
+	return uintptr(i)*heapArenaBytes + arenaBaseOffset
 }
 
 type arenaIdx uint
@@ -1205,7 +1206,6 @@ func (h *mheap) allocSpan(npages uintptr, manual bool, spanclass spanClass, sysS
 		}
 	}
 
-
 	if s == nil {
 		// We failed to get an mspan earlier, so grab
 		// one now that we have the heap lock.
@@ -1247,7 +1247,6 @@ func (h *mheap) allocSpan(npages uintptr, manual bool, spanclass spanClass, sysS
 		}
 	}
 	unlock(&h.lock)
-
 
 HaveSpan:
 	//拿到了mspan, 进行初始化
@@ -1372,7 +1371,7 @@ HaveSpan:
 // Try to add at least npage pages of memory to the heap,
 // returning whether it worked.
 //
-// h must be locked. 
+// h must be locked.
 // 分配多页空间，加入到pageAlloc 然后从其中分配mspan
 func (h *mheap) grow(npage uintptr) bool {
 	// We must grow the heap in whole palloc chunks.

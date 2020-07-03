@@ -8,7 +8,6 @@ package poll
 
 import (
 	"io"
-	"runtime"
 	"sync/atomic"
 	"syscall"
 )
@@ -18,7 +17,7 @@ import (
 // field of a larger type representing a network connection or OS file.
 type FD struct {
 	// Lock sysfd and serialize access to Read and Write methods.
-	fdmu fdMutex	//保护读写api操作的锁
+	fdmu fdMutex //保护读写api操作的锁
 
 	// System file descriptor. Immutable until Close.
 	Sysfd int
@@ -33,7 +32,7 @@ type FD struct {
 	csema uint32
 
 	// Non-zero if this file has been set to blocking mode.
-	isBlocking uint32		// != 0 true 表示 是阻塞模式
+	isBlocking uint32 // != 0 true 表示 是阻塞模式
 
 	// Whether this is a streaming descriptor, as opposed to a packet-based descriptor like a UDP socket. Immutable.
 	// 流式 tcp 还是 包 packet
@@ -44,7 +43,7 @@ type FD struct {
 	ZeroReadIsEOF bool
 
 	// Whether this is a file rather than a network socket.
-	isFile bool		//true 表示只是个普通文件
+	isFile bool //true 表示只是个普通文件
 }
 
 // Init initializes the FD. The Sysfd field should already be set.
@@ -54,10 +53,10 @@ type FD struct {
 func (fd *FD) Init(net string, pollable bool) error {
 	// We don't actually care about the various network types.
 	if net == "file" {
-		fd.isFile = true 	//标记是文件
+		fd.isFile = true //标记是文件
 	}
 	if !pollable {
-		fd.isBlocking = 1	//非可poll, 就是阻塞访问的
+		fd.isBlocking = 1 //非可poll, 就是阻塞访问的
 		return nil
 	}
 	err := fd.pd.init(fd)
@@ -158,7 +157,7 @@ func (fd *FD) Read(p []byte) (int, error) {
 	}
 	for {
 		//系统调用
-		n, err := syscall.Read(fd.Sysfd, p)
+		n, err := ignoringEINTR(syscall.Read, fd.Sysfd, p)
 		if err != nil {
 			n = 0
 			if err == syscall.EAGAIN && fd.pd.pollable() {
@@ -167,12 +166,6 @@ func (fd *FD) Read(p []byte) (int, error) {
 				if err = fd.pd.waitRead(fd.isFile); err == nil {
 					continue
 				}
-			}
-
-			// On MacOS we can see EINTR here if the user
-			// pressed ^Z.  See issue #22838.
-			if runtime.GOOS == "darwin" && err == syscall.EINTR {
-				continue
 			}
 		}
 		err = fd.eofError(n, err)
@@ -191,7 +184,16 @@ func (fd *FD) Pread(p []byte, off int64) (int, error) {
 	if fd.IsStream && len(p) > maxRW {
 		p = p[:maxRW]
 	}
-	n, err := syscall.Pread(fd.Sysfd, p, off)
+	var (
+		n   int
+		err error
+	)
+	for {
+		n, err = syscall.Pread(fd.Sysfd, p, off)
+		if err != syscall.EINTR {
+			break
+		}
+	}
 	if err != nil {
 		n = 0
 	}
@@ -212,6 +214,9 @@ func (fd *FD) ReadFrom(p []byte) (int, syscall.Sockaddr, error) {
 	for {
 		n, sa, err := syscall.Recvfrom(fd.Sysfd, p, 0)
 		if err != nil {
+			if err == syscall.EINTR {
+				continue
+			}
 			n = 0
 			if err == syscall.EAGAIN && fd.pd.pollable() {
 				if err = fd.pd.waitRead(fd.isFile); err == nil {
@@ -236,6 +241,9 @@ func (fd *FD) ReadMsg(p []byte, oob []byte) (int, int, int, syscall.Sockaddr, er
 	for {
 		n, oobn, flags, sa, err := syscall.Recvmsg(fd.Sysfd, p, oob, 0)
 		if err != nil {
+			if err == syscall.EINTR {
+				continue
+			}
 			// TODO(dfc) should n and oobn be set to 0
 			if err == syscall.EAGAIN && fd.pd.pollable() {
 				if err = fd.pd.waitRead(fd.isFile); err == nil {
@@ -266,7 +274,7 @@ func (fd *FD) Write(p []byte) (int, error) {
 			max = nn + maxRW
 		}
 		// 系统调用
-		n, err := syscall.Write(fd.Sysfd, p[nn:max])
+		n, err := ignoringEINTR(syscall.Write, fd.Sysfd, p[nn:max])
 		if n > 0 {
 			nn += n
 		}
@@ -304,6 +312,9 @@ func (fd *FD) Pwrite(p []byte, off int64) (int, error) {
 			max = nn + maxRW
 		}
 		n, err := syscall.Pwrite(fd.Sysfd, p[nn:max], off+int64(nn))
+		if err == syscall.EINTR {
+			continue
+		}
 		if n > 0 {
 			nn += n
 		}
@@ -330,6 +341,9 @@ func (fd *FD) WriteTo(p []byte, sa syscall.Sockaddr) (int, error) {
 	}
 	for {
 		err := syscall.Sendto(fd.Sysfd, p, 0, sa)
+		if err == syscall.EINTR {
+			continue
+		}
 		if err == syscall.EAGAIN && fd.pd.pollable() {
 			if err = fd.pd.waitWrite(fd.isFile); err == nil {
 				continue
@@ -353,6 +367,9 @@ func (fd *FD) WriteMsg(p []byte, oob []byte, sa syscall.Sockaddr) (int, int, err
 	}
 	for {
 		n, err := syscall.SendmsgN(fd.Sysfd, p, oob, sa, 0)
+		if err == syscall.EINTR {
+			continue
+		}
 		if err == syscall.EAGAIN && fd.pd.pollable() {
 			if err = fd.pd.waitWrite(fd.isFile); err == nil {
 				continue
@@ -383,6 +400,8 @@ func (fd *FD) Accept() (int, syscall.Sockaddr, string, error) {
 			return s, rsa, "", err
 		}
 		switch err {
+		case syscall.EINTR:
+			continue
 		case syscall.EAGAIN:
 			if fd.pd.pollable() {
 				// park 暂停g
@@ -418,7 +437,7 @@ func (fd *FD) ReadDirent(buf []byte) (int, error) {
 	}
 	defer fd.decref()
 	for {
-		n, err := syscall.ReadDirent(fd.Sysfd, buf)
+		n, err := ignoringEINTR(syscall.ReadDirent, fd.Sysfd, buf)
 		if err != nil {
 			n = 0
 			if err == syscall.EAGAIN && fd.pd.pollable() {
@@ -509,7 +528,7 @@ func (fd *FD) WriteOnce(p []byte) (int, error) {
 		return 0, err
 	}
 	defer fd.writeUnlock()
-	return syscall.Write(fd.Sysfd, p)
+	return ignoringEINTR(syscall.Write, fd.Sysfd, p)
 }
 
 // RawRead invokes the user-defined function f for a read operation.
@@ -546,6 +565,22 @@ func (fd *FD) RawWrite(f func(uintptr) bool) error {
 		}
 		if err := fd.pd.waitWrite(fd.isFile); err != nil {
 			return err
+		}
+	}
+}
+
+// ignoringEINTR makes a function call and repeats it if it returns
+// an EINTR error. This appears to be required even though we install
+// all signal handlers with SA_RESTART: see #22838, #38033, #38836.
+// Also #20400 and #36644 are issues in which a signal handler is
+// installed without setting SA_RESTART. None of these are the common case,
+// but there are enough of them that it seems that we can't avoid
+// an EINTR loop.
+func ignoringEINTR(fn func(fd int, p []byte) (int, error), fd int, p []byte) (int, error) {
+	for {
+		n, err := fn(fd, p)
+		if err != syscall.EINTR {
+			return n, err
 		}
 	}
 }

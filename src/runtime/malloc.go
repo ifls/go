@@ -100,26 +100,26 @@ const (
 	debugMalloc = false
 
 	//16
-	maxTinySize   = _TinySize
+	maxTinySize = _TinySize
 	// 2
 	tinySizeClass = _TinySizeClass
 	// 2^15 32KB
-	maxSmallSize  = _MaxSmallSize
+	maxSmallSize = _MaxSmallSize
 
 	//13
 	pageShift = _PageShift
 	// 8K
-	pageSize  = _PageSize
+	pageSize = _PageSize
 	// 8K-1 0b 0111 1111 1111
-	pageMask  = _PageMask
+	pageMask = _PageMask
 	// By construction通过构造, single page spans of the smallest object class have the most objects per span.
 	// 1k
 	maxObjsPerSpan = pageSize / 8
 	// true
 	concurrentSweep = _ConcurrentSweep
 
-	_PageSize = 1 << _PageShift 	//2^13 8K
-	_PageMask = _PageSize - 1		// 8K-1 0b 0111 1111 1111
+	_PageSize = 1 << _PageShift //2^13 8K
+	_PageMask = _PageSize - 1   // 8K-1 0b 0111 1111 1111
 
 	// _64bit = 1 on 64-bit systems, 0 on 32-bit systems
 	// 1
@@ -309,9 +309,7 @@ const (
 	//
 	// On other platforms, the user address space is contiguous
 	// and starts at 0, so no offset is necessary.
-	// 2^47 amd64
-	// 其他平台从0开始
-	arenaBaseOffset = sys.GoarchAmd64*(1<<47) + (^0x0a00000000000000+1)&uintptrMask*sys.GoosAix
+	arenaBaseOffset = 0xffff800000000000*sys.GoarchAmd64 + 0x0a00000000000000*sys.GoosAix
 
 	// Max number of threads to run garbage collection. 运行垃圾回收的最大线程数量
 	// 2, 3, and 4 are all plausible可信的 maximums depending on the hardware details of the machine.
@@ -347,7 +345,7 @@ var physPageSize uintptr
 // performance critical functions.
 var (
 	physHugePageSize  uintptr
-	physHugePageShift uint		//根据size 计算偏移
+	physHugePageShift uint //根据size 计算偏移
 )
 
 // OS memory management abstraction layer
@@ -880,7 +878,7 @@ retry:
 }
 
 // base address for all 0-byte allocations
-var zerobase uintptr	//未分配空间的指针的默认值
+var zerobase uintptr //未分配空间的指针的默认值
 
 // nextFreeFast returns the next free object if one is quickly available.
 // Otherwise it returns 0.
