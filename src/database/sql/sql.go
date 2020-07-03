@@ -124,14 +124,14 @@ type IsolationLevel int
 //
 // See https://en.wikipedia.org/wiki/Isolation_(database_systems)#Isolation_levels.
 const (
-	LevelDefault IsolationLevel = iota
-	LevelReadUncommitted		//读未提交
-	LevelReadCommitted			//读已提交
-	LevelWriteCommitted			//写提交
-	LevelRepeatableRead			//可重复读
-	LevelSnapshot				//快照隔离
-	LevelSerializable			//可串行化
-	LevelLinearizable			//线性化
+	LevelDefault         IsolationLevel = iota
+	LevelReadUncommitted                //读未提交
+	LevelReadCommitted                  //读已提交
+	LevelWriteCommitted                 //写提交
+	LevelRepeatableRead                 //可重复读
+	LevelSnapshot                       //快照隔离
+	LevelSerializable                   //可串行化
+	LevelLinearizable                   //线性化
 )
 
 // String returns the name of the transaction isolation level.
@@ -165,7 +165,7 @@ type TxOptions struct {
 	// Isolation is the transaction isolation level.
 	// If zero, the driver or database's default level is used. 不复制, 则使用默认隔离级别
 	Isolation IsolationLevel
-	ReadOnly  bool		//是否只读
+	ReadOnly  bool //是否只读
 }
 
 // RawBytes is a byte slice that holds a reference to memory owned by
@@ -198,6 +198,7 @@ func (ns *NullString) Scan(value interface{}) error {
 		return nil
 	}
 	ns.Valid = true
+	// *(&ns.String) = value.(string)
 	return convertAssign(&ns.String, value)
 }
 
@@ -402,14 +403,14 @@ type DB struct {
 	// on 32-bit platforms. Of type time.Duration.
 	waitDuration int64 // Total time waited for new connections.
 
-	connector driver.Connector	//连接器
+	connector driver.Connector //连接器
 	// numClosed is an atomic counter which represents a total number of
 	// closed connections. Stmt.openStmt checks it before cleaning closed
 	// connections in Stmt.css.
-	numClosed uint64			//原子操作, 已关闭的网络连接数
+	numClosed uint64 //原子操作, 已关闭的网络连接数
 
-	mu           sync.Mutex // protects following fields
-	freeConn     []*driverConn		//被释放, 等待复用的空闲链接
+	mu           sync.Mutex    // protects following fields
+	freeConn     []*driverConn //被释放, 等待复用的空闲链接
 	connRequests map[uint64]chan connRequest
 	nextRequest  uint64 // 一个请求的唯一标识, Next key to use in connRequests.
 	numOpen      int    // 已打开的连接数量 number of opened and pending open connections
@@ -418,15 +419,15 @@ type DB struct {
 	// maybeOpenNewConnections sends on the chan (one send per needed connection)
 	// It is closed during db.Close(). The close tells the connectionOpener
 	// goroutine to exit.
-	openerCh          chan struct{}			// 收到就建立新的连接
-	closed            bool					// 标记客户端已关闭
-	dep               map[finalCloser]depSet	//添加关闭依赖, 只有依赖都被移除, 为空才能关闭
-	lastPut           map[*driverConn]string // stacktrace of last conn's put; debug only
-	maxIdleCount      int                    // 函数maxIdleConnsLocked() 里定义 0 是默认一个大小, 负数才代表0 zero means defaultMaxIdleConns; negative means 0
-	maxOpen           int                    // 最大网络连接的数量, <= 0 means unlimited不限制
-	maxLifetime       time.Duration          // 小于此时间才能被重用 maximum amount of time a connection may be reused
-	maxIdleTime       time.Duration          // 空闲超过此时间会被主动关闭 maximum amount of time a connection may be idle before being closed
-	cleanerCh         chan struct{}			//通知主动清理连接
+	openerCh     chan struct{}          // 收到就建立新的连接
+	closed       bool                   // 标记客户端已关闭
+	dep          map[finalCloser]depSet //添加关闭依赖, 只有依赖都被移除, 为空才能关闭
+	lastPut      map[*driverConn]string // stacktrace of last conn's put; debug only
+	maxIdleCount int                    // 函数maxIdleConnsLocked() 里定义 0 是默认一个大小, 负数才代表0 zero means defaultMaxIdleConns; negative means 0
+	maxOpen      int                    // 最大网络连接的数量, <= 0 means unlimited不限制
+	maxLifetime  time.Duration          // 小于此时间才能被重用 maximum amount of time a connection may be reused
+	maxIdleTime  time.Duration          // 空闲超过此时间会被主动关闭 maximum amount of time a connection may be idle before being closed
+	cleanerCh    chan struct{}          //通知主动清理连接
 
 	// DBStats 里的统计值
 	waitCount         int64 // Total number of connections waited for.
@@ -453,17 +454,17 @@ const (
 // (including any calls onto interfaces returned via that Conn, such as calls on Tx, Stmt, Result, Rows)
 type driverConn struct {
 	db        *DB
-	createdAt time.Time			//建立连接的时间
+	createdAt time.Time //建立连接的时间
 
-	sync.Mutex  // guards following
-	ci          driver.Conn		//封装的 tcp 网络连接
-	needReset   bool // The connection session should be reset before use if true.
+	sync.Mutex              // guards following
+	ci          driver.Conn //封装的 tcp 网络连接
+	needReset   bool        // The connection session should be reset before use if true.
 	closed      bool
 	finalClosed bool // ci.Close has been called
 	openStmt    map[*driverStmt]bool
 
 	// guarded by db.mu
-	inUse      bool			// 被占用 不是空闲 连接
+	inUse      bool      // 被占用 不是空闲 连接
 	returnedAt time.Time // Time the connection was created or returned.
 	onPut      []func()  // code (with db.mu held) run when conn is next returned
 	dbmuClosed bool      // same as closed, but guarded by db.mu, for removeClosedStmtLocked
@@ -872,7 +873,6 @@ func (db *DB) Close() error {
 //默认空闲连接2个
 const defaultMaxIdleConns = 2
 
-
 func (db *DB) maxIdleConnsLocked() int {
 	n := db.maxIdleCount
 	switch {
@@ -1018,7 +1018,7 @@ func (db *DB) connectionCleaner(d time.Duration) {
 
 	for {
 		select {
-		case <-t.C:		//定时清理
+		case <-t.C: //定时清理
 		case <-db.cleanerCh: // maxLifetime was changed or db was closed.
 		}
 
@@ -1286,14 +1286,14 @@ func (db *DB) conn(ctx context.Context, strategy connReuseStrategy) (*driverConn
 
 			select {
 			default:
-			case ret, ok := <-req:	//同时判断两个 channel
+			case ret, ok := <-req: //同时判断两个 channel
 				if ok && ret.conn != nil {
 					//放回池子
 					db.putConn(ret.conn, ret.err, false)
 				}
 			}
 			return nil, ctx.Err()
-		case ret, ok := <-req:		//在请求中拿到了可用的连接
+		case ret, ok := <-req: //在请求中拿到了可用的连接
 			atomic.AddInt64(&db.waitDuration, int64(time.Since(waitStart)))
 
 			if !ok {
@@ -2808,12 +2808,13 @@ func (s *Stmt) finalClose() error {
 	return nil
 }
 
-// Rows is the result of a query. Its cursor starts before the first row
-// of the result set. Use Next to advance from row to row.
+// Rows is the result of a query.
+// Its cursor starts before the first row of the result set.
+// Use Next to advance from row to row.
 type Rows struct {
 	dc          *driverConn // owned; must call releaseConn when closed to release
-	releaseConn func(error)
-	rowsi       driver.Rows
+	releaseConn func(error) //回调
+	rowsi       driver.Rows //
 	cancel      func()      // called when Rows is closed, may be nil.
 	closeStmt   *driverStmt // if non-nil, statement to Close on close
 
@@ -2826,8 +2827,7 @@ type Rows struct {
 	closed  bool
 	lasterr error // non-nil only if closed is true
 
-	// lastcols is only used in Scan, Next, and NextResultSet which are expected
-	// not to be called concurrently.
+	// lastcols is only used in Scan, Next, and NextResultSet which are expected not to be called concurrently.
 	lastcols []driver.Value
 }
 
@@ -2877,6 +2877,7 @@ func (rs *Rows) awaitDone(ctx, txctx context.Context) {
 // the two cases.
 //
 // Every call to Scan, even the first one, must be preceded by a call to Next.
+// 读取下一行数据, 到内部 并返回是否成功
 func (rs *Rows) Next() bool {
 	var doClose, ok bool
 	withLock(rs.closemu.RLocker(), func() {
@@ -3177,6 +3178,7 @@ func (rs *Rows) Scan(dest ...interface{}) error {
 	if len(dest) != len(rs.lastcols) {
 		return fmt.Errorf("sql: expected %d destination arguments in Scan, not %d", len(rs.lastcols), len(dest))
 	}
+	// mysql类型-> sql go driver 类型 -> 外面需要的类型
 	for i, sv := range rs.lastcols {
 		err := convertAssignRows(dest[i], sv, rs)
 		if err != nil {
@@ -3228,7 +3230,7 @@ func (rs *Rows) close(err error) error {
 	return err
 }
 
-// Row is the result of calling QueryRow to select a single row.
+// Row is the result of calling QueryRow to select a single row. 单行查询
 type Row struct {
 	// One of these two will be non-nil:
 	err  error // deferred error for easy chaining
@@ -3240,6 +3242,7 @@ type Row struct {
 // If more than one row matches the query,
 // Scan uses the first row and discards the rest. If no row matches
 // the query, Scan returns ErrNoRows.
+// // 扫描一行数据并返回
 func (r *Row) Scan(dest ...interface{}) error {
 	if r.err != nil {
 		return r.err
@@ -3264,7 +3267,7 @@ func (r *Row) Scan(dest ...interface{}) error {
 			return errors.New("sql: RawBytes isn't allowed on Row.Scan")
 		}
 	}
-
+	//只扫描一行
 	if !r.rows.Next() {
 		if err := r.rows.Err(); err != nil {
 			return err
