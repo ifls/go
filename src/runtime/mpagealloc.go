@@ -57,9 +57,9 @@ const (
 	// The size of a bitmap chunk, i.e. the amount of bits (that is, pages) to consider
 	// in the bitmap at once.
 	//1^9 512
-	pallocChunkPages    = 1 << logPallocChunkPages
+	pallocChunkPages = 1 << logPallocChunkPages
 	// 2^13 * 2^9 = 2 ^ 22
-	pallocChunkBytes    = pallocChunkPages * pageSize
+	pallocChunkBytes = pallocChunkPages * pageSize
 
 	logPallocChunkPages = 9
 	// 22
@@ -78,7 +78,7 @@ const (
 	// summaryLevels is an architecture-dependent value defined in mpagealloc_*.go.
 	summaryLevelBits = 3
 	// 48 - 22 - 12 = 14
-	summaryL0Bits    = heapAddrBits - logPallocChunkBytes - (summaryLevels-1)*summaryLevelBits
+	summaryL0Bits = heapAddrBits - logPallocChunkBytes - (summaryLevels-1)*summaryLevelBits
 
 	// pallocChunksL2Bits is the number of bits of the chunk index number
 	// covered by the second level of the chunks map.
@@ -86,7 +86,7 @@ const (
 	// See (*pageAlloc).chunks for more details. Update the documentation
 	// there should this change.
 	// 48 - 22 - 13 = 13
-	pallocChunksL2Bits  = heapAddrBits - logPallocChunkBytes - pallocChunksL1Bits
+	pallocChunksL2Bits = heapAddrBits - logPallocChunkBytes - pallocChunksL1Bits
 	// 13
 	pallocChunksL1Shift = pallocChunksL2Bits
 )
@@ -107,12 +107,12 @@ type chunkIdx uint
 // chunkIndex returns the global index of the palloc chunk containing the
 // pointer p.
 func chunkIndex(p uintptr) chunkIdx {
-	return chunkIdx((p + arenaBaseOffset) / pallocChunkBytes)
+	return chunkIdx((p - arenaBaseOffset) / pallocChunkBytes)
 }
 
 // chunkIndex returns the base address of the palloc chunk at index ci.
 func chunkBase(ci chunkIdx) uintptr {
-	return uintptr(ci)*pallocChunkBytes - arenaBaseOffset
+	return uintptr(ci)*pallocChunkBytes + arenaBaseOffset
 }
 
 // chunkPageIndex computes the index of the page that contains p,
@@ -144,13 +144,13 @@ func (i chunkIdx) l2() uint {
 // offAddrToLevelIndex converts an address in the offset address space
 // to the index into summary[level] containing addr.
 func offAddrToLevelIndex(level int, addr offAddr) int {
-	return int((addr.a + arenaBaseOffset) >> levelShift[level])
+	return int((addr.a - arenaBaseOffset) >> levelShift[level])
 }
 
 // levelIndexToOffAddr converts an index into summary[level] into
 // the corresponding address in the offset address space.
 func levelIndexToOffAddr(level, idx int) offAddr {
-	return offAddr{(uintptr(idx) << levelShift[level]) - arenaBaseOffset}
+	return offAddr{(uintptr(idx) << levelShift[level]) + arenaBaseOffset}
 }
 
 // addrsToSummaryRange converts base and limit pointers into a range
@@ -167,8 +167,8 @@ func addrsToSummaryRange(level int, base, limit uintptr) (lo int, hi int) {
 	// of a summary's max page count boundary for this level
 	// (1 << levelLogPages[level]). So, make limit an inclusive upper bound
 	// then shift, then add 1, so we get an exclusive upper bound at the end.
-	lo = int((base + arenaBaseOffset) >> levelShift[level])
-	hi = int(((limit-1)+arenaBaseOffset)>>levelShift[level]) + 1
+	lo = int((base - arenaBaseOffset) >> levelShift[level])
+	hi = int(((limit-1)-arenaBaseOffset)>>levelShift[level]) + 1
 	return
 }
 
@@ -301,7 +301,7 @@ type pageAlloc struct {
 
 	// mheap_.lock. This level of indirection makes it possible
 	// to test pageAlloc indepedently of the runtime allocator.
-	mheapLock *mutex	//堆锁 init()函数里赋值
+	mheapLock *mutex //堆锁 init()函数里赋值
 
 	// sysStat is the runtime memstat to update when new system
 	// memory is committed by the pageAlloc for allocation metadata.
