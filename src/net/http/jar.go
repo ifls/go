@@ -8,8 +8,8 @@ import (
 	"net/url"
 )
 
-// A CookieJar manages storage and use of cookies in HTTP requests.
-//
+// A CookieJar manages storage and use of cookies in HTTP requests. 管理cookies的使用和存储
+// jar 罐子
 // Implementations of CookieJar must be safe for concurrent use by multiple
 // goroutines.
 //

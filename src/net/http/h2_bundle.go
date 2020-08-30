@@ -52,6 +52,7 @@ import (
 	"golang.org/x/net/idna"
 )
 
+// 附带的http2实现, 不如 x/net/http2实现
 // A list of the possible cipher suite ids. Taken from
 // https://www.iana.org/assignments/tls-parameters/tls-parameters.txt
 

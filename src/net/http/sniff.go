@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 )
 
-// The algorithm uses at most sniffLen bytes to make its decision.
+// The algorithm uses at most sniffLen bytes to make its decision. html嗅探块
 const sniffLen = 512
 
 // DetectContentType implements the algorithm described
@@ -34,12 +34,12 @@ func DetectContentType(data []byte) string {
 		}
 	}
 
-	return "application/octet-stream" // fallback
+	return "application/octet-stream" // fallback 8位流
 }
 
 // isWS reports whether the provided byte is a whitespace byte (0xWS)
 // as defined in https://mimesniff.spec.whatwg.org/#terminology.
-func isWS(b byte) bool {
+func isWS(b byte) bool { // 是否是空白字符
 	switch b {
 	case '\t', '\n', '\x0c', '\r', ' ':
 		return true

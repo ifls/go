@@ -92,6 +92,8 @@ const DefaultMaxIdleConnsPerHost = 2
 // entry. If the idempotency key value is a zero-length slice, the
 // request is treated as idempotent but the header is not sent on the
 // wire.
+
+// RoundTripper的实现,
 type Transport struct {
 	idleMu       sync.Mutex
 	closeIdle    bool                                // user has requested to close all idle conns
@@ -103,7 +105,7 @@ type Transport struct {
 	reqCanceler map[*Request]func(error)
 
 	altMu    sync.Mutex   // guards changing altProto only
-	altProto atomic.Value // of nil or map[string]RoundTripper, key is URI scheme
+	altProto atomic.Value // of nil or map[string]RoundTripper, key is URI scheme  保存各种RoundTripper实现, 支持多种应用层协议
 
 	connsPerHostMu   sync.Mutex
 	connsPerHost     map[connectMethodKey]int
@@ -549,6 +551,7 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
 		// host (for http or https), the http proxy, or the http proxy
 		// pre-CONNECTed to https server. In any case, we'll be ready
 		// to send it requests.
+		// 创建新的连接
 		pconn, err := t.getConn(treq, cm)
 		if err != nil {
 			t.setReqCanceler(req, nil)
@@ -562,6 +565,7 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
 			t.setReqCanceler(req, nil) // not cancelable with CancelRequest
 			resp, err = pconn.alt.RoundTrip(req)
 		} else {
+			// http/1.x
 			resp, err = pconn.roundTrip(treq)
 		}
 		if err == nil {
@@ -1109,8 +1113,8 @@ type wantConn struct {
 	beforeDial func()
 	afterDial  func()
 
-	mu  sync.Mutex // protects pc, err, close(ready)
-	pc  *persistConn
+	mu  sync.Mutex   // protects pc, err, close(ready)
+	pc  *persistConn // 用来传递持久连接
 	err error
 }
 
@@ -1286,7 +1290,7 @@ func (t *Transport) getConn(treq *transportRequest, cm connectMethod) (pc *persi
 
 	// Wait for completion or cancellation.
 	select {
-	case <-w.ready:
+	case <-w.ready: // 等待连接完成
 		// Trace success but only for HTTP/1.
 		// HTTP/2 calls trace.GotConn itself.
 		if w.pc != nil && w.pc.alt == nil && trace != nil && trace.GotConn != nil {
@@ -1328,7 +1332,7 @@ func (t *Transport) getConn(treq *transportRequest, cm connectMethod) (pc *persi
 func (t *Transport) queueForDial(w *wantConn) {
 	w.beforeDial()
 	if t.MaxConnsPerHost <= 0 {
-		go t.dialConnFor(w)
+		go t.dialConnFor(w) // 创建新连接
 		return
 	}
 
@@ -1469,6 +1473,7 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 	return nil
 }
 
+// 会开启读写循环
 func (t *Transport) dialConn(ctx context.Context, cm connectMethod) (pconn *persistConn, err error) {
 	pconn = &persistConn{
 		t:             t,
@@ -1778,8 +1783,8 @@ type persistConn struct {
 	cacheKey  connectMethodKey
 	conn      net.Conn
 	tlsState  *tls.ConnectionState
-	br        *bufio.Reader       // from conn
-	bw        *bufio.Writer       // to conn
+	br        *bufio.Reader       // 读缓冲 from conn
+	bw        *bufio.Writer       // 写缓冲 to conn
 	nwrite    int64               // bytes written
 	reqch     chan requestAndChan // written by roundTrip; read by readLoop
 	writech   chan writeRequest   // written by roundTrip; read by writeLoop
@@ -1818,6 +1823,7 @@ func (pc *persistConn) maxHeaderResponseSize() int64 {
 	return 10 << 20 // conservative default; same as http2
 }
 
+// http 读数据
 func (pc *persistConn) Read(p []byte) (n int, err error) {
 	if pc.readLimit <= 0 {
 		return 0, fmt.Errorf("read limit of %d bytes exhausted", pc.maxHeaderResponseSize())
@@ -1943,6 +1949,7 @@ func (pc *persistConn) mapRoundTripError(req *transportRequest, startBytesWritte
 // closing a net.Conn that is now owned by the caller.
 var errCallerOwnsConn = errors.New("read loop ending; caller owns writable underlying conn")
 
+// http 读循环
 func (pc *persistConn) readLoop() {
 	closeErr := errReadLoopExiting // default value, if not changed below
 	defer func() {
@@ -1988,7 +1995,7 @@ func (pc *persistConn) readLoop() {
 		}
 		pc.mu.Unlock()
 
-		rc := <-pc.reqch
+		rc := <-pc.reqch // 请求通道
 		trace := httptrace.ContextClientTrace(rc.req.Context())
 
 		var resp *Response
@@ -2046,6 +2053,7 @@ func (pc *persistConn) readLoop() {
 			}
 
 			select {
+			// 读取response 写到通道, roundTrip 会从通道里拿
 			case rc.ch <- responseAndError{res: resp}:
 			case <-rc.callerGone:
 				return
@@ -2091,6 +2099,7 @@ func (pc *persistConn) readLoop() {
 		}
 
 		select {
+		// 读取response 写到通道, roundTrip 会从通道里拿
 		case rc.ch <- responseAndError{res: resp}:
 		case <-rc.callerGone:
 			return
@@ -2275,12 +2284,14 @@ type nothingWrittenError struct {
 	error
 }
 
+// http 连接实现, 写循环
 func (pc *persistConn) writeLoop() {
 	defer close(pc.writeLoopDone)
 	for {
 		select {
 		case wr := <-pc.writech:
 			startBytesWritten := pc.nwrite
+			// req 写到 pc.bw
 			err := wr.req.Request.write(pc.bw, pc.isProxy, wr.req.extra, pc.waitForContinue(wr.continueCh))
 			if bre, ok := err.(requestBodyReadError); ok {
 				err = bre.error
@@ -2294,6 +2305,7 @@ func (pc *persistConn) writeLoop() {
 				wr.req.setError(err)
 			}
 			if err == nil {
+				// 发送到网络
 				err = pc.bw.Flush()
 			}
 			if err != nil {
@@ -2420,6 +2432,7 @@ var (
 	testHookReadLoopBeforeNextRead             = nop
 )
 
+// 请求-回复, 阻塞模式
 func (pc *persistConn) roundTrip(req *transportRequest) (resp *Response, err error) {
 	testHookEnterRoundTrip()
 	if !pc.t.replaceReqCanceler(req.Request, pc.cancelRequest) {
@@ -2530,6 +2543,7 @@ func (pc *persistConn) roundTrip(req *transportRequest) (resp *Response, err err
 			pc.close(errTimeout)
 			return nil, errTimeout
 		case re := <-resc:
+			// 判断res和err是否满足互斥
 			if (re.res == nil) == (re.err == nil) {
 				panic(fmt.Sprintf("internal error: exactly one of res or err should be set; nil=%v", re.res == nil))
 			}
@@ -2539,6 +2553,8 @@ func (pc *persistConn) roundTrip(req *transportRequest) (resp *Response, err err
 			if re.err != nil {
 				return nil, pc.mapRoundTripError(req, startBytesWritten, re.err)
 			}
+
+			// 直到拿到response
 			return re.res, nil
 		case <-cancelChan:
 			pc.t.CancelRequest(req.Request)

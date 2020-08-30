@@ -30,8 +30,8 @@ var respExcludeHeader = map[string]bool{
 // Response represents the response from an HTTP request.
 //
 // The Client and Transport return Responses from servers once
-// the response headers have been received. The response body
-// is streamed on demand as the Body field is read.
+// the response headers have been received. 拿到头部就返回response
+// The response body is streamed on demand as the Body field is read. body不断获取, 应该用for循环
 type Response struct {
 	Status     string // e.g. "200 OK"
 	StatusCode int    // e.g. 200
@@ -47,7 +47,7 @@ type Response struct {
 	// ContentLength, TransferEncoding, Trailer), the field values are
 	// authoritative.
 	//
-	// Keys in the map are canonicalized (see CanonicalHeaderKey).
+	// Keys in the map are canonicalized规范化 (see CanonicalHeaderKey).
 	Header Header
 
 	// Body represents the response body.
@@ -151,6 +151,7 @@ func (r *Response) Location() (*url.URL, error) {
 // Clients must call resp.Body.Close when finished reading resp.Body.
 // After that call, clients can inspect resp.Trailer to find key/value
 // pairs included in the response trailer.
+// 读取http 响应体
 func ReadResponse(r *bufio.Reader, req *Request) (*Response, error) {
 	tp := textproto.NewReader(r)
 	resp := &Response{
@@ -227,9 +228,9 @@ func (r *Response) ProtoAtLeast(major, minor int) bool {
 }
 
 // Write writes r to w in the HTTP/1.x server response format,
-// including the status line, headers, body, and optional trailer.
+// including the status line, headers, body, and optional trailer最后的.
 //
-// This method consults the following fields of the response r:
+// This method consults查阅 the following fields of the response r:
 //
 //  StatusCode
 //  ProtoMajor

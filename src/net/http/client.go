@@ -59,7 +59,7 @@ type Client struct {
 	// Transport specifies the mechanism by which individual
 	// HTTP requests are made.
 	// If nil, DefaultTransport is used.
-	Transport RoundTripper
+	Transport RoundTripper // 阻塞式, 请求
 
 	// CheckRedirect specifies the policy for handling redirects.
 	// If CheckRedirect is not nil, the client calls it before
@@ -201,6 +201,7 @@ func (c *Client) transport() RoundTripper {
 
 // send issues an HTTP request.
 // Caller should close resp.Body when done reading from it.
+// ireq是原始请求
 func send(ireq *Request, rt RoundTripper, deadline time.Time) (resp *Response, didTimeout func() bool, err error) {
 	req := ireq // req is either the original request, or a modified fork
 
@@ -219,12 +220,12 @@ func send(ireq *Request, rt RoundTripper, deadline time.Time) (resp *Response, d
 		return nil, alwaysFalse, errors.New("http: Request.RequestURI can't be set in client requests")
 	}
 
-	// forkReq forks req into a shallow clone of ireq the first
+	// forkReq forks req into a shallow clone浅拷贝 of ireq the first
 	// time it's called.
 	forkReq := func() {
 		if ireq == req {
 			req = new(Request)
-			*req = *ireq // shallow clone
+			*req = *ireq // shallow clone, 深拷贝需要递归, 而且要考虑一些特殊情况的处理, 可以参考一些开源库
 		}
 	}
 
@@ -268,6 +269,7 @@ func send(ireq *Request, rt RoundTripper, deadline time.Time) (resp *Response, d
 	if resp == nil {
 		return nil, didTimeout, fmt.Errorf("http: RoundTripper implementation (%T) returned a nil *Response with a nil error", rt)
 	}
+
 	if resp.Body == nil {
 		// The documentation on the Body field says “The http Client and Transport
 		// guarantee that Body is always non-nil, even on responses without a body
@@ -282,8 +284,10 @@ func send(ireq *Request, rt RoundTripper, deadline time.Time) (resp *Response, d
 		if resp.ContentLength > 0 && req.Method != "HEAD" {
 			return nil, didTimeout, fmt.Errorf("http: RoundTripper implementation (%T) returned a *Response with content length %d but a nil Body", rt, resp.ContentLength)
 		}
+		// 伪装的reader, 什么都读不到, 不会赋值为nil
 		resp.Body = ioutil.NopCloser(strings.NewReader(""))
 	}
+
 	if !deadline.IsZero() {
 		resp.Body = &cancelTimerBody{
 			stop:          stopTimer,
@@ -332,7 +336,7 @@ func knownRoundTripperImpl(rt RoundTripper, req *Request) bool {
 	return false
 }
 
-// setRequestCancel sets req.Cancel and adds a deadline context to req
+// setRequestCancel sets req.Cancel and adds a deadline context to req 设置req的Cancel函数, 添加一个deadline
 // if deadline is non-zero. The RoundTripper's type is used to
 // determine whether the legacy CancelRequest behavior should be used.
 //
@@ -590,6 +594,7 @@ var testHookClientDoResult func(retres *Response, reterr error)
 
 func (c *Client) do(req *Request) (retres *Response, reterr error) {
 	if testHookClientDoResult != nil {
+		// 最后可以对返回结果和返回错误, 请求hook
 		defer func() { testHookClientDoResult(retres, reterr) }()
 	}
 	if req.URL == nil {
@@ -611,6 +616,7 @@ func (c *Client) do(req *Request) (retres *Response, reterr error) {
 		redirectMethod string
 		includeBody    bool
 	)
+
 	uerr := func(err error) error {
 		// the body may have been closed already by c.send()
 		if !reqBodyClosed {
@@ -628,6 +634,7 @@ func (c *Client) do(req *Request) (retres *Response, reterr error) {
 			Err: err,
 		}
 	}
+
 	for {
 		// For all but the first request, create the next
 		// request hop and replace req.
@@ -637,6 +644,7 @@ func (c *Client) do(req *Request) (retres *Response, reterr error) {
 				resp.closeBody()
 				return nil, uerr(fmt.Errorf("%d response missing Location header", resp.StatusCode))
 			}
+
 			u, err := req.URL.Parse(loc)
 			if err != nil {
 				resp.closeBody()
@@ -873,7 +881,7 @@ func PostForm(url string, data url.Values) (resp *Response, err error) {
 // Caller should close resp.Body when done reading from it.
 //
 // See the Client.Do method documentation for details on how redirects
-// are handled.
+// are handled. Form格式的数据, 请求POST
 func (c *Client) PostForm(url string, data url.Values) (resp *Response, err error) {
 	return c.Post(url, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 }
@@ -902,6 +910,7 @@ func Head(url string) (resp *Response, err error) {
 //    303 (See Other)
 //    307 (Temporary Redirect)
 //    308 (Permanent Redirect)
+// 请求 http.Methodhead 去请求
 func (c *Client) Head(url string) (resp *Response, err error) {
 	req, err := NewRequest("HEAD", url, nil)
 	if err != nil {
@@ -916,7 +925,7 @@ func (c *Client) Head(url string) (resp *Response, err error) {
 // connections currently in use.
 //
 // If the Client's Transport does not have a CloseIdleConnections method
-// then this method does nothing.
+// then this method does nothing. 关闭所有空闲连接
 func (c *Client) CloseIdleConnections() {
 	type closeIdler interface {
 		CloseIdleConnections()

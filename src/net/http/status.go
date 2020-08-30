@@ -51,7 +51,7 @@ const (
 	StatusUnsupportedMediaType         = 415 // RFC 7231, 6.5.13
 	StatusRequestedRangeNotSatisfiable = 416 // RFC 7233, 4.4
 	StatusExpectationFailed            = 417 // RFC 7231, 6.5.14
-	StatusTeapot                       = 418 // RFC 7168, 2.3.3
+	StatusTeapot                       = 418 // RFC 7168, 2.3.3  愚人节
 	StatusMisdirectedRequest           = 421 // RFC 7540, 9.1.2
 	StatusUnprocessableEntity          = 422 // RFC 4918, 11.2
 	StatusLocked                       = 423 // RFC 4918, 11.3
@@ -99,8 +99,8 @@ var statusText = map[int]string{
 	StatusSeeOther:          "See Other",
 	StatusNotModified:       "Not Modified",
 	StatusUseProxy:          "Use Proxy",
-	StatusTemporaryRedirect: "Temporary Redirect",
-	StatusPermanentRedirect: "Permanent Redirect",
+	StatusTemporaryRedirect: "Temporary Redirect", // 307
+	StatusPermanentRedirect: "Permanent Redirect", // 308
 
 	StatusBadRequest:                   "Bad Request",
 	StatusUnauthorized:                 "Unauthorized",

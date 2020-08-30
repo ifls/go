@@ -25,6 +25,7 @@ type Header map[string][]string
 // The key is case insensitive; it is canonicalized by
 // CanonicalHeaderKey.
 func (h Header) Add(key, value string) {
+	// 对key 做了特殊处理
 	textproto.MIMEHeader(h).Add(key, value)
 }
 

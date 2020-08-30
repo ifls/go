@@ -8,7 +8,7 @@
 // See TODO https://golang.org/s/sqldrivers for a list of drivers.
 //
 // Drivers that do not support context cancellation will not return until
-// after the query is completed. 不支持取消 conext 的驱动,直到查询结束前都不会返回
+// after the query is completed. 不支持取消 context 的驱动,直到查询结束前都不会返回
 // 应该要使用支持取消的
 //
 // For usage examples, see the wiki page at
@@ -18,7 +18,6 @@ package sql
 
 import (
 	"context"
-	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -78,7 +77,7 @@ func Drivers() []string {
 
 // A NamedArg is a named argument.
 // NamedArg values may be used as arguments to Query or Exec and bind to the corresponding named parameter in the SQL statement.
-//
+// sql 语句里 参数绑定
 // For a more concise way to create NamedArg values, see the Named function.  Named()
 type NamedArg struct {
 	// for what
@@ -127,7 +126,7 @@ const (
 	LevelDefault         IsolationLevel = iota
 	LevelReadUncommitted                //读未提交
 	LevelReadCommitted                  //读已提交
-	LevelWriteCommitted                 //写提交
+	LevelWriteCommitted                 //写已提交
 	LevelRepeatableRead                 //可重复读
 	LevelSnapshot                       //快照隔离
 	LevelSerializable                   //可串行化
@@ -419,7 +418,7 @@ type DB struct {
 	// maybeOpenNewConnections sends on the chan (one send per needed connection)
 	// It is closed during db.Close(). The close tells the connectionOpener
 	// goroutine to exit.
-	openerCh     chan struct{}          // 收到就建立新的连接
+	openerCh     chan struct{}          // 缓冲chan, 收到消息就建立新的连接
 	closed       bool                   // 标记客户端已关闭
 	dep          map[finalCloser]depSet //添加关闭依赖, 只有依赖都被移除, 为空才能关闭
 	lastPut      map[*driverConn]string // stacktrace of last conn's put; debug only
@@ -702,6 +701,7 @@ type dsnConnector struct {
 	driver driver.Driver
 }
 
+//使用驱动创建 到数据库的网络连接
 func (t dsnConnector) Connect(_ context.Context) (driver.Conn, error) {
 	return t.driver.Open(t.dsn)
 }
@@ -737,7 +737,7 @@ func OpenDB(c driver.Connector) *DB {
 		stop:         cancel,
 	}
 
-	//负责根据开连接的消息,创建新的连接
+	//负责根据开连接的chan读取消息,创建新的连接
 	go db.connectionOpener(ctx)
 
 	return db
@@ -760,7 +760,7 @@ func OpenDB(c driver.Connector) *DB {
 // and maintains its own pool of idle connections. Thus, the Open
 // function should be called just once. It is rarely necessary to
 // close a DB.
-func Open(driverName, dataSourceName string) (*DB, error) {
+func f(driverName, dataSourceName string) (*DB, error) {
 	driversMu.RLock()
 	driveri, ok := drivers[driverName]
 	driversMu.RUnlock()
@@ -1129,6 +1129,7 @@ func (db *DB) Stats() DBStats {
 // Assumes db.mu is locked.
 // If there are connRequests and the connection limit hasn't been reached,
 // then tell the connectionOpener to open new connections.
+// 打开期望数量的请求连接
 func (db *DB) maybeOpenNewConnections() {
 	numRequests := len(db.connRequests)
 	if db.maxOpen > 0 {
@@ -1137,6 +1138,7 @@ func (db *DB) maybeOpenNewConnections() {
 			numRequests = numCanOpen
 		}
 	}
+
 	for numRequests > 0 {
 		db.numOpen++ // optimistically
 		numRequests--

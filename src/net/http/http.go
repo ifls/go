@@ -26,12 +26,13 @@ type incomparable [0]func()
 const maxInt64 = 1<<63 - 1
 
 // aLongTimeAgo is a non-zero time, far in the past, used for
-// immediate cancellation of network operations.
+// immediate cancellation立刻取消 of network operations.
+// 很久以前
 var aLongTimeAgo = time.Unix(1, 0)
 
 // omitBundledHTTP2 is set by omithttp2.go when the nethttpomithttp2
 // build tag is set. That means h2_bundle.go isn't compiled in and we
-// shouldn't try to use it.
+// shouldn't try to use it. 设置http2部分会不会参与编译, 不应该使用
 var omitBundledHTTP2 bool
 
 // TODO(bradfitz): move common stuff here. The other files have accumulated
@@ -50,7 +51,7 @@ func (k *contextKey) String() string { return "net/http context value " + k.name
 func hasPort(s string) bool { return strings.LastIndex(s, ":") > strings.LastIndex(s, "]") }
 
 // removeEmptyPort strips the empty port in ":port" to ""
-// as mandated by RFC 3986 Section 6.2.3.
+// as mandated指令 by RFC 3986 Section 6.2.3.
 func removeEmptyPort(host string) string {
 	if hasPort(host) {
 		return strings.TrimSuffix(host, ":")
@@ -75,6 +76,8 @@ func isASCII(s string) bool {
 func stringContainsCTLByte(s string) bool {
 	for i := 0; i < len(s); i++ {
 		b := s[i]
+		// b < 0x20(32)
+		// 0x7f 是delete字符
 		if b < ' ' || b == 0x7f {
 			return true
 		}
@@ -136,9 +139,8 @@ type PushOptions struct {
 	Header Header
 }
 
-// Pusher is the interface implemented by ResponseWriters that support
-// HTTP/2 server push. For more background, see
-// https://tools.ietf.org/html/rfc7540#section-8.2.
+// Pusher is the interface implemented by ResponseWriters that support HTTP/2 server push.
+// For more background, see https://tools.ietf.org/html/rfc7540#section-8.2.
 type Pusher interface {
 	// Push initiates an HTTP/2 server push. This constructs a synthetic
 	// request using the given target and options, serializes that request

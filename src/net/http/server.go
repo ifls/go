@@ -93,9 +93,8 @@ type Handler interface {
 // A ResponseWriter may not be used after the Handler.ServeHTTP method
 // has returned.
 type ResponseWriter interface {
-	// Header returns the header map that will be sent by
-	// WriteHeader. The Header map also is the mechanism with which
-	// Handlers can set HTTP trailers.
+	// Header returns the header map that will be sent by WriteHeader. 获取header
+	// The Header map also is the mechanism with which Handlers can set HTTP trailers.
 	//
 	// Changing the header map after a call to WriteHeader (or
 	// Write) has no effect unless the modified headers are
@@ -138,9 +137,8 @@ type ResponseWriter interface {
 	// possible to maximize compatibility.
 	Write([]byte) (int, error)
 
-	// WriteHeader sends an HTTP response header with the provided
-	// status code.
-	//
+	// WriteHeader sends an HTTP response header with the provided status code.
+	// 输出响应头部
 	// If WriteHeader is not called explicitly, the first call to Write
 	// will trigger an implicit WriteHeader(http.StatusOK).
 	// Thus explicit calls to WriteHeader are mainly used to
@@ -211,7 +209,7 @@ type Hijacker interface {
 type CloseNotifier interface {
 	// CloseNotify returns a channel that receives at most a
 	// single value (true) when the client connection has gone
-	// away.
+	// away. 通知客户端连接已关闭
 	//
 	// CloseNotify may wait to notify until Request.Body has been
 	// fully read.
@@ -256,7 +254,7 @@ type conn struct {
 	// rwc is the underlying network connection.
 	// This is never wrapped by other types and is the value given out
 	// to CloseNotifier callers. It is usually of type *net.TCPConn or
-	// *tls.Conn.
+	// *tls.Conn. 具体类型通常是这两者之一
 	rwc net.Conn
 
 	// remoteAddr is rwc.RemoteAddr().String(). It is not populated synchronously
@@ -292,7 +290,7 @@ type conn struct {
 
 	curState struct{ atomic uint64 } // packed (unixtime<<8|uint8(ConnState))
 
-	// mu guards hijackedv
+	// mu guards hijackedv  只保护下面的字段
 	mu sync.Mutex
 
 	// hijackedv is whether this connection has been hijacked
@@ -334,7 +332,7 @@ const bufferBeforeChunkingSize = 2048
 
 // chunkWriter writes to a response's conn buffer, and is the writer
 // wrapped by the response.bufw buffered writer.
-//
+// 将http响应报文的数据写到连接缓冲区
 // chunkWriter also is responsible for finalizing the Header, including
 // conditionally setting the Content-Type and setting a Content-Length
 // in cases where the handler's final output is smaller than the buffer
@@ -361,7 +359,7 @@ type chunkWriter struct {
 }
 
 var (
-	crlf       = []byte("\r\n")
+	crlf       = []byte("\r\n") // Carriage-Return Line-Feed
 	colonSpace = []byte(": ")
 )
 
@@ -2487,7 +2485,7 @@ func ServeTLS(l net.Listener, handler Handler, certFile, keyFile string) error {
 }
 
 // A Server defines parameters for running an HTTP server.
-// The zero value for Server is a valid configuration.
+// The zero value for Server is a valid configuration. 零值可用
 type Server struct {
 	// Addr optionally specifies the TCP address for the server to listen on,
 	// in the form "host:port". If empty, ":http" (port 80) is used.
@@ -2495,7 +2493,7 @@ type Server struct {
 	// See net.Dial for details of the address format.
 	Addr string
 
-	Handler Handler // handler to invoke, http.DefaultServeMux if nil
+	Handler Handler // handler to invoke, http.DefaultServeMux if nil 没有就使用默认的
 
 	// TLSConfig optionally provides a TLS configuration for use
 	// by ServeTLS and ListenAndServeTLS. Note that this value is
@@ -2586,7 +2584,7 @@ type Server struct {
 
 	mu         sync.Mutex
 	listeners  map[*net.Listener]struct{}
-	activeConn map[*conn]struct{}
+	activeConn map[*conn]struct{} // 活跃连接
 	doneChan   chan struct{}
 	onShutdown []func()
 }
@@ -2692,7 +2690,7 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 	}
 }
 
-// RegisterOnShutdown registers a function to call on Shutdown.
+// RegisterOnShutdown registers a function to call on Shutdown. 注册关闭服务的回调函数
 // This can be used to gracefully shutdown connections that have
 // undergone ALPN protocol upgrade or that have been hijacked.
 // This function should start protocol-specific graceful shutdown,

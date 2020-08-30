@@ -86,6 +86,7 @@ var (
 func badStringError(what, val string) error { return fmt.Errorf("%s %q", what, val) }
 
 // Headers that Request.Write handles itself and should be skipped.
+// http响应不能有这些?
 var reqWriteExcludeHeader = map[string]bool{
 	"Host":              true, // not in Header map anyway
 	"User-Agent":        true,
@@ -183,7 +184,7 @@ type Request struct {
 	// requires setting Body.
 	//
 	// For server requests, it is unused.
-	GetBody func() (io.ReadCloser, error)
+	GetBody func() (io.ReadCloser, error) // 占8B 是一个指针
 
 	// ContentLength records the length of the associated content.
 	// The value -1 indicates that the length is unknown.
@@ -237,23 +238,23 @@ type Request struct {
 	// Form contains the parsed form data, including both the URL
 	// field's query parameters and the PATCH, POST, or PUT form data.
 	// This field is only available after ParseForm is called.
-	// The HTTP client ignores Form and uses Body instead.
+	// The HTTP client ignores Form and uses Body instead. 使用body代替
 	Form url.Values
 
 	// PostForm contains the parsed form data from PATCH, POST
 	// or PUT body parameters.
 	//
 	// This field is only available after ParseForm is called.
-	// The HTTP client ignores PostForm and uses Body instead.
+	// The HTTP client ignores PostForm and uses Body instead. 使用body代替
 	PostForm url.Values
 
 	// MultipartForm is the parsed multipart form, including file uploads.
 	// This field is only available after ParseMultipartForm is called.
-	// The HTTP client ignores MultipartForm and uses Body instead.
+	// The HTTP client ignores MultipartForm and uses Body instead. 使用body代替
 	MultipartForm *multipart.Form
 
-	// Trailer specifies additional headers that are sent after the request
-	// body.
+	// Trailer specifies指定 additional headers that are sent after the request
+	// body. 尾部, body之后的头部 https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Trailer
 	//
 	// For server requests, the Trailer map initially contains only the
 	// trailer keys, with nil values. (The client declares which trailers it
@@ -269,7 +270,7 @@ type Request struct {
 	// the request body is read. Once the body returns EOF, the caller must
 	// not mutate Trailer.
 	//
-	// Few HTTP clients, servers, or proxies support HTTP trailers.
+	// Few 很少有HTTP clients, servers, or proxies support HTTP trailers.
 	Trailer Header
 
 	// RemoteAddr allows HTTP servers and other software to record
@@ -281,41 +282,40 @@ type Request struct {
 	// This field is ignored by the HTTP client.
 	RemoteAddr string
 
-	// RequestURI is the unmodified request-target of the
-	// Request-Line (RFC 7230, Section 3.1.1) as sent by the client
-	// to a server. Usually the URL field should be used instead.
+	// RequestURI is the unmodified request-target of the Request-Line (RFC 7230, Section 3.1.1) as sent by the client to a server.
+	// Usually the URL field should be used instead.
 	// It is an error to set this field in an HTTP client request.
-	RequestURI string
+	RequestURI string // 客户端发给服务器的, 请求行的未修改的URI
 
 	// TLS allows HTTP servers and other software to record
-	// information about the TLS connection on which the request
-	// was received. This field is not filled in by ReadRequest.
-	// The HTTP server in this package sets the field for
-	// TLS-enabled connections before invoking a handler;
-	// otherwise it leaves the field nil.
-	// This field is ignored by the HTTP client.
-	TLS *tls.ConnectionState
+	// information about the TLS connection on which the request was received.
 
-	// Cancel is an optional channel whose closure indicates that the client
-	// request should be regarded as canceled. Not all implementations of
-	// RoundTripper may support Cancel.
+	// This field is not filled in by ReadRequest.
+	// The HTTP server in this package sets the field for TLS-enabled connections before invoking a handler;
+	// otherwise it leaves the field nil.
+
+	// This field is ignored by the HTTP client.
+	TLS *tls.ConnectionState //
+
+	// Cancel is an optional channel whose closure关闭 indicates that the client
+	// request should be regarded as canceled.
+	// Not all implementations of RoundTripper may support Cancel.
 	//
-	// For server requests, this field is not applicable.
+	// For server requests, this field is not applicable. 对于服务端, 不可用
 	//
-	// Deprecated: Set the Request's context with NewRequestWithContext
-	// instead. If a Request's Cancel field and context are both
+	// Deprecated: Set the Request's context with NewRequestWithContext instead. 使用 NewRequestWithContext()代替
+	// If a Request's Cancel field and context are both
 	// set, it is undefined whether Cancel is respected.
 	Cancel <-chan struct{}
 
 	// Response is the redirect response which caused this request
-	// to be created. This field is only populated during client
-	// redirects.
+	// to be created. 一个重定向的响应, 导致的需要发起一个新的请求
+	// This field is only populated存在 during client redirects.
 	Response *Response
 
-	// ctx is either the client or server context. It should only
-	// be modified via copying the whole Request using WithContext.
-	// It is unexported to prevent people from using Context wrong
-	// and mutating the contexts held by callers of the same request.
+	// ctx is either the client or server context.
+	// It should only be modified via copying the whole Request using WithContext.
+	// It is unexported to prevent people from using Context wrong and mutating the contexts held by callers of the same request.
 	ctx context.Context
 }
 
@@ -339,7 +339,7 @@ func (r *Request) Context() context.Context {
 
 // WithContext returns a shallow copy of r with its context changed
 // to ctx. The provided ctx must be non-nil.
-//
+// 返回一个新的请求结构体
 // For outgoing client request, the context controls the entire
 // lifetime of a request and its response: obtaining a connection,
 // sending the request, and reading the response headers and body.
@@ -361,7 +361,7 @@ func (r *Request) WithContext(ctx context.Context) *Request {
 
 // Clone returns a deep copy of r with its context changed to ctx.
 // The provided ctx must be non-nil.
-//
+// 深拷贝一个request
 // For an outgoing client request, the context controls the entire
 // lifetime of a request and its response: obtaining a connection,
 // sending the request, and reading the response headers and body.
@@ -428,7 +428,7 @@ func (r *Request) Cookie(name string) (*Cookie, error) {
 func (r *Request) AddCookie(c *Cookie) {
 	s := fmt.Sprintf("%s=%s", sanitizeCookieName(c.Name), sanitizeCookieValue(c.Value))
 	if c := r.Header.Get("Cookie"); c != "" {
-		r.Header.Set("Cookie", c+"; "+s)
+		r.Header.Set("Cookie", c+"; "+s) // 拼接cookie
 	} else {
 		r.Header.Set("Cookie", s)
 	}
@@ -442,6 +442,8 @@ func (r *Request) AddCookie(c *Cookie) {
 // as a method is that the compiler can diagnose programs that use the
 // alternate (correct English) spelling req.Referrer() but cannot
 // diagnose programs that use Header["Referrer"].
+// https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Referer
+// 包含当前请求的来源地址, 暴露隐私
 func (r *Request) Referer() string {
 	return r.Header.Get("Referer")
 }
@@ -486,7 +488,7 @@ func (r *Request) multipartReader(allowMixed bool) (*multipart.Reader, error) {
 }
 
 // isH2Upgrade reports whether r represents the http2 "client preface"
-// magic string.
+// magic string.  方法是PRI, 表示升级
 func (r *Request) isH2Upgrade() bool {
 	return r.Method == "PRI" && len(r.Header) == 0 && r.URL.Path == "*" && r.Proto == "HTTP/2.0"
 }
@@ -505,8 +507,8 @@ func valueOrDefault(value, def string) string {
 // See https://codereview.appspot.com/7532043.
 const defaultUserAgent = "Go-http-client/1.1"
 
-// Write writes an HTTP/1.1 request, which is the header and body, in wire format.
-// This method consults the following fields of the request:
+// Write writes an HTTP/1.1 request, which is the header and body, in wire format. 传输格式
+// This method consults查阅 the following fields of the request:
 //	Host
 //	URL
 //	Method (defaults to "GET")
@@ -518,6 +520,7 @@ const defaultUserAgent = "Go-http-client/1.1"
 // If Body is present, Content-Length is <= 0 and TransferEncoding
 // hasn't been set to "identity", Write adds "Transfer-Encoding:
 // chunked" to the header. Body is closed after it is sent.
+// 输出http文本协议
 func (r *Request) Write(w io.Writer) error {
 	return r.write(w, false, nil, nil)
 }
@@ -1011,7 +1014,7 @@ func readRequest(b *bufio.Reader, deleteHostHeader bool) (req *Request, err erro
 		return nil, err
 	}
 	defer func() {
-		putTextprotoReader(tp)
+		putTextprotoReader(tp) // 放回缓冲池
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF
 		}
@@ -1396,7 +1399,7 @@ func (r *Request) isReplayable() bool {
 		// The Idempotency-Key, while non-standard, is widely used to
 		// mean a POST or other request is idempotent. See
 		// https://golang.org/issue/19943#issuecomment-421092421
-		if r.Header.has("Idempotency-Key") || r.Header.has("X-Idempotency-Key") {
+		if r.Header.has("Idempotency-Key") || r.Header.has("X-Idempotency-Key") { // Idempotency 幂等
 			return true
 		}
 	}

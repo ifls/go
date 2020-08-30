@@ -23,6 +23,7 @@ import (
 	"time"
 )
 
+// fs 文件系统 封装文件接口
 // A Dir implements FileSystem using the native file system restricted to a
 // specific directory tree.
 //

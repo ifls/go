@@ -52,7 +52,7 @@ compression, and other settings, create a Transport:
 	resp, err := client.Get("https://example.com")
 
 Clients and Transports are safe for concurrent use by multiple
-goroutines and for efficiency should only be created once and re-used.
+goroutines and for efficiency should only be created once and re-used. 是并发安全的, 应该重用
 
 ListenAndServe starts an HTTP server with a given address and handler.
 The handler is usually nil, which means to use DefaultServeMux.
@@ -66,9 +66,7 @@ Handle and HandleFunc add handlers to DefaultServeMux:
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
-More control over the server's behavior is available by creating a
-custom Server:
-
+More control over the server's behavior is available by creating a custom Server:
 	s := &http.Server{
 		Addr:           ":8080",
 		Handler:        myHandler,
@@ -78,12 +76,10 @@ custom Server:
 	}
 	log.Fatal(s.ListenAndServe())
 
-Starting with Go 1.6, the http package has transparent support for the
-HTTP/2 protocol when using HTTPS. Programs that must disable HTTP/2
-can do so by setting Transport.TLSNextProto (for clients) or
-Server.TLSNextProto (for servers) to a non-nil, empty
-map. Alternatively, the following GODEBUG environment variables are
-currently supported:
+Starting with Go 1.6, the http package has transparent support for the HTTP/2 protocol when using HTTPS.
+Programs that must disable HTTP/2 can do so by setting Transport.TLSNextProto (for clients) or
+Server.TLSNextProto (for servers) to a non-nil, empty map.
+Alternatively, the following GODEBUG environment variables are currently supported:
 
 	GODEBUG=http2client=0  # disable HTTP/2 client support
 	GODEBUG=http2server=0  # disable HTTP/2 server support
@@ -94,13 +90,15 @@ The GODEBUG variables are not covered by Go's API compatibility
 promise. Please report any issues before disabling HTTP/2
 support: https://golang.org/s/http2bug
 
-The http package's Transport and Server both automatically enable
-HTTP/2 support for simple configurations. To enable HTTP/2 for more
-complex configurations, to use lower-level HTTP/2 features, or to use
+The http package's Transport and Server both automatically enable HTTP/2 support for simple configurations.
+简单配置下就自动支持http2
+To enable HTTP/2 for more complex configurations, to use lower-level HTTP/2 features, or to use
 a newer version of Go's http2 package, import "golang.org/x/net/http2"
-directly and use its ConfigureTransport and/or ConfigureServer
-functions. Manually configuring HTTP/2 via the golang.org/x/net/http2
-package takes precedence over the net/http package's built-in HTTP/2
+
+directly and use its ConfigureTransport and/or ConfigureServer functions.
+
+Manually configuring HTTP/2 via the golang.org/x/net/http2
+package takes precedence over优于 the net/http package's built-in HTTP/2
 support.
 
 */
