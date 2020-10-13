@@ -274,6 +274,8 @@ var execveLibc func(path uintptr, argv uintptr, envp uintptr) Errno
 var execveDarwin func(path *byte, argv **byte, envp **byte) error
 
 // Exec invokes the execve(2) system call.
+// execve - execute program
+// https://man7.org/linux/man-pages/man2/execve.2.html
 func Exec(argv0 string, argv []string, envv []string) (err error) {
 	argv0p, err := BytePtrFromString(argv0)
 	if err != nil {

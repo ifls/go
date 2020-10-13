@@ -6,6 +6,8 @@
 
 package syscall
 
+// ioctl - control device
+// https://man7.org/linux/man-pages/man2/ioctl.2.html
 func Ioctl(fd, req, arg uintptr) (err Errno) {
 	_, _, err = Syscall(SYS_IOCTL, fd, req, arg)
 	return err
