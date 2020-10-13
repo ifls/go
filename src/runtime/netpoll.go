@@ -47,7 +47,7 @@ const (
 
 // pollDesc contains 2 binary semaphores,
 // rg and wg, to park reader and writer goroutines respectively.
-//The semaphore can be in the following states:
+// The semaphore can be in the following states:
 // pdReady - io readiness notification is pending;
 //           a goroutine consumes the notification by changing the state to nil.
 // pdWait - a goroutine prepares to park on the semaphore, but not yet parked;
@@ -63,7 +63,7 @@ const (
 	pdWait  uintptr = 2
 )
 
-//4K
+// 4K
 const pollBlockSize = 4 * 1024
 
 // Network poller descriptor.
@@ -84,22 +84,22 @@ type pollDesc struct {
 	lock    mutex // protects the following fields
 	fd      uintptr
 	closing bool
-	everr   bool    // marks event scanning error happened
-	user    uint32  // user settable cookie 用户可变cookie
+	everr   bool   // marks event scanning error happened
+	user    uint32 // user settable cookie 用户可变cookie
 
-	rseq    uintptr // protects from stale旧的 read timers
-	rg      uintptr // pdReady, pdWait, G waiting for read or nil 等待读的g 值为 pdReady标记，pdWait标记，*g, nil 之一
-	rt      timer   // read deadline timer (set if rt.f != nil)
-	rd      int64   // read deadline
+	rseq uintptr // protects from stale旧的 read timers
+	rg   uintptr // pdReady, pdWait, G waiting for read or nil 等待读的g 值为 pdReady标记，pdWait标记，*g, nil 之一
+	rt   timer   // read deadline timer (set if rt.f != nil)
+	rd   int64   // read deadline
 
-	wseq    uintptr // protects from stale过期的 write timers
+	wseq uintptr // protects from stale过期的 write timers
 
-	wg      uintptr // pdReady, pdWait, G waiting for write or nil 等待写的g
-	wt      timer   // write deadline timer
-	wd      int64   // write deadline
+	wg uintptr // pdReady, pdWait, G waiting for write or nil 等待写的g
+	wt timer   // write deadline timer
+	wd int64   // write deadline
 }
 
-//连续数组 构建单链表
+// 连续数组 构建单链表
 type pollCache struct {
 	lock  mutex
 	first *pollDesc
@@ -111,11 +111,11 @@ type pollCache struct {
 }
 
 var (
-	netpollInitLock mutex		//保护初始化
-	netpollInited   uint32		//表示是否已初始化
+	netpollInitLock mutex  // 保护初始化
+	netpollInited   uint32 // 表示是否已初始化
 
-	pollcache      pollCache	//pd缓存链表
-	netpollWaiters uint32		//有多少等待的g
+	pollcache      pollCache // pd缓存链表
+	netpollWaiters uint32    // 有多少等待的g
 )
 
 //go:linkname poll_runtime_pollServerInit internal/poll.runtime_pollServerInit
@@ -128,7 +128,7 @@ func netpollGenericInit() {
 		lockInit(&netpollInitLock, lockRankNetpollInit)
 		lock(&netpollInitLock)
 		if netpollInited == 0 {
-			//netpoll_epoll.go
+			// netpoll_epoll.go
 			netpollinit()
 			atomic.Store(&netpollInited, 1)
 		}
@@ -170,7 +170,7 @@ func poll_runtime_pollOpen(fd uintptr) (*pollDesc, int) {
 	unlock(&pd.lock)
 
 	var errno int32
-	//加入到轮询里
+	// 加入到轮询里
 	errno = netpollopen(fd, pd)
 	return pd, int(errno)
 }
@@ -187,7 +187,7 @@ func poll_runtime_pollClose(pd *pollDesc) {
 	if pd.rg != 0 && pd.rg != pdReady {
 		throw("runtime: blocked read on closing polldesc")
 	}
-	//移出epoll监听
+	// 移出epoll监听
 	netpollclose(pd.fd)
 	// pollDesc{} 放回缓存
 	pollcache.free(pd)
@@ -195,7 +195,7 @@ func poll_runtime_pollClose(pd *pollDesc) {
 
 func (c *pollCache) free(pd *pollDesc) {
 	lock(&c.lock)
-	//插入链表头
+	// 插入链表头
 	pd.link = c.first
 	c.first = pd
 	unlock(&c.lock)
@@ -297,7 +297,7 @@ func poll_runtime_pollSetDeadline(pd *pollDesc, d int64, mode int) {
 		if pd.rd > 0 {
 			modtimer(&pd.rt, pd.rd, 0, rtf, pd, pd.rseq)
 		} else {
-			//删除当前的
+			// 删除当前的
 			deltimer(&pd.rt)
 			pd.rt.f = nil
 		}
@@ -348,7 +348,7 @@ func poll_runtime_pollUnblock(pd *pollDesc) {
 	if pd.closing {
 		throw("runtime: unblock on closing polldesc")
 	}
-	//标记关闭
+	// 标记关闭
 	pd.closing = true
 	pd.rseq++
 	pd.wseq++
@@ -357,7 +357,7 @@ func poll_runtime_pollUnblock(pd *pollDesc) {
 	rg = netpollunblock(pd, 'r', false)
 	wg = netpollunblock(pd, 'w', false)
 
-	//删除定时器
+	// 删除定时器
 	if pd.rt.f != nil {
 		deltimer(&pd.rt)
 		pd.rt.f = nil
@@ -368,7 +368,7 @@ func poll_runtime_pollUnblock(pd *pollDesc) {
 	}
 	unlock(&pd.lock)
 	if rg != nil {
-		//加入到 运行队列
+		// 加入到 运行队列
 		netpollgoready(rg, 3)
 	}
 	if wg != nil {
@@ -534,7 +534,7 @@ func netpolldeadlineimpl(pd *pollDesc, seq uintptr, read, write bool) {
 	}
 	unlock(&pd.lock)
 	if rg != nil {
-		//唤醒 到运行队列
+		// 唤醒 到运行队列
 		netpollgoready(rg, 0)
 	}
 	if wg != nil {
@@ -565,20 +565,20 @@ func (c *pollCache) alloc() *pollDesc {
 		}
 		// Must be in non-GC memory because can be referenced
 		// only from epoll/kqueue internals.
-		//一定要是堆外内存，因为只能被epoll内部引用
-		//分配了n块内存
+		// 一定要是堆外内存，因为只能被epoll内部引用
+		// 分配了n块内存
 		mem := persistentalloc(n*pdSize, 0, &memstats.other_sys)
-		//一块连续内存
+		// 一块连续内存
 		for i := uintptr(0); i < n; i++ {
-			//插入到链表
+			// 插入到链表
 			pd := (*pollDesc)(add(mem, i*pdSize))
 			pd.link = c.first
 			c.first = pd
 		}
 	}
-	//取表头
+	// 取表头
 	pd := c.first
-	//下移
+	// 下移
 	c.first = pd.link
 	lockInit(&pd.lock, lockRankPollDesc)
 	unlock(&c.lock)

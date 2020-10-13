@@ -150,7 +150,7 @@ func newosproc(mp *m) {
 	// with signals disabled. It will enable them in minit.
 	var oset sigset
 	sigprocmask(_SIG_SETMASK, &sigset_all, &oset)
-	//new sys thread stk是栈底，mp, g0, 设置入口函数mstart
+	// new sys thread stk是栈底，mp, g0, 设置入口函数mstart
 	ret := clone(cloneFlags, stk, unsafe.Pointer(mp), unsafe.Pointer(mp.g0), unsafe.Pointer(funcPC(mstart)))
 	sigprocmask(_SIG_SETMASK, &oset, nil)
 
@@ -297,11 +297,11 @@ func getHugePageSize() uintptr {
 }
 
 func osinit() {
-	//cpu核心数
+	// cpu核心数
 	ncpu = getproccount()
-	//获取物理页大小
+	// 获取物理页大小
 	physHugePageSize = getHugePageSize()
-	//获取uts 主机名 版本号等信息
+	// 获取uts 主机名 版本号等信息
 	osArchInit()
 }
 
@@ -341,7 +341,7 @@ var gsignalInitQuirk func(gsignal *g)
 // Called to initialize a new m (including the bootstrap m).
 // Called on the parent thread (main thread in case of bootstrap), can allocate memory.
 func mpreinit(mp *m) {
-	//32KB 信号处理栈
+	// 32KB 信号处理栈
 	mp.gsignal = malg(32 * 1024) // Linux wants >= 2K
 	mp.gsignal.m = mp
 	if gsignalInitQuirk != nil {
@@ -368,9 +368,9 @@ func unminit() {
 	unminitSignals()
 }
 
-//#ifdef GOARCH_386
-//#define sa_handler k_sa_handler
-//#endif
+// #ifdef GOARCH_386
+// #define sa_handler k_sa_handler
+// #endif
 
 func sigreturn()
 func sigtramp(sig uint32, info *siginfo, ctx unsafe.Pointer)
@@ -402,7 +402,7 @@ func pipe() (r, w int32, errno int32)
 func pipe2(flags int32) (r, w int32, errno int32)
 func setNonblock(fd int32)
 
-//设置信号处理函数
+// 设置信号处理函数
 //go:nosplit
 //go:nowritebarrierrec
 func setsig(i uint32, fn uintptr) {
@@ -484,7 +484,7 @@ func sysSigaction(sig uint32, new, old *sigactiont) {
 //go:noescape
 func rt_sigaction(sig uintptr, new, old *sigactiont, size uintptr) int32
 
-//进程id
+// 进程id
 func getpid() int
 func tgkill(tgid, tid, sig int)
 

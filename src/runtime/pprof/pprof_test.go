@@ -918,7 +918,7 @@ func TestMutexProfile(t *testing.T) {
 		}
 		// checking that the line is like "35258904 1 @ 0x48288d 0x47cd28 0x458931"
 		r2 := `^\d+ \d+ @(?: 0x[[:xdigit:]]+)+`
-		//r2 := "^[0-9]+ 1 @ 0x[0-9a-f x]+$"
+		// r2 := "^[0-9]+ 1 @ 0x[0-9a-f x]+$"
 		if ok, err := regexp.MatchString(r2, lines[3]); err != nil || !ok {
 			t.Errorf("%q didn't match %q", lines[3], r2)
 		}

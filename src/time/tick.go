@@ -30,7 +30,7 @@ func NewTicker(d Duration) *Ticker {
 		C: c,
 		r: runtimeTimer{
 			when:   when(d),
-			period: int64(d),		//Timer相比多了period
+			period: int64(d), // Timer相比多了period
 			f:      sendTime,
 			arg:    c,
 		},

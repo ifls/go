@@ -82,7 +82,7 @@ func (s *pageAlloc) sysInit() {
 		// Reserve b bytes of memory anywhere in the address space.
 		// 64 * 2^14 向上取整到页大小的整数倍
 		b := alignUp(uintptr(entries)*pallocSumBytes, physPageSize)
-		//分配任意b大小的空间
+		// 分配任意b大小的空间
 		r := sysReserve(nil, b)
 		if r == nil {
 			throw("failed to reserve page summary memory")

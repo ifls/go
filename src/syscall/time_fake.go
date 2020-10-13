@@ -14,7 +14,7 @@ const faketime = true
 // the runtime's write function, since that adds the framing that
 // reports the emulated time.
 
-//实现为 runtime.write
+// 实现为 runtime.write
 //go:linkname runtimeWrite runtime.write
 func runtimeWrite(fd uintptr, p unsafe.Pointer, n int32) int32
 

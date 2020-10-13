@@ -147,7 +147,7 @@ type mstats struct {
 var memstats mstats
 
 // A MemStats records statistics about the memory allocator.
-//内存分配器统计信息
+// 内存分配器统计信息
 type MemStats struct {
 	// General statistics.
 

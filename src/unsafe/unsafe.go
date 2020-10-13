@@ -11,7 +11,7 @@
 package unsafe
 
 // ArbitraryType is here for the purposes of documentation only and is not actually part of the unsafe package.
-//It represents the type of an arbitrary Go expression.
+// It represents the type of an arbitrary Go expression.
 type ArbitraryType int
 
 // Pointer represents a pointer to an arbitrary type. void*
@@ -166,7 +166,7 @@ type Pointer *ArbitraryType
 // The size does not include any memory possibly referenced by x. 不包含x引用的其他内存空间的尺寸
 // For instance例如, if x is a slice, Sizeof returns the size of the slice descriptor是sliceheader的长度, not the size of the memory referenced by the slice.
 // The return value of Sizeof is a Go constant. 编译时确定
-//任意类型的变量
+// 任意类型的变量
 func Sizeof(x ArbitraryType) uintptr
 
 // Offsetof returns the offset within the struct结构体 of the field represented by x, which must be of the form structValue.field.

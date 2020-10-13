@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // +build aix darwin dragonfly freebsd js,wasm linux netbsd openbsd solaris
-//操作 环境变量
+// 操作 环境变量
 // Unix environment variables.
 
 package syscall

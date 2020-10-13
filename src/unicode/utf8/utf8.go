@@ -33,10 +33,10 @@ const (
 	t4 = 0b11110000
 	t5 = 0b11111000
 
-	maskx = 0b00111111
-	mask2 = 0b00011111
-	mask3 = 0b00001111
-	mask4 = 0b00000111
+	maskx = 0b00111111 // 保留后6位
+	mask2 = 0b00011111 // 保留后5位 2B
+	mask3 = 0b00001111 // 保留后4位 3B
+	mask4 = 0b00000111 // 保留后三位 4B
 
 	rune1Max = 1<<7 - 1
 	rune2Max = 1<<11 - 1
@@ -50,15 +50,15 @@ const (
 	// table below. The first nibble is an index into acceptRanges or F for
 	// special one-byte cases. The second nibble is the Rune length or the
 	// Status for the special one-byte case.
-	xx = 0xF1 // invalid: size 1
-	as = 0xF0 // ASCII: size 1
-	s1 = 0x02 // accept 0, size 2
-	s2 = 0x13 // accept 1, size 3
-	s3 = 0x03 // accept 0, size 3
-	s4 = 0x23 // accept 2, size 3
-	s5 = 0x34 // accept 3, size 4
-	s6 = 0x04 // accept 0, size 4
-	s7 = 0x44 // accept 4, size 4
+	xx = 0xF1 // invalid: size 1  0b 1111 0001
+	as = 0xF0 // ASCII: size 1    0b 1111 0000
+	s1 = 0x02 // accept 0, size 2 0b 0000 0010
+	s2 = 0x13 // accept 1, size 3 0b 0001 0011
+	s3 = 0x03 // accept 0, size 3 0b 0000 0011
+	s4 = 0x23 // accept 2, size 3 0b 0010 0011
+	s5 = 0x34 // accept 3, size 4 0b 0011 0100
+	s6 = 0x04 // accept 0, size 4 0b 0000 0100
+	s7 = 0x44 // accept 4, size 4 0b 0100 0100
 )
 
 // first is information about the first byte in a UTF-8 sequence.
@@ -92,11 +92,11 @@ type acceptRange struct {
 
 // acceptRanges has size 16 to avoid bounds checks in the code that uses it.
 var acceptRanges = [16]acceptRange{
-	0: {locb, hicb},
-	1: {0xA0, hicb},
-	2: {locb, 0x9F},
-	3: {0x90, hicb},
-	4: {locb, 0x8F},
+	0: {locb, hicb}, // 0x80, 0xBF
+	1: {0xA0, hicb}, // 0xA0, 0xBF
+	2: {locb, 0x9F}, // 0x80, 0x9F
+	3: {0x90, hicb}, // 0x90, 0xBF
+	4: {locb, 0x8F}, // 0x80, 0x8F
 }
 
 // FullRune reports whether the bytes in p begin with a full UTF-8 encoding of a rune.
@@ -162,6 +162,7 @@ func DecodeRune(p []byte) (r rune, size int) {
 		mask := rune(x) << 31 >> 31 // Create 0x0000 or 0xFFFF.
 		return rune(p[0])&^mask | RuneError&mask, 1
 	}
+	// 0x0011 & 0x0111
 	sz := int(x & 7)
 	accept := acceptRanges[x>>4]
 	if n < sz {
@@ -171,6 +172,8 @@ func DecodeRune(p []byte) (r rune, size int) {
 	if b1 < accept.lo || accept.hi < b1 {
 		return RuneError, 1
 	}
+
+	// 2字节
 	if sz <= 2 { // <= instead of == to help the compiler eliminate some bounds checks
 		return rune(p0&mask2)<<6 | rune(b1&maskx), 2
 	}
@@ -178,6 +181,8 @@ func DecodeRune(p []byte) (r rune, size int) {
 	if b2 < locb || hicb < b2 {
 		return RuneError, 1
 	}
+
+	// 3字节
 	if sz <= 3 {
 		return rune(p0&mask3)<<12 | rune(b1&maskx)<<6 | rune(b2&maskx), 3
 	}
@@ -185,6 +190,7 @@ func DecodeRune(p []byte) (r rune, size int) {
 	if b3 < locb || hicb < b3 {
 		return RuneError, 1
 	}
+	// 4字节
 	return rune(p0&mask4)<<18 | rune(b1&maskx)<<12 | rune(b2&maskx)<<6 | rune(b3&maskx), 4
 }
 

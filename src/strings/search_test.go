@@ -6,7 +6,6 @@ package strings_test
 
 import (
 	"reflect"
-	. "strings"
 	"testing"
 )
 

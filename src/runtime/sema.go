@@ -34,16 +34,17 @@ import (
 // before we introduced the second level of list, and test/locklinear.go
 // for a test that exercises this.
 type semaRoot struct {
-	lock  mutex		//基于linux futex fast user exclusive 实现
+	lock  mutex  // 基于linux futex fast user exclusive 实现
 	treap *sudog // root of balanced tree of unique waiters.  树堆，既是二叉搜索树也是小顶堆
 	nwait uint32 // Number of waiters. Read w/o the lock.
 }
 
 // Prime to not correlate with any user patterns.
 const semTabSize = 251
+
 // sudog按照地址hash刀 [0,250]其中一个
 var semtable [semTabSize]struct {
-	root semaRoot	//都有一颗treap树, 系统地址上的sudog会形成一个链表
+	root semaRoot // 都有一颗treap树, 系统地址上的sudog会形成一个链表
 	pad  [cpu.CacheLinePadSize - unsafe.Sizeof(semaRoot{})]byte
 }
 
@@ -137,8 +138,8 @@ func semacquire1(addr *uint32, lifo bool, profile semaProfileFlags, skipframes i
 		}
 		// Any semrelease after the cansemacquire knows we're waiting
 		// (we set nwait above), so go to sleep.
-		root.queue(addr, s, lifo)		//s.g = getg()
-		//暂停当前g，进入等待状态
+		root.queue(addr, s, lifo) // s.g = getg()
+		// 暂停当前g，进入等待状态
 		goparkunlock(&root.lock, waitReasonSemacquire, traceEvGoBlockSync, 4+skipframes)
 		if s.ticket != 0 || cansemacquire(addr) {
 			break
@@ -169,7 +170,7 @@ func semrelease1(addr *uint32, handoff bool, skipframes int) {
 	// Harder case: search for a waiter and wake it.
 	lockWithRank(&root.lock, lockRankRoot)
 
-	//加锁后再次验证
+	// 加锁后再次验证
 	if atomic.Load(&root.nwait) == 0 {
 		// The count is already consumed by another goroutine,
 		// so no need to wake up another goroutine.

@@ -421,7 +421,7 @@ func testBentleyMcIlroy(t *testing.T, sort func(Interface), maxswap func(int) in
 					d := &testingData{desc: desc, t: t, data: mdata[0:n], maxswap: maxswap(n)}
 					sort(d)
 					// Uncomment if you are trying to improve the number of compares/swaps.
-					//t.Logf("%s: ncmp=%d, nswp=%d", desc, d.ncmp, d.nswap)
+					// t.Logf("%s: ncmp=%d, nswp=%d", desc, d.ncmp, d.nswap)
 
 					// If we were testing C qsort, we'd have to make a copy
 					// of the slice and sort it ourselves and then compare

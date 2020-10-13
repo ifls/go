@@ -158,9 +158,9 @@ func TestStackGrowth(t *testing.T) {
 }
 
 // ... and in init
-//func init() {
+// func init() {
 //	growStack()
-//}
+// }
 
 func growStack(progress *uint32) {
 	n := 1 << 10
@@ -799,7 +799,7 @@ func TestDeferLiveness(t *testing.T) {
 
 func TestDeferHeapAndStack(t *testing.T) {
 	P := 4     // processors
-	N := 10000 //iterations
+	N := 10000 // iterations
 	D := 200   // stack depth
 
 	if testing.Short() {

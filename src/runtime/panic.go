@@ -230,16 +230,16 @@ func deferproc(siz int32, fn *funcval) { // arguments of fn follow fn 函数的�
 	// to somewhere safe. The memmove below does that.
 	// Until the copy completes, we can only call nosplit routines.
 	sp := getcallersp()
-	//函数指针+8 的上面就是此函数的参数
+	// 函数指针+8 的上面就是此函数的参数
 	argp := uintptr(unsafe.Pointer(&fn)) + unsafe.Sizeof(fn)
-	callerpc := getcallerpc()	//call deferproc 的下一条指令
+	callerpc := getcallerpc() // call deferproc 的下一条指令
 
 	d := newdefer(siz)
 	if d._panic != nil {
 		throw("deferproc: d.panic != nil after newdefer")
 	}
 
-	//插入链表
+	// 插入链表
 	d.link = gp._defer
 	gp._defer = d
 	d.fn = fn
@@ -262,7 +262,7 @@ func deferproc(siz int32, fn *funcval) { // arguments of fn follow fn 函数的�
 	// the code the compiler generates always
 	// checks the return value and jumps to the
 	// end of the function if deferproc returns != 0.
-	return0()	// ax = 0 ret //模拟c语言 return 0的效果 go不一样，go的返回值不放在寄存器里返回
+	return0() // ax = 0 ret //模拟c语言 return 0的效果 go不一样，go的返回值不放在寄存器里返回
 	// No code can go here - the C return register has
 	// been set and must not be clobbered.
 }
@@ -285,7 +285,7 @@ func deferprocStack(d *_defer) {
 	// The other fields are junk on entry to deferprocStack and
 	// are initialized here.
 	d.started = false
-	d.heap = false	//不在堆上
+	d.heap = false // 不在堆上
 	d.openDefer = false
 	d.sp = getcallersp()
 	d.pc = getcallerpc()
@@ -340,7 +340,7 @@ func totaldefersize(siz uintptr) uintptr {
 }
 
 // Ensure that defer arg sizes that map to the same defer size class also map to the same malloc size class.
-//保证尺寸大小一致
+// 保证尺寸大小一致
 func testdefersizes() {
 	var m [len(p{}.deferpool)]int32
 
@@ -419,7 +419,7 @@ func newdefer(siz int32) *_defer {
 		}
 	}
 
-	//分配defer + 参数大小的内存空间
+	// 分配defer + 参数大小的内存空间
 	if d == nil {
 		// Allocate new defer+args.
 		systemstack(func() {
@@ -431,7 +431,7 @@ func newdefer(siz int32) *_defer {
 			// Duplicate the tail below so if there's a
 			// crash in checkPut we can tell if d was just
 			// allocated or came from the pool.
-			//调试代码
+			// 调试代码
 			d.siz = siz
 			d.link = gp._defer
 			gp._defer = d
@@ -542,12 +542,12 @@ func deferreturn(arg0 uintptr) {
 	gp := getg()
 	d := gp._defer
 
-	//没有defer函数直接返回
+	// 没有defer函数直接返回
 	if d == nil {
 		return
 	}
 	sp := getcallersp()
-	//只执行同一函数内的defer
+	// 只执行同一函数内的defer
 	if d.sp != sp {
 		return
 	}
@@ -581,7 +581,7 @@ func deferreturn(arg0 uintptr) {
 	// 下一个
 	d.fn = nil
 	gp._defer = d.link
-	//放回defer池
+	// 放回defer池
 	freedefer(d)
 	// If the defer function pointer is nil, force the seg fault to happen
 	// here rather than in jmpdefer. gentraceback() throws an error if it is
@@ -916,7 +916,7 @@ func gopanic(e interface{}) {
 		throw("panic on system stack")
 	}
 
-	//不能是正在分配内存
+	// 不能是正在分配内存
 	if gp.m.mallocing != 0 {
 		print("panic: ")
 		printany(e)
@@ -924,7 +924,7 @@ func gopanic(e interface{}) {
 		throw("panic during malloc")
 	}
 
-	//不能是在gc导致的关闭抢占状态
+	// 不能是在gc导致的关闭抢占状态
 	if gp.m.preemptoff != "" {
 		print("panic: ")
 		printany(e)
@@ -943,15 +943,15 @@ func gopanic(e interface{}) {
 		throw("panic holding locks")
 	}
 
-	//分配一个_panic结构体变量
+	// 分配一个_panic结构体变量
 	var p _panic
-	//赋值
+	// 赋值
 	p.arg = e
 	p.link = gp._panic
 	// noescape？？？
 	gp._panic = (*_panic)(noescape(unsafe.Pointer(&p)))
 
-	//统计
+	// 统计
 	atomic.Xadd(&runningPanicDefers, 1)
 
 	// By calculating getcallerpc/getcallersp here, we avoid scanning the gopanic frame (stack scanning is slow... 栈扫描很慢)
@@ -1010,11 +1010,11 @@ func gopanic(e interface{}) {
 		if gp._defer != d {
 			throw("bad defer entry in panic")
 		}
-		//remove
+		// remove
 		d._panic = nil
 
 		// trigger shrinkage to test stack copy. See stack_test.go:TestStackPanic
-		//GC()
+		// GC()
 
 		pc := d.pc
 		sp := unsafe.Pointer(d.sp) // must be pointer so it gets adjusted during stack copy
@@ -1024,7 +1024,7 @@ func gopanic(e interface{}) {
 			freedefer(d)
 		}
 
-		//执行recover函数会设置为true
+		// 执行recover函数会设置为true
 		if p.recovered {
 			gp._panic = p.link
 			if gp._panic != nil && gp._panic.goexit && gp._panic.aborted {
@@ -1082,7 +1082,7 @@ func gopanic(e interface{}) {
 				gp.sig = 0
 			}
 
-			//传递pc和sp用于恢复，
+			// 传递pc和sp用于恢复，
 			// Pass information about recovering frame to recovery.
 			gp.sigcode0 = uintptr(sp)
 			gp.sigcode1 = pc
@@ -1127,9 +1127,9 @@ func gorecover(argp uintptr) interface{} {
 	gp := getg()
 	p := gp._panic
 	if p != nil && !p.goexit && !p.recovered && argp == uintptr(p.argp) {
-		//就是改标记
+		// 就是改标记
 		p.recovered = true
-		//拿到顶部panic 的参数
+		// 拿到顶部panic 的参数
 		return p.arg
 	}
 	return nil
@@ -1178,7 +1178,7 @@ func recovery(gp *g) {
 	pc := gp.sigcode1
 
 	// d's arguments need to be in the stack.
-	//检查sp在栈上
+	// 检查sp在栈上
 	if sp != 0 && (sp < gp.stack.lo || gp.stack.hi < sp) {
 		print("recover: ", hex(sp), " not in [", hex(gp.stack.lo), ", ", hex(gp.stack.hi), "]\n")
 		throw("bad recovery")
@@ -1189,12 +1189,10 @@ func recovery(gp *g) {
 	// jump to the standard return epilogue.
 	gp.sched.sp = sp
 
-
-
 	gp.sched.pc = pc
 	gp.sched.lr = 0
 	gp.sched.ret = 1
-	gogo(&gp.sched)		//move ret -> ax
+	gogo(&gp.sched) // move ret -> ax
 }
 
 // fatalthrow implements an unrecoverable runtime throw. It freezes the

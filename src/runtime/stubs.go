@@ -7,7 +7,7 @@ package runtime
 import "unsafe"
 
 // Should be a built-in for unsafe.Pointer?
-//封装指针运算
+// 封装指针运算
 //go:nosplit
 func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
 	return unsafe.Pointer(uintptr(p) + x)
@@ -59,12 +59,12 @@ func systemstack(fn func())
 
 var badsystemstackMsg = "fatal: systemstack called from unexpected goroutine"
 
-//call from 汇编
+// call from 汇编
 //go:nosplit
 //go:nowritebarrierrec
 func badsystemstack() {
 	sp := stringStructOf(&badsystemstackMsg)
-	write(2, sp.str, int32(sp.len))		//输出错误
+	write(2, sp.str, int32(sp.len)) // 输出错误
 }
 
 // memclrNoHeapPointers clears n bytes starting at ptr.
@@ -108,10 +108,10 @@ func reflect_memmove(to, from unsafe.Pointer, n uintptr) {
 }
 
 // exported value for testing
-//hash 负载因子
+// hash 负载因子
 var hashLoad = float32(loadFactorNum) / float32(loadFactorDen)
 
-//拿到线程随机种子
+// 拿到线程随机种子
 //go:nosplit
 func fastrand() uint32 {
 	mp := getg().m
@@ -161,6 +161,7 @@ func gosave(buf *gobuf)
 
 //go:noescape
 func jmpdefer(fv *funcval, argp uintptr)
+
 // linux 上是直接ret
 func asminit()
 func setg(gg *g)
@@ -178,7 +179,8 @@ func breakpoint()
 //
 // Package reflect accesses this symbol through a linkname.
 func reflectcall(argtype *_type, fn, arg unsafe.Pointer, argsize uint32, retoffset uint32)
-//自旋 PAUSE
+
+// 自旋 PAUSE
 func procyield(cycles uint32)
 
 type neverCallThisFunction struct{}

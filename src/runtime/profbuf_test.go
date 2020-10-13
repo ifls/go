@@ -6,7 +6,6 @@ package runtime_test
 
 import (
 	"reflect"
-	. "runtime"
 	"testing"
 	"time"
 	"unsafe"

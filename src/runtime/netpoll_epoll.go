@@ -20,6 +20,7 @@ func epollctl(epfd, op, fd int32, ev *epollevent) int32
 // SYS_epoll_pwait
 //go:noescape
 func epollwait(epfd int32, ev *epollevent, nev, timeout int32) int32
+
 // SYS_fcntl
 func closeonexec(fd int32)
 
@@ -33,7 +34,7 @@ var (
 
 func netpollinit() {
 	epfd = epollcreate1(_EPOLL_CLOEXEC)
-	//错误
+	// 错误
 	if epfd < 0 {
 		epfd = epollcreate(1024)
 		if epfd < 0 {
@@ -54,7 +55,7 @@ func netpollinit() {
 	}
 	*(**uintptr)(unsafe.Pointer(&ev.data)) = &netpollBreakRd
 	// _EPOLL_CTL_ADD defs_linux_amd64.go
-	//添加add事件监听
+	// 添加add事件监听
 	errno = epollctl(epfd, _EPOLL_CTL_ADD, r, &ev)
 	if errno != 0 {
 		println("runtime: epollctl failed with", -errno)
@@ -65,12 +66,12 @@ func netpollinit() {
 	netpollBreakWr = uintptr(w)
 }
 
-//是epoll对象本身的文件描述符
+// 是epoll对象本身的文件描述符
 func netpollIsPollDescriptor(fd uintptr) bool {
 	return fd == uintptr(epfd) || fd == netpollBreakRd || fd == netpollBreakWr
 }
 
-//加入对fd的监听，回调到pd
+// 加入对fd的监听，回调到pd
 func netpollopen(fd uintptr, pd *pollDesc) int32 {
 	var ev epollevent
 	ev.events = _EPOLLIN | _EPOLLOUT | _EPOLLRDHUP | _EPOLLET
@@ -78,7 +79,7 @@ func netpollopen(fd uintptr, pd *pollDesc) int32 {
 	return -epollctl(epfd, _EPOLL_CTL_ADD, int32(fd), &ev)
 }
 
-//删除监听事件
+// 删除监听事件
 func netpollclose(fd uintptr) int32 {
 	var ev epollevent
 	return -epollctl(epfd, _EPOLL_CTL_DEL, int32(fd), &ev)
@@ -90,11 +91,11 @@ func netpollarm(pd *pollDesc, mode int) {
 
 // netpollBreak interrupts an epollwait.
 func netpollBreak() {
-	//防重入
+	// 防重入
 	if atomic.Cas(&netpollWakeSig, 0, 1) {
 		for {
 			var b byte
-			//写入等于唤醒？
+			// 写入等于唤醒？
 			n := write(netpollBreakWr, unsafe.Pointer(&b), 1)
 			if n == 1 {
 				break
@@ -117,12 +118,12 @@ func netpollBreak() {
 // delay == 0: does not block, just polls
 // delay > 0: block for up to that many nanoseconds
 func netpoll(delay int64) gList {
-	//未初始化
+	// 未初始化
 	if epfd == -1 {
 		return gList{}
 	}
 
-	//转化为毫秒
+	// 转化为毫秒
 	var waitms int32
 	if delay < 0 {
 		waitms = -1
@@ -140,7 +141,7 @@ func netpoll(delay int64) gList {
 
 	var events [128]epollevent
 retry:
-	//wait
+	// wait
 	// 长度为128
 	n := epollwait(epfd, &events[0], int32(len(events)), waitms)
 	// 没有fd有数据
@@ -152,7 +153,7 @@ retry:
 		// If a timed sleep was interrupted, just return to
 		// recalculate how long we should sleep now.
 		if waitms > 0 {
-			//阻塞方式，则重试wait
+			// 阻塞方式，则重试wait
 			return gList{}
 		}
 		goto retry
@@ -161,12 +162,12 @@ retry:
 	var toRun gList
 	for i := int32(0); i < n; i++ {
 		ev := &events[i]
-		//无事件
+		// 无事件
 		if ev.events == 0 {
 			continue
 		}
 
-		//如果是管道读事件，那标明是对端发生了写事件
+		// 如果是管道读事件，那标明是对端发生了写事件
 		if *(**uintptr)(unsafe.Pointer(&ev.data)) == &netpollBreakRd {
 			if ev.events != _EPOLLIN {
 				println("runtime: netpoll: break fd ready for", ev.events)
@@ -178,9 +179,9 @@ retry:
 				// nonblocking poll. Only read the byte
 				// if blocking.
 				var tmp [16]byte
-				//读等待
+				// 读等待
 				read(int32(netpollBreakRd), noescape(unsafe.Pointer(&tmp[0])), int32(len(tmp)))
-				//读完允许调用netpollBreak， 也就是下一次写
+				// 读完允许调用netpollBreak， 也就是下一次写
 				atomic.Store(&netpollWakeSig, 0)
 			}
 			continue
@@ -194,13 +195,13 @@ retry:
 			mode += 'w'
 		}
 		if mode != 0 {
-			//从事件里拿到poolDesc{}的指针
+			// 从事件里拿到poolDesc{}的指针
 			pd := *(**pollDesc)(unsafe.Pointer(&ev.data))
 			pd.everr = false
 			if ev.events == _EPOLLERR {
 				pd.everr = true
 			}
-			//将pd里保存的g加入到列表， 区分读g和写的g
+			// 将pd里保存的g加入到列表， 区分读g和写的g
 			netpollready(&toRun, pd, mode)
 		}
 	}

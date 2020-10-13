@@ -142,7 +142,7 @@ func initsig(preinit bool) {
 		}
 
 		handlingSig[i] = 1
-		//设置信号处理函数
+		// 设置信号处理函数
 		setsig(i, funcPC(sighandler))
 	}
 }
@@ -324,14 +324,14 @@ func sigpipe() {
 }
 
 // doSigPreempt handles a preemption signal on gp.
-//注册信号处理 抢占函数
+// 注册信号处理 抢占函数
 func doSigPreempt(gp *g, ctxt *sigctxt) {
 	// Check if this G wants to be preempted and is safe to
 	// preempt.
 	if wantAsyncPreempt(gp) {
 		if ok, newpc := isAsyncSafePoint(gp, ctxt.sigpc(), ctxt.sigsp(), ctxt.siglr()); ok {
 			// Adjust the PC and inject a call to asyncPreempt.
-			//修改ip和sp，执行异步抢占
+			// 修改ip和sp，执行异步抢占
 			ctxt.pushCall(funcPC(asyncPreempt), newpc)
 		}
 	}
@@ -349,7 +349,7 @@ const preemptMSupported = true
 // marked for preemption and the goroutine is at an asynchronous
 // safe-point, it will preempt the goroutine. It always atomically
 // increments mp.preemptGen after handling a preemption request.
-//发出异步抢占信号
+// 发出异步抢占信号
 func preemptM(mp *m) {
 	if GOOS == "darwin" && GOARCH == "arm64" && !iscgo {
 		// On darwin, we use libc calls, and cgo is required on ARM64
@@ -447,7 +447,7 @@ func sigtrampgo(sig uint32, info *siginfo, ctx unsafe.Pointer) {
 	setg(g.m.gsignal)
 
 	if g.stackguard0 == stackFork {
-		//throw
+		// throw
 		signalDuringFork(sig)
 	}
 
@@ -529,7 +529,7 @@ func sighandler(sig uint32, info *siginfo, ctxt unsafe.Pointer, gp *g) {
 	_g_ := getg()
 	c := &sigctxt{info, ctxt}
 
-	//profile时钟超时
+	// profile时钟超时
 	if sig == _SIGPROF {
 		sigprof(c.sigpc(), c.sigsp(), c.siglr(), gp, _g_.m)
 		return
@@ -538,12 +538,12 @@ func sighandler(sig uint32, info *siginfo, ctxt unsafe.Pointer, gp *g) {
 	if sig == _SIGTRAP && testSigtrap != nil && testSigtrap(info, (*sigctxt)(noescape(unsafe.Pointer(c))), gp) {
 		return
 	}
-	//用户信号
+	// 用户信号
 	if sig == _SIGUSR1 && testSigusr1 != nil && testSigusr1(gp) {
 		return
 	}
 
-	//抢占信号
+	// 抢占信号
 	if sig == sigPreempt {
 		// Might be a preemption signal.
 		doSigPreempt(gp, c)
@@ -594,7 +594,7 @@ func sighandler(sig uint32, info *siginfo, ctxt unsafe.Pointer, gp *g) {
 		return
 	}
 
-	//kill信号
+	// kill信号
 	if flags&_SigKill != 0 {
 		dieFromSignal(sig)
 	}
@@ -779,7 +779,6 @@ func dieFromSignal(sig uint32) {
 	osyield()
 	osyield()
 	osyield()
-
 
 	// If we are still somehow running, just exit with the wrong status.
 	exit(2)
@@ -1087,14 +1086,14 @@ func minitSignals() {
 func minitSignalStack() {
 	_g_ := getg()
 	var st stackt
-	//获取原有信号栈
+	// 获取原有信号栈
 	sigaltstack(nil, &st)
 	if st.ss_flags&_SS_DISABLE != 0 || !iscgo {
-		//如果禁用了信号栈，将gsignal的栈设置为备用信号栈
+		// 如果禁用了信号栈，将gsignal的栈设置为备用信号栈
 		signalstack(&_g_.m.gsignal.stack)
 		_g_.m.newSigstack = true
 	} else {
-		//否则将m.goSigStack设置为从sigaltstack返回的备用信号栈
+		// 否则将m.goSigStack设置为从sigaltstack返回的备用信号栈
 		setGsignalStack(&st, &_g_.m.goSigStack)
 		_g_.m.newSigstack = false
 	}
@@ -1108,7 +1107,7 @@ func minitSignalStack() {
 // removes all essential signals from the mask, thus causing those
 // signals to not be blocked. Then it sets the thread's signal mask.
 // After this is called the thread can receive signals.
-//初始化信号屏蔽字
+// 初始化信号屏蔽字
 func minitSignalMask() {
 	nmask := getg().m.sigmask
 	for i := range sigtable {
@@ -1171,7 +1170,7 @@ type gsignalStack struct {
 // It saves the old values in *old for use by restoreGsignalStack.
 // This is used when handling a signal if non-Go code has set the
 // alternate signal stack.
-	//保存gsignal栈到当前线程
+// 保存gsignal栈到当前线程
 //go:nosplit
 //go:nowritebarrierrec
 func setGsignalStack(st *stackt, old *gsignalStack) {

@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
-//启动执行新的进程，命令
+// 启动执行新的进程，命令
 // Fork, exec, wait, etc.
 
 package syscall

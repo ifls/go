@@ -816,7 +816,7 @@ var trimTests = []struct {
 	{"Trim", "\x80test\xff", "\xff", "test"},
 	{"Trim", " Ġ ", " ", "Ġ"},
 	{"Trim", " Ġİ0", "0 ", "Ġİ"},
-	//empty string tests
+	// empty string tests
 	{"Trim", "abba", "", "abba"},
 	{"Trim", "", "123", ""},
 	{"Trim", "", "", ""},

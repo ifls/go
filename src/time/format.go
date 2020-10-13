@@ -198,7 +198,7 @@ func nextStdChunk(layout string) (prefix string, std int, suffix string) {
 
 		case '_': // _2, _2006, __2
 			if len(layout) >= i+2 && layout[i+1] == '2' {
-				//_2006 is really a literal _, followed by stdLongYear
+				// _2006 is really a literal _, followed by stdLongYear
 				if len(layout) >= i+5 && layout[i+1:i+5] == "2006" {
 					return layout[0 : i+1], stdLongYear, layout[i+5:]
 				}
@@ -447,7 +447,7 @@ func formatNano(b []byte, nanosec uint, n int, trim bool) []byte {
 // The returned string is meant for debugging; for a stable serialized
 // representation, use t.MarshalText, t.MarshalBinary, or t.Format
 // with an explicit format string.
-//返回固定格式化字符串
+// 返回固定格式化字符串
 func (t Time) String() string {
 	s := t.Format("2006-01-02 15:04:05.999999999 -0700 MST")
 
@@ -493,7 +493,7 @@ func (t Time) String() string {
 // and convenient representations of the reference time. For more information
 // about the formats and the definition of the reference time, see the
 // documentation for ANSIC and the other constants defined by this package.
-//返回指定格式化字符串
+// 返回指定格式化字符串
 func (t Time) Format(layout string) string {
 	const bufSize = 64
 	var b []byte
@@ -814,7 +814,7 @@ func skip(value, prefix string) (string, error) {
 // same layout losslessly, but the exact instant used in the representation will
 // differ by the actual zone offset. To avoid such problems, prefer time layouts
 // that use a numeric zone offset, or use ParseInLocation.
-//解析时间点
+// 解析时间点
 func Parse(layout, value string) (Time, error) {
 	return parse(layout, value, UTC, Local)
 }

@@ -273,6 +273,7 @@ func (t Time) Equal(u Time) bool {
 
 // A Month specifies a month of the year (January = 1, ...).
 type Month int
+
 // 常量
 const (
 	January Month = 1 + iota
@@ -301,7 +302,8 @@ func (m Month) String() string {
 
 // A Weekday specifies a day of the week (Sunday = 0, ...).
 type Weekday int
-//周一，周末
+
+// 周一，周末
 const (
 	Sunday Weekday = iota
 	Monday
@@ -585,7 +587,7 @@ func (t Time) YearDay() int {
 type Duration int64
 
 const (
-	minDuration Duration = -1 << 63		//[math.MinInt32, math.MaxInt32]
+	minDuration Duration = -1 << 63 // [math.MinInt32, math.MaxInt32]
 	maxDuration Duration = 1<<63 - 1
 )
 
@@ -788,7 +790,7 @@ func lessThanHalf(x, y Duration) bool {
 // value that can be stored in a Duration,
 // Round returns the maximum (or minimum) duration.
 // If m <= 0, Round returns d unchanged.
-//四舍五入
+// 四舍五入
 func (d Duration) Round(m Duration) Duration {
 	if m <= 0 {
 		return d
@@ -1065,13 +1067,13 @@ func runtimeNano() int64
 // which appears to have a default resolution of 15ms),
 // we avoid ever reporting a monotonic time of 0.
 // (Callers may want to use 0 as "time not set".)
-var startNano int64 = runtimeNano() - 1		//程序启动时间
+var startNano int64 = runtimeNano() - 1 // 程序启动时间
 
 // Now returns the current local time.
 func Now() Time {
 	sec, nsec, mono := now()
 	mono -= startNano
-	sec += unixToInternal - minWall			//
+	sec += unixToInternal - minWall //
 	if uint64(sec)>>33 != 0 {
 		return Time{uint64(nsec), sec + minWall, Local}
 	}
@@ -1243,6 +1245,7 @@ func (t *Time) GobDecode(data []byte) error {
 
 // MarshalJSON implements the json.Marshaler interface.
 // The time is a quoted string in RFC 3339 format, with sub-second precision added if present.
+// json的序列化
 func (t Time) MarshalJSON() ([]byte, error) {
 	if y := t.Year(); y < 0 || y >= 10000 {
 		// RFC 3339 is clear that years are 4 digits exactly.
@@ -1272,6 +1275,7 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 
 // MarshalText implements the encoding.TextMarshaler interface.
 // The time is formatted in RFC 3339 format, with sub-second precision added if present.
+// 时间的序列化
 func (t Time) MarshalText() ([]byte, error) {
 	if y := t.Year(); y < 0 || y >= 10000 {
 		return nil, errors.New("Time.MarshalText: year outside of range [0,9999]")

@@ -97,7 +97,7 @@ func makeslice(et *_type, len, cap int) unsafe.Pointer {
 		}
 		panicmakeslicecap()
 	}
-	//返回指定大小的数组地址，构建slice，之前是由这里完成，现在改成编译器处理了
+	// 返回指定大小的数组地址，构建slice，之前是由这里完成，现在改成编译器处理了
 	return mallocgc(mem, et, true)
 }
 
@@ -136,7 +136,7 @@ func growslice(et *_type, old slice, cap int) slice {
 		msanread(old.array, uintptr(old.len*int(et.size)))
 	}
 
-	//不允许缩容
+	// 不允许缩容
 	if cap < old.cap {
 		panic(errorString("growslice: cap out of range"))
 	}
@@ -150,23 +150,23 @@ func growslice(et *_type, old slice, cap int) slice {
 	newcap := old.cap
 	doublecap := newcap + newcap
 	if cap > doublecap {
-		//超过2倍则使用指定传入的长度
+		// 超过2倍则使用指定传入的长度
 		newcap = cap
 	} else {
-		//cap <= doublecap
+		// cap <= doublecap
 		if old.len < 1024 {
-			//1024以下用2倍
+			// 1024以下用2倍
 			newcap = doublecap
 		} else {
 			// Check 0 < newcap to detect overflow
 			// and prevent an infinite loop.
-			//1/4递增，直到超过cap
+			// 1/4递增，直到超过cap
 			for 0 < newcap && newcap < cap {
 				newcap += newcap / 4
 			}
 			// Set newcap to the requested cap when
 			// the newcap calculation overflowed.
-			//考虑溢出为负数的情况
+			// 考虑溢出为负数的情况
 			if newcap <= 0 {
 				newcap = cap
 			}
@@ -226,14 +226,14 @@ func growslice(et *_type, old slice, cap int) slice {
 	//   s = append(s, d, d, d, d)
 	//   print(len(s), "\n")
 	// }
-	//要分配的总内存
+	// 要分配的总内存
 	if overflow || capmem > maxAlloc {
 		panic(errorString("growslice: cap out of range"))
 	}
 
 	var p unsafe.Pointer
 	if et.ptrdata == 0 {
-		//分配内存，下面再清空
+		// 分配内存，下面再清空
 		p = mallocgc(capmem, nil, false)
 		// The append() that calls growslice is going to overwrite from old.len to cap (which will be the new length).
 		// Only clear the part that will not be overwritten.
@@ -247,7 +247,7 @@ func growslice(et *_type, old slice, cap int) slice {
 			bulkBarrierPreWriteSrcOnly(uintptr(p), uintptr(old.array), lenmem-et.size+et.ptrdata)
 		}
 	}
-	//内存拷贝
+	// 内存拷贝
 	memmove(p, old.array, lenmem)
 
 	return slice{p, old.len, newcap}
@@ -257,7 +257,7 @@ func isPowerOfTwo(x uintptr) bool {
 	return x&(x-1) == 0
 }
 
-//copy(a, b) 拷贝切片
+// copy(a, b) 拷贝切片
 func slicecopy(toPtr unsafe.Pointer, toLen int, fmPtr unsafe.Pointer, fmLen int, width uintptr) int {
 	if fmLen == 0 || toLen == 0 {
 		return 0
@@ -268,7 +268,7 @@ func slicecopy(toPtr unsafe.Pointer, toLen int, fmPtr unsafe.Pointer, fmLen int,
 		n = toLen
 	}
 
-	//类型尺寸， == 0不需要拷贝，直接成功
+	// 类型尺寸， == 0不需要拷贝，直接成功
 	if width == 0 {
 		return n
 	}
@@ -284,20 +284,20 @@ func slicecopy(toPtr unsafe.Pointer, toLen int, fmPtr unsafe.Pointer, fmLen int,
 		msanwrite(toPtr, uintptr(n*int(width)))
 	}
 
-	//计算总大小
+	// 计算总大小
 	size := uintptr(n) * width
 	if size == 1 { // common case worth about 2x to do here
 		// TODO: is this still worth it with new memmove impl?
-		//直接拷贝单个字节
+		// 直接拷贝单个字节
 		*(*byte)(toPtr) = *(*byte)(fmPtr) // known to be a byte pointer
 	} else {
-		//内存移动
+		// 内存移动
 		memmove(toPtr, fmPtr, size)
 	}
 	return n
 }
 
-//针对 string 拷贝
+// 针对 string 拷贝
 func slicestringcopy(toPtr *byte, toLen int, fm string) int {
 	if len(fm) == 0 || toLen == 0 {
 		return 0

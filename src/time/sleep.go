@@ -6,6 +6,7 @@ package time
 
 // Sleep pauses the current goroutine for at least至少 the duration d.
 // A negative or zero duration causes Sleep to return immediately. <=0 立即退出
+// //go:linkname timeSleep time.Sleep  (runtime/time.go)
 func Sleep(d Duration)
 
 // Interface to timers implemented in package runtime. 和内部的timer是一个结构，
@@ -15,7 +16,7 @@ type runtimeTimer struct {
 	when     int64
 	period   int64
 	f        func(interface{}, uintptr) // NOTE: must not be closure
-	arg      interface{}				// f的第一个参数
+	arg      interface{}                // f的第一个参数
 	seq      uintptr
 	nextwhen int64
 	status   uint32
@@ -27,11 +28,11 @@ type runtimeTimer struct {
 // zero because of an overflow, MaxInt64 is returned.
 func when(d Duration) int64 {
 	if d <= 0 {
-		//runtime.nanotime()
+		// runtime.nanotime()
 		return runtimeNano()
 	}
 	t := runtimeNano() + int64(d)
-	//溢出
+	// 溢出
 	if t < 0 {
 		t = 1<<63 - 1 // math.MaxInt64
 	}
@@ -75,7 +76,7 @@ type Timer struct {
 // with f explicitly.
 func (t *Timer) Stop() bool {
 	if t.r.f == nil {
-		//没有回调函数
+		// 没有回调函数
 		panic("time: Stop called on uninitialized Timer")
 	}
 	return stopTimer(&t.r)
@@ -89,7 +90,7 @@ func NewTimer(d Duration) *Timer {
 		C: c,
 		r: runtimeTimer{
 			when: when(d),
-			f:    sendTime,		//回调函数
+			f:    sendTime, // 回调函数
 			arg:  c,
 		},
 	}
@@ -129,7 +130,7 @@ func (t *Timer) Reset(d Duration) bool {
 	return resetTimer(&t.r, w)
 }
 
-//默认的回调时间
+// 默认的回调时间
 func sendTime(c interface{}, seq uintptr) {
 	// Non-blocking send of time on c.
 	// Used in NewTimer, it cannot block anyway (buffer).
@@ -168,7 +169,7 @@ func AfterFunc(d Duration, f func()) *Timer {
 	return t
 }
 
-//异步执行函数
+// 异步执行函数
 func goFunc(arg interface{}, seq uintptr) {
 	go arg.(func())()
 }

@@ -10,7 +10,8 @@ import (
 	"runtime/internal/sys"
 	"unsafe"
 )
-//64
+
+// 64
 const pageCachePages = 8 * unsafe.Sizeof(pageCache{}.cache)
 
 // pageCache represents a per-p cache of pages the allocator can

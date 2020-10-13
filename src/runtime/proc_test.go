@@ -141,7 +141,7 @@ func TestGoroutineParallelism(t *testing.T) {
 
 // Test that all runnable goroutines are scheduled at the same time.
 func TestGoroutineParallelism2(t *testing.T) {
-	//testGoroutineParallelism2(t, false, false)
+	// testGoroutineParallelism2(t, false, false)
 	testGoroutineParallelism2(t, true, false)
 	testGoroutineParallelism2(t, false, true)
 	testGoroutineParallelism2(t, true, true)

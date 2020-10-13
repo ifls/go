@@ -46,7 +46,7 @@ func ByteSliceFromString(s string) ([]byte, error) {
 			return nil, EINVAL
 		}
 	}
-	//最后一个字节就是0x00
+	// 最后一个字节就是0x00
 	a := make([]byte, len(s)+1)
 	copy(a, s)
 	return a, nil

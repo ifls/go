@@ -26,17 +26,17 @@ const (
 	kindComplex64
 	kindComplex128
 
-	kindArray	//[3]int
-	kindChan	// chan int
-	kindFunc	//func name()
-	kindInterface //interface{}
-	kindMap	//map
-	kindPtr	//
+	kindArray     // [3]int
+	kindChan      // chan int
+	kindFunc      // func name()
+	kindInterface // interface{}
+	kindMap       // map
+	kindPtr       //
 
-	kindSlice //[]int
-	kindString // ""
-	kindStruct //struct{}
-	kindUnsafePointer //unsafe.Pointer
+	kindSlice         // []int
+	kindString        // ""
+	kindStruct        // struct{}
+	kindUnsafePointer // unsafe.Pointer
 
 	kindDirectIface = 1 << 5
 	kindGCProg      = 1 << 6
@@ -45,6 +45,6 @@ const (
 
 // isDirectIface reports whether t is stored directly in an interface value.
 func isDirectIface(t *_type) bool {
-	//对应位 是1
+	// 对应位 是1
 	return t.kind&kindDirectIface != 0
 }
