@@ -7,14 +7,13 @@ package version
 
 import (
 	"bytes"
+	"cmd/go/internal/base"
 	"encoding/binary"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"cmd/go/internal/base"
 )
 
 var CmdVersion = &base.Command{

@@ -7,6 +7,7 @@
 package renameio
 
 import (
+	"cmd/go/internal/robustio"
 	"encoding/binary"
 	"errors"
 	"internal/testenv"
@@ -21,8 +22,6 @@ import (
 	"syscall"
 	"testing"
 	"time"
-
-	"cmd/go/internal/robustio"
 )
 
 func TestConcurrentReadsAndWrites(t *testing.T) {

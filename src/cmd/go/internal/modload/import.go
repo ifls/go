@@ -5,6 +5,11 @@
 package modload
 
 import (
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/load"
+	"cmd/go/internal/modfetch"
+	"cmd/go/internal/par"
+	"cmd/go/internal/search"
 	"errors"
 	"fmt"
 	"go/build"
@@ -14,12 +19,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/load"
-	"cmd/go/internal/modfetch"
-	"cmd/go/internal/par"
-	"cmd/go/internal/search"
 
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"

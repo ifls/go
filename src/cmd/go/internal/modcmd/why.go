@@ -5,12 +5,11 @@
 package modcmd
 
 import (
-	"fmt"
-	"strings"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/modload"
 	"cmd/go/internal/work"
+	"fmt"
+	"strings"
 
 	"golang.org/x/mod/module"
 )

@@ -515,7 +515,7 @@ func span5(ctxt *obj.Link, cursym *obj.LSym, newprog obj.ProgAlloc) {
 				bflag = 1
 			}
 
-			//print("%v pc changed %d to %d in iter. %d\n", p, opc, (int32)p->pc, times);
+			// print("%v pc changed %d to %d in iter. %d\n", p, opc, (int32)p->pc, times);
 			pc = int32(p.Pc + int64(m))
 
 			if m%4 != 0 || p.Pc%4 != 0 {
@@ -3079,7 +3079,7 @@ func (c *ctxt5) chipfloat5(e float64) int {
 	// rest of exp and mantissa (cd-efgh)
 	n |= int((h >> 16) & 0x3f)
 
-	//print("match %.8lux %.8lux %d\n", l, h, n);
+	// print("match %.8lux %.8lux %d\n", l, h, n);
 	return n
 }
 

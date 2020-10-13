@@ -7,6 +7,12 @@ package modfetch
 import (
 	"archive/zip"
 	"bytes"
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/lockedfile"
+	"cmd/go/internal/par"
+	"cmd/go/internal/renameio"
+	"cmd/go/internal/robustio"
 	"errors"
 	"fmt"
 	"io"
@@ -16,13 +22,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/lockedfile"
-	"cmd/go/internal/par"
-	"cmd/go/internal/renameio"
-	"cmd/go/internal/robustio"
 
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/sumdb/dirhash"

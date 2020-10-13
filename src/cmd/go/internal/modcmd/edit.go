@@ -8,17 +8,16 @@ package modcmd
 
 import (
 	"bytes"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"os"
-	"strings"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/lockedfile"
 	"cmd/go/internal/modfetch"
 	"cmd/go/internal/modload"
 	"cmd/go/internal/work"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"

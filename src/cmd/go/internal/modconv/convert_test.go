@@ -6,6 +6,8 @@ package modconv
 
 import (
 	"bytes"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/modfetch"
 	"fmt"
 	"internal/testenv"
 	"io/ioutil"
@@ -15,9 +17,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/modfetch"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"

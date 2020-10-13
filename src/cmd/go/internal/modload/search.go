@@ -5,14 +5,13 @@
 package modload
 
 import (
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/imports"
+	"cmd/go/internal/search"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/imports"
-	"cmd/go/internal/search"
 
 	"golang.org/x/mod/module"
 )

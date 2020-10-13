@@ -6,6 +6,11 @@ package modcmd
 
 import (
 	"bytes"
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/imports"
+	"cmd/go/internal/modload"
+	"cmd/go/internal/work"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,12 +18,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/imports"
-	"cmd/go/internal/modload"
-	"cmd/go/internal/work"
 
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"

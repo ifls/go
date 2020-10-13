@@ -739,8 +739,8 @@ func span9(ctxt *obj.Link, cursym *obj.LSym, newprog obj.ProgAlloc) {
 					q.To.Type = obj.TYPE_BRANCH
 					q.Pcond = q.Link.Link
 
-					//addnop(p->link);
-					//addnop(p);
+					// addnop(p->link);
+					// addnop(p);
 					bflag = 1
 				}
 			}
@@ -2249,7 +2249,7 @@ func (c *ctxt9) opform(insn uint32) int {
 		OPVCC(58, 0, 0, 1),        // ldu
 		OPVCC(58, 0, 0, 0) | 1<<1, // lwa
 		OPVCC(62, 0, 0, 0),        // std
-		OPVCC(62, 0, 0, 1):        //stdu
+		OPVCC(62, 0, 0, 1):        // stdu
 		return DS_FORM
 	case OP_ADDI, // add
 		OPVCC(32, 0, 0, 0), // lwz
@@ -2424,7 +2424,7 @@ func (c *ctxt9) asmout(p *obj.Prog, o *Optab, out []uint32) {
 	o4 := uint32(0)
 	o5 := uint32(0)
 
-	//print("%v => case %d\n", p, o->type);
+	// print("%v => case %d\n", p, o->type);
 	switch o.type_ {
 	default:
 		c.ctxt.Diag("unknown type %d", o.type_)
@@ -2437,7 +2437,7 @@ func (c *ctxt9) asmout(p *obj.Prog, o *Optab, out []uint32) {
 		if p.To.Reg == REGZERO && p.From.Type == obj.TYPE_CONST {
 			v := c.regoff(&p.From)
 			if r0iszero != 0 /*TypeKind(100016)*/ && v != 0 {
-				//nerrors--;
+				// nerrors--;
 				c.ctxt.Diag("literal operation on R0\n%v", p)
 			}
 
@@ -3488,7 +3488,7 @@ func (c *ctxt9) asmout(p *obj.Prog, o *Optab, out []uint32) {
 		}
 		o1, o2 = c.symbolAccess(p.To.Sym, v, p.From.Reg, inst)
 
-	//if(dlm) reloc(&p->to, p->pc, 1);
+	// if(dlm) reloc(&p->to, p->pc, 1);
 
 	case 75:
 		v := c.vregoff(&p.From)
@@ -3499,7 +3499,7 @@ func (c *ctxt9) asmout(p *obj.Prog, o *Optab, out []uint32) {
 		}
 		o1, o2 = c.symbolAccess(p.From.Sym, v, p.To.Reg, inst)
 
-	//if(dlm) reloc(&p->from, p->pc, 1);
+	// if(dlm) reloc(&p->from, p->pc, 1);
 
 	case 76:
 		v := c.vregoff(&p.From)
@@ -3511,7 +3511,7 @@ func (c *ctxt9) asmout(p *obj.Prog, o *Optab, out []uint32) {
 		o1, o2 = c.symbolAccess(p.From.Sym, v, p.To.Reg, inst)
 		o3 = LOP_RRR(OP_EXTSB, uint32(p.To.Reg), uint32(p.To.Reg), 0)
 
-		//if(dlm) reloc(&p->from, p->pc, 1);
+		// if(dlm) reloc(&p->from, p->pc, 1);
 
 	case 79:
 		if p.From.Offset != 0 {

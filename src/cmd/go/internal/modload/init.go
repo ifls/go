@@ -6,6 +6,15 @@ package modload
 
 import (
 	"bytes"
+	"cmd/go/internal/base"
+	"cmd/go/internal/cache"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/load"
+	"cmd/go/internal/lockedfile"
+	"cmd/go/internal/modconv"
+	"cmd/go/internal/modfetch"
+	"cmd/go/internal/mvs"
+	"cmd/go/internal/search"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,16 +27,6 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cache"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/load"
-	"cmd/go/internal/lockedfile"
-	"cmd/go/internal/modconv"
-	"cmd/go/internal/modfetch"
-	"cmd/go/internal/mvs"
-	"cmd/go/internal/search"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"

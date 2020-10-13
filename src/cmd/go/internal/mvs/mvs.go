@@ -7,13 +7,12 @@
 package mvs
 
 import (
+	"cmd/go/internal/par"
 	"fmt"
 	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
-
-	"cmd/go/internal/par"
 
 	"golang.org/x/mod/module"
 )

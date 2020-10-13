@@ -247,9 +247,9 @@ func preprocess(ctxt *obj.Link, cursym *obj.LSym, newprog obj.ProgAlloc) {
 					q1.Mark |= LABEL
 				}
 			}
-			//else {
+			// else {
 			//	p.Mark |= LABEL
-			//}
+			// }
 			q1 = p.Link
 			if q1 != nil {
 				q1.Mark |= LABEL
@@ -853,7 +853,7 @@ const (
 	E_MEMSP = 1 << 4 /* uses offset and size */
 	E_MEMSB = 1 << 5 /* uses offset and size */
 	ANYMEM  = E_MEM | E_MEMSP | E_MEMSB
-	//DELAY = LOAD|BRANCH|FCMP
+	// DELAY = LOAD|BRANCH|FCMP
 	DELAY = BRANCH /* only schedule branch */
 )
 
@@ -1100,7 +1100,7 @@ func (c *ctxt0) markregused(s *Sch) {
 			if p.To.Type == obj.TYPE_REG {
 				p.Reg = p.To.Reg
 			}
-			//if(p->reg == NREG)
+			// if(p->reg == NREG)
 			//	print("botch %P\n", p);
 		}
 	}

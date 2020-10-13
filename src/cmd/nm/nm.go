@@ -6,13 +6,12 @@ package main
 
 import (
 	"bufio"
+	"cmd/internal/objfile"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"sort"
-
-	"cmd/internal/objfile"
 )
 
 const helpText = `usage: go tool nm [options] file...

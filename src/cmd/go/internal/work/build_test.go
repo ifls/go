@@ -6,6 +6,9 @@ package work
 
 import (
 	"bytes"
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/load"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,10 +17,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/load"
 )
 
 func TestRemoveDevNull(t *testing.T) {

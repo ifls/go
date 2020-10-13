@@ -448,7 +448,7 @@ func addpltsym2(target *ld.Target, ldr *loader.Loader, syms *ld.ArchSyms, s load
 		plt.AddUint8(0xf4)
 
 		plt.AddUint32(target.Arch, uint32(-((plt.Size() - 2) >> 1))) // roll-your-own relocation
-		//.plt index
+		// .plt index
 		plt.AddUint32(target.Arch, uint32(rela.Size())) // rela size before current entry
 
 		// rela

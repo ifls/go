@@ -103,6 +103,7 @@ func Flushplist(ctxt *Link, plist *Plist, newprog ProgAlloc, myimportpath string
 	for _, s := range text {
 		mkfwd(s)
 		linkpatch(ctxt, s, newprog)
+		// 架构特定的预处理和汇编
 		ctxt.Arch.Preprocess(ctxt, s, newprog)
 		ctxt.Arch.Assemble(ctxt, s, newprog)
 		if ctxt.Errors > 0 {

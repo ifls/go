@@ -336,7 +336,7 @@ func preprocess(ctxt *obj.Link, cursym *obj.LSym, newprog obj.ProgAlloc) {
 				p, pPreempt = c.stacksplitPre(p, autosize) // emit pre part of split check
 				pPre = p
 				p = c.ctxt.EndUnsafePoint(p, c.newprog, -1)
-				wasSplit = true //need post part of split
+				wasSplit = true // need post part of split
 			}
 
 			if autosize != 0 {
@@ -588,7 +588,7 @@ func (c *ctxtz) stacksplitPre(p *obj.Prog, framesize int32) (*obj.Prog, *obj.Pro
 		//	CMPUBGE	stackguard, SP, label-of-call-to-morestack
 
 		p = obj.Appendp(p, c.newprog)
-		//q1 = p
+		// q1 = p
 		p.From.Type = obj.TYPE_REG
 		p.From.Reg = REG_R3
 		p.Reg = REGSP

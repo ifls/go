@@ -5,6 +5,10 @@
 package modfetch
 
 import (
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/modfetch/codehost"
+	"cmd/go/internal/web"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,11 +22,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/modfetch/codehost"
-	"cmd/go/internal/web"
 
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"

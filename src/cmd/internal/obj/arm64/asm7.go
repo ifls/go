@@ -2845,7 +2845,7 @@ func (c *ctxt7) chipfloat7(e float64) int {
 	// rest of exp and mantissa (cd-efgh)
 	n |= int((h >> 16) & 0x3f)
 
-	//print("match %.8lux %.8lux %d\n", l, h, n);
+	// print("match %.8lux %.8lux %d\n", l, h, n);
 	return n
 }
 
@@ -3345,7 +3345,7 @@ func (c *ctxt7) asmout(p *obj.Prog, o *Optab, out []uint32) {
 			o1 = c.olsr9s(p, int32(c.opldr9(p, p.As)), v, r, int(p.To.Reg))
 		} else {
 			v = int32(c.offsetshift(p, int64(v), int(o.a1)))
-			//print("offset=%lld v=%ld a1=%d\n", instoffset, v, o->a1);
+			// print("offset=%lld v=%ld a1=%d\n", instoffset, v, o->a1);
 			o1 = c.olsr12u(p, int32(c.opldr12(p, p.As)), v, r, int(p.To.Reg))
 		}
 

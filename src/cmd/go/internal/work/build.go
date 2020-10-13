@@ -5,6 +5,10 @@
 package work
 
 import (
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/load"
+	"cmd/go/internal/search"
 	"errors"
 	"fmt"
 	"go/build"
@@ -13,11 +17,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/load"
-	"cmd/go/internal/search"
 )
 
 var CmdBuild = &base.Command{

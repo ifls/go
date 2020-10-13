@@ -7,6 +7,13 @@ package work
 import (
 	"bufio"
 	"bytes"
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/load"
+	"cmd/go/internal/str"
+	"cmd/internal/objabi"
+	"cmd/internal/sys"
+	"crypto/sha1"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,14 +22,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/load"
-	"cmd/go/internal/str"
-	"cmd/internal/objabi"
-	"cmd/internal/sys"
-	"crypto/sha1"
 )
 
 // The Go toolchain.

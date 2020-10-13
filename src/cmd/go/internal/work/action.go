@@ -9,6 +9,11 @@ package work
 import (
 	"bufio"
 	"bytes"
+	"cmd/go/internal/base"
+	"cmd/go/internal/cache"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/load"
+	"cmd/internal/buildid"
 	"container/heap"
 	"debug/elf"
 	"encoding/json"
@@ -20,12 +25,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cache"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/load"
-	"cmd/internal/buildid"
 )
 
 // A Builder holds global state about a build.

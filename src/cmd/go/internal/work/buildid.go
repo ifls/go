@@ -6,17 +6,16 @@ package work
 
 import (
 	"bytes"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"strings"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/cache"
 	"cmd/go/internal/cfg"
 	"cmd/go/internal/str"
 	"cmd/internal/buildid"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"strings"
 )
 
 // Build IDs

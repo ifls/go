@@ -6,6 +6,12 @@ package modfetch
 
 import (
 	"bytes"
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/lockedfile"
+	"cmd/go/internal/modfetch/codehost"
+	"cmd/go/internal/par"
+	"cmd/go/internal/renameio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,13 +20,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/lockedfile"
-	"cmd/go/internal/modfetch/codehost"
-	"cmd/go/internal/par"
-	"cmd/go/internal/renameio"
 
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"

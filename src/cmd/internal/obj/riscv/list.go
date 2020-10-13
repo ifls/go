@@ -5,9 +5,8 @@
 package riscv
 
 import (
-	"fmt"
-
 	"cmd/internal/obj"
+	"fmt"
 )
 
 func init() {

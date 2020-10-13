@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"cmd/internal/diff"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -20,8 +21,6 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strings"
-
-	"cmd/internal/diff"
 )
 
 var (

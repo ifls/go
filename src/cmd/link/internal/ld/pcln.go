@@ -624,7 +624,7 @@ func (ctxt *Link) findfunctab(container loader.Bitmap) {
 			q = ldr.SymValue(e)
 		}
 
-		//print("%d: [%lld %lld] %s\n", idx, p, q, s->name);
+		// print("%d: [%lld %lld] %s\n", idx, p, q, s->name);
 		for ; p < q; p += SUBBUCKETSIZE {
 			i = int((p - min) / SUBBUCKETSIZE)
 			if indexes[i] > idx {

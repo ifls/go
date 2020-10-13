@@ -6,16 +6,15 @@
 package run
 
 import (
-	"fmt"
-	"os"
-	"path"
-	"strings"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/cfg"
 	"cmd/go/internal/load"
 	"cmd/go/internal/str"
 	"cmd/go/internal/work"
+	"fmt"
+	"os"
+	"path"
+	"strings"
 )
 
 var CmdRun = &base.Command{
@@ -119,7 +118,7 @@ func runRun(cmd *base.Command, args []string) {
 	}
 	p.Target = "" // must build - not up to date
 	if p.Internal.CmdlineFiles {
-		//set executable name if go file is given as cmd-argument
+		// set executable name if go file is given as cmd-argument
 		var src string
 		if len(p.GoFiles) > 0 {
 			src = p.GoFiles[0]

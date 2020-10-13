@@ -6,6 +6,9 @@ package vet
 
 import (
 	"bytes"
+	"cmd/go/internal/base"
+	"cmd/go/internal/cmdflag"
+	"cmd/go/internal/work"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -15,10 +18,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cmdflag"
-	"cmd/go/internal/work"
 )
 
 // go vet flag processing

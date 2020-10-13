@@ -6,6 +6,8 @@ package modfetch
 
 import (
 	"archive/zip"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/modfetch/codehost"
 	"crypto/sha256"
 	"encoding/hex"
 	"hash"
@@ -18,9 +20,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/modfetch/codehost"
 
 	"golang.org/x/mod/sumdb/dirhash"
 )

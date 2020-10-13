@@ -30,13 +30,12 @@
 package work
 
 import (
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/load"
 	"fmt"
 	"internal/lazyregexp"
 	"regexp"
 	"strings"
-
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/load"
 )
 
 var re = lazyregexp.New

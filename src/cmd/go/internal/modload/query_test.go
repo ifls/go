@@ -5,6 +5,7 @@
 package modload
 
 import (
+	"cmd/go/internal/cfg"
 	"internal/testenv"
 	"io/ioutil"
 	"log"
@@ -13,8 +14,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"cmd/go/internal/cfg"
 
 	"golang.org/x/mod/module"
 )

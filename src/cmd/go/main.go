@@ -7,14 +7,6 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"log"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/bug"
 	"cmd/go/internal/cfg"
@@ -37,6 +29,13 @@ import (
 	"cmd/go/internal/version"
 	"cmd/go/internal/vet"
 	"cmd/go/internal/work"
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 )
 
 func init() {

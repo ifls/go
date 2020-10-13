@@ -9,6 +9,14 @@ package main_test
 
 import (
 	"bytes"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/imports"
+	"cmd/go/internal/par"
+	"cmd/go/internal/robustio"
+	"cmd/go/internal/txtar"
+	"cmd/go/internal/work"
+	"cmd/internal/objabi"
+	"cmd/internal/sys"
 	"context"
 	"errors"
 	"fmt"
@@ -24,15 +32,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/imports"
-	"cmd/go/internal/par"
-	"cmd/go/internal/robustio"
-	"cmd/go/internal/txtar"
-	"cmd/go/internal/work"
-	"cmd/internal/objabi"
-	"cmd/internal/sys"
 )
 
 // TestScript runs the tests in testdata/script/*.txt.

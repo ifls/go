@@ -6,6 +6,9 @@ package codehost
 
 import (
 	"bytes"
+	"cmd/go/internal/lockedfile"
+	"cmd/go/internal/par"
+	"cmd/go/internal/web"
 	"errors"
 	"fmt"
 	"io"
@@ -19,10 +22,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"cmd/go/internal/lockedfile"
-	"cmd/go/internal/par"
-	"cmd/go/internal/web"
 
 	"golang.org/x/mod/semver"
 )

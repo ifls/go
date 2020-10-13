@@ -6,14 +6,13 @@
 package tool
 
 import (
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
 	"fmt"
 	"os"
 	"os/exec"
 	"sort"
 	"strings"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
 )
 
 var CmdTool = &base.Command{

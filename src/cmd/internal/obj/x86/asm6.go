@@ -69,7 +69,7 @@ const (
 const (
 	// branchBackwards marks targets that are located behind.
 	// Used to express jumps to loop headers.
-	branchBackwards = (1 << iota)
+	branchBackwards = 1 << iota
 	// branchShort marks branches those target is close,
 	// with offset is in -128..127 range.
 	branchShort
@@ -2039,6 +2039,7 @@ type nopPad struct {
 	n int32     // Size of the pad
 }
 
+// x86平台汇编函数
 func span6(ctxt *obj.Link, s *obj.LSym, newprog obj.ProgAlloc) {
 	pjc := makePjcCtx(ctxt)
 
@@ -4713,7 +4714,7 @@ func (ab *AsmBuf) doasm(ctxt *obj.Link, cursym *obj.LSym, p *obj.Prog) {
 				v = vaddr(ctxt, p, &p.From, &rel)
 				l = int(v >> 32)
 				if l == 0 && rel.Siz != 8 {
-					ab.rexflag &^= (0x40 | Rxw)
+					ab.rexflag &^= 0x40 | Rxw
 
 					ab.rexflag |= regrex[p.To.Reg] & Rxb
 					ab.Put1(byte(0xb8 + reg[p.To.Reg]))
@@ -5278,7 +5279,7 @@ bad:
 			if ctxt.Arch.Family == sys.I386 {
 				breg := byteswapreg(ctxt, &p.From)
 				if breg != REG_AX {
-					ab.Put1(0x87) //xchg rhs,bx
+					ab.Put1(0x87) // xchg rhs,bx
 					ab.asmando(ctxt, cursym, p, &p.To, reg[breg])
 					subreg(&pp, z, breg)
 					ab.doasm(ctxt, cursym, &pp)

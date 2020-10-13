@@ -488,7 +488,7 @@ func (ctxt *Link) findfunctab() {
 			q = e.Value
 		}
 
-		//print("%d: [%lld %lld] %s\n", idx, p, q, s->name);
+		// print("%d: [%lld %lld] %s\n", idx, p, q, s->name);
 		for ; p < q; p += SUBBUCKETSIZE {
 			i = int((p - min) / SUBBUCKETSIZE)
 			if indexes[i] > idx {

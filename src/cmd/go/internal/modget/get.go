@@ -6,14 +6,6 @@
 package modget
 
 import (
-	"errors"
-	"fmt"
-	"os"
-	"path/filepath"
-	"sort"
-	"strings"
-	"sync"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/get"
 	"cmd/go/internal/imports"
@@ -23,6 +15,13 @@ import (
 	"cmd/go/internal/par"
 	"cmd/go/internal/search"
 	"cmd/go/internal/work"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"sync"
 
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"

@@ -37,10 +37,9 @@ package modfetch
 import (
 	"errors"
 	"fmt"
+	"internal/lazyregexp"
 	"strings"
 	"time"
-
-	"internal/lazyregexp"
 
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"

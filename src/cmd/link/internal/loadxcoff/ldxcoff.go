@@ -55,7 +55,7 @@ func Load(l *loader.Loader, arch *sys.Arch, localSymVersion int, input *bio.Read
 	defer f.Close()
 
 	for _, sect := range f.Sections {
-		//only text, data and bss section
+		// only text, data and bss section
 		if sect.Type < xcoff.STYP_TEXT || sect.Type > xcoff.STYP_BSS {
 			continue
 		}

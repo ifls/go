@@ -5,6 +5,9 @@
 package codehost
 
 import (
+	"cmd/go/internal/lockedfile"
+	"cmd/go/internal/par"
+	"cmd/go/internal/str"
 	"errors"
 	"fmt"
 	"internal/lazyregexp"
@@ -17,10 +20,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"cmd/go/internal/lockedfile"
-	"cmd/go/internal/par"
-	"cmd/go/internal/str"
 )
 
 // A VCSError indicates an error using a version control system.

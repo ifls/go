@@ -8,6 +8,9 @@ package codehost
 
 import (
 	"bytes"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/lockedfile"
+	"cmd/go/internal/str"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -18,10 +21,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/lockedfile"
-	"cmd/go/internal/str"
 )
 
 // Downloaded size limits.

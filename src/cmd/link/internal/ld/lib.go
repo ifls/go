@@ -2346,10 +2346,10 @@ func (sc *stkChk) check(up *chain, depth int) int {
 		// TODO(mwhudson): actually think about this.
 		// TODO(khr): disabled for now. Calls to external functions can only happen on the g0 stack.
 		// See the trampolines in src/runtime/sys_darwin_$ARCH.go.
-		//if depth == 1 && ldr.SymType(s) != sym.SXREF && !ctxt.DynlinkingGo() &&
+		// if depth == 1 && ldr.SymType(s) != sym.SXREF && !ctxt.DynlinkingGo() &&
 		//	ctxt.BuildMode != BuildModeCArchive && ctxt.BuildMode != BuildModePIE && ctxt.BuildMode != BuildModeCShared && ctxt.BuildMode != BuildModePlugin {
 		//	Errorf(s, "call to external function")
-		//}
+		// }
 		return -1
 	}
 	info := ldr.FuncInfo(s)

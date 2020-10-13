@@ -182,7 +182,7 @@ const (
 	N_ABS   = -1
 	N_UNDEF = 0
 
-	//Ntype
+	// Ntype
 	SYM_V_INTERNAL  = 0x1000
 	SYM_V_HIDDEN    = 0x2000
 	SYM_V_PROTECTED = 0x3000

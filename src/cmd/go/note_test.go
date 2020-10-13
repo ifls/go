@@ -5,11 +5,10 @@
 package main_test
 
 import (
+	"cmd/internal/buildid"
 	"go/build"
 	"runtime"
 	"testing"
-
-	"cmd/internal/buildid"
 )
 
 func TestNoteReading(t *testing.T) {

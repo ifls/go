@@ -5,6 +5,11 @@
 package modload
 
 import (
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/imports"
+	"cmd/go/internal/modfetch"
+	"cmd/go/internal/search"
+	"cmd/go/internal/str"
 	"errors"
 	"fmt"
 	"os"
@@ -12,12 +17,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/imports"
-	"cmd/go/internal/modfetch"
-	"cmd/go/internal/search"
-	"cmd/go/internal/str"
 
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"

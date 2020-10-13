@@ -6,17 +6,16 @@ package modcmd
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"runtime"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/cfg"
 	"cmd/go/internal/modfetch"
 	"cmd/go/internal/modload"
 	"cmd/go/internal/work"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"runtime"
 
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/sumdb/dirhash"

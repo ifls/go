@@ -7,13 +7,12 @@ package renameio
 
 import (
 	"bytes"
+	"cmd/go/internal/robustio"
 	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
-
-	"cmd/go/internal/robustio"
 )
 
 const patternSuffix = ".tmp"

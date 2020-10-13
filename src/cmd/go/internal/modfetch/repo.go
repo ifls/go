@@ -5,19 +5,18 @@
 package modfetch
 
 import (
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/get"
+	"cmd/go/internal/modfetch/codehost"
+	"cmd/go/internal/par"
+	"cmd/go/internal/str"
+	"cmd/go/internal/web"
 	"fmt"
 	"io"
 	"os"
 	"sort"
 	"strconv"
 	"time"
-
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/get"
-	"cmd/go/internal/modfetch/codehost"
-	"cmd/go/internal/par"
-	"cmd/go/internal/str"
-	web "cmd/go/internal/web"
 
 	"golang.org/x/mod/semver"
 )

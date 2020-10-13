@@ -5,6 +5,7 @@
 package modload
 
 import (
+	"cmd/go/internal/base"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -12,8 +13,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"cmd/go/internal/base"
 
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"

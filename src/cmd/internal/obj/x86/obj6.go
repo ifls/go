@@ -643,7 +643,7 @@ func preprocess(ctxt *obj.Link, cursym *obj.LSym, newprog obj.ProgAlloc) {
 	}
 
 	if !cursym.Func.Text.From.Sym.NoSplit() {
-		//没有go:nosplit的函数会触发分段检查
+		// 没有go:nosplit的函数会触发分段检查
 		p = stacksplit(ctxt, cursym, p, newprog, autoffset, int32(textarg)) // emit split check
 	}
 
@@ -1242,6 +1242,7 @@ var unaryDst = map[obj.As]bool{
 	AXSAVES:     true,
 }
 
+// x86-64
 var Linkamd64 = obj.LinkArch{
 	Arch:           sys.ArchAMD64,
 	Init:           instinit,

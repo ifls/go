@@ -7,6 +7,10 @@ package main_test
 import (
 	"archive/zip"
 	"bytes"
+	"cmd/go/internal/modfetch"
+	"cmd/go/internal/modfetch/codehost"
+	"cmd/go/internal/par"
+	"cmd/go/internal/txtar"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -22,11 +26,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-
-	"cmd/go/internal/modfetch"
-	"cmd/go/internal/modfetch/codehost"
-	"cmd/go/internal/par"
-	"cmd/go/internal/txtar"
 
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/semver"

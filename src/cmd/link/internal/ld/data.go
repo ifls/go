@@ -228,7 +228,7 @@ func (st *relocSymState) relocsym(s loader.Sym, P []byte) {
 		}
 
 		// TODO(mundaym): remove this special case - see issue 14218.
-		//if target.IsS390X() {
+		// if target.IsS390X() {
 		//	switch r.Type {
 		//	case objabi.R_PCRELDBL:
 		//		r.InitExt()
@@ -238,7 +238,7 @@ func (st *relocSymState) relocsym(s loader.Sym, P []byte) {
 		//		r.InitExt()
 		//		r.Variant = sym.RV_390_DBL
 		//	}
-		//}
+		// }
 
 		var o int64
 		switch rt {
@@ -377,7 +377,7 @@ func (st *relocSymState) relocsym(s loader.Sym, P []byte) {
 				// same address once loaded, this is possible.
 				if ldr.SymSect(s).Seg == &Segdata {
 					panic("not implemented")
-					//Xcoffadddynrel(target, ldr, err, s, &r) // XXX
+					// Xcoffadddynrel(target, ldr, err, s, &r) // XXX
 				}
 			}
 
@@ -544,12 +544,12 @@ func (st *relocSymState) relocsym(s loader.Sym, P []byte) {
 			o = ldr.SymValue(rs) + r.Add() - ldr.SymValue(syms.GOT2)
 		}
 
-		//if target.IsPPC64() || target.IsS390X() {
+		// if target.IsPPC64() || target.IsS390X() {
 		//	r.InitExt()
 		//	if r.Variant != sym.RV_NONE {
 		//		o = thearch.Archrelocvariant(ldr, target, syms, &r, s, o)
 		//	}
-		//}
+		// }
 
 		switch siz {
 		default:

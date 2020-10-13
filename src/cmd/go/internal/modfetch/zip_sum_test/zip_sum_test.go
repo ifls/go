@@ -16,6 +16,9 @@
 package zip_sum_test
 
 import (
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/modfetch"
+	"cmd/go/internal/modload"
 	"crypto/sha256"
 	"encoding/csv"
 	"encoding/hex"
@@ -28,10 +31,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/modfetch"
-	"cmd/go/internal/modload"
 
 	"golang.org/x/mod/module"
 )

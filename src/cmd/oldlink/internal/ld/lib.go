@@ -2249,7 +2249,7 @@ func stkcheck(ctxt *Link, up *chain, depth int) int {
 		// See the trampolines in src/runtime/sys_darwin_$ARCH.go.
 		if depth == 1 && s.Type != sym.SXREF && !ctxt.DynlinkingGo() &&
 			ctxt.BuildMode != BuildModeCArchive && ctxt.BuildMode != BuildModePIE && ctxt.BuildMode != BuildModeCShared && ctxt.BuildMode != BuildModePlugin {
-			//Errorf(s, "call to external function")
+			// Errorf(s, "call to external function")
 		}
 		return -1
 	}

@@ -5,6 +5,10 @@
 package test
 
 import (
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/cmdflag"
+	"cmd/go/internal/work"
 	"errors"
 	"flag"
 	"fmt"
@@ -12,11 +16,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/cmdflag"
-	"cmd/go/internal/work"
 )
 
 //go:generate go run ./genflags.go

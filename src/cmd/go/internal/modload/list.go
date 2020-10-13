@@ -5,16 +5,15 @@
 package modload
 
 import (
-	"errors"
-	"fmt"
-	"os"
-	"strings"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/cfg"
 	"cmd/go/internal/modinfo"
 	"cmd/go/internal/par"
 	"cmd/go/internal/search"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
 
 	"golang.org/x/mod/module"
 )

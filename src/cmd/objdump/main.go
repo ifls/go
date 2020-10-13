@@ -32,6 +32,7 @@
 package main
 
 import (
+	"cmd/internal/objfile"
 	"flag"
 	"fmt"
 	"log"
@@ -39,8 +40,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"cmd/internal/objfile"
 )
 
 var printCode = flag.Bool("S", false, "print Go code alongside assembly")

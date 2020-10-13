@@ -12,6 +12,9 @@
 package web
 
 import (
+	"cmd/go/internal/auth"
+	"cmd/go/internal/cfg"
+	"cmd/internal/browser"
 	"crypto/tls"
 	"fmt"
 	"mime"
@@ -20,10 +23,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"cmd/go/internal/auth"
-	"cmd/go/internal/cfg"
-	"cmd/internal/browser"
 )
 
 // impatientInsecureHTTPClient is used in -insecure mode,

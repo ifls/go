@@ -12,6 +12,8 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/modfetch/codehost"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -19,9 +21,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/modfetch/codehost"
 )
 
 func usage() {

@@ -8,14 +8,13 @@ package modcmd
 
 import (
 	"bufio"
-	"os"
-	"sort"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/cfg"
 	"cmd/go/internal/modload"
 	"cmd/go/internal/par"
 	"cmd/go/internal/work"
+	"os"
+	"sort"
 
 	"golang.org/x/mod/module"
 )

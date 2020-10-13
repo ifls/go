@@ -5,15 +5,14 @@
 package modconv
 
 import (
+	"cmd/go/internal/base"
+	"cmd/go/internal/modfetch"
+	"cmd/go/internal/par"
 	"fmt"
 	"os"
 	"sort"
 	"strings"
 	"sync"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/modfetch"
-	"cmd/go/internal/par"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"

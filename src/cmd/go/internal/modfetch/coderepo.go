@@ -7,6 +7,7 @@ package modfetch
 import (
 	"archive/zip"
 	"bytes"
+	"cmd/go/internal/modfetch/codehost"
 	"errors"
 	"fmt"
 	"io"
@@ -16,8 +17,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"cmd/go/internal/modfetch/codehost"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
