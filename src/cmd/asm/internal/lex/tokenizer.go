@@ -5,15 +5,14 @@
 package lex
 
 import (
+	"cmd/asm/internal/flags"
+	"cmd/internal/objabi"
+	"cmd/internal/src"
 	"io"
 	"os"
 	"strings"
 	"text/scanner"
 	"unicode"
-
-	"cmd/asm/internal/flags"
-	"cmd/internal/objabi"
-	"cmd/internal/src"
 )
 
 // A Tokenizer is a simple wrapping of text/scanner.Scanner, configured

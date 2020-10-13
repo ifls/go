@@ -254,7 +254,7 @@ func print(args ...Type)
 // implementation-specific way and writes the result to standard error.
 // Spaces are always added between arguments and a newline is appended.
 // Println is useful for bootstrapping自举启动 and debugging调试; it is not guaranteed
-// to stay in the language.
+// to stay in the language. 不依赖任何包, 不会有包导入循环的问题
 func println(args ...Type)
 
 // The error built-in interface type is the conventional interface for

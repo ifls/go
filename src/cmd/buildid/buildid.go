@@ -5,13 +5,12 @@
 package main
 
 import (
+	"cmd/internal/buildid"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"strings"
-
-	"cmd/internal/buildid"
 )
 
 func usage() {

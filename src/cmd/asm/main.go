@@ -6,21 +6,20 @@ package main
 
 import (
 	"bufio"
-	"flag"
-	"fmt"
-	"log"
-	"os"
-
 	"cmd/asm/internal/arch"
 	"cmd/asm/internal/asm"
 	"cmd/asm/internal/flags"
 	"cmd/asm/internal/lex"
-
 	"cmd/internal/bio"
 	"cmd/internal/obj"
 	"cmd/internal/objabi"
+	"flag"
+	"fmt"
+	"log"
+	"os"
 )
 
+// 汇编程序主函数
 func main() {
 	log.SetFlags(0)
 	log.SetPrefix("asm: ")
@@ -88,6 +87,7 @@ func main() {
 			pList.Firstpc, ok = parser.Parse()
 			// reports errors to parser.Errorf
 			if ok {
+				// 汇编代码都是由 Flushplist 这个函数生成的，该函数会调用架构特定的 Preprocess 和 Assemble 方法：
 				obj.Flushplist(ctxt, pList, nil, *flags.Importpath)
 			}
 		}

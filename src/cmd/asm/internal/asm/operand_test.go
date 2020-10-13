@@ -5,13 +5,12 @@
 package asm
 
 import (
-	"strings"
-	"testing"
-
 	"cmd/asm/internal/arch"
 	"cmd/asm/internal/lex"
 	"cmd/internal/obj"
 	"cmd/internal/objabi"
+	"strings"
+	"testing"
 )
 
 // A simple in-out test: Do we print what we parse?

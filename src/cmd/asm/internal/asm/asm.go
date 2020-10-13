@@ -6,10 +6,6 @@ package asm
 
 import (
 	"bytes"
-	"fmt"
-	"strconv"
-	"text/scanner"
-
 	"cmd/asm/internal/arch"
 	"cmd/asm/internal/flags"
 	"cmd/asm/internal/lex"
@@ -17,6 +13,9 @@ import (
 	"cmd/internal/obj/x86"
 	"cmd/internal/objabi"
 	"cmd/internal/sys"
+	"fmt"
+	"strconv"
+	"text/scanner"
 )
 
 // TODO: configure the architecture

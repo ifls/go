@@ -92,10 +92,10 @@ type FileHeader struct {
 	// appropriate, including canonicalizing slash directions,
 	// validating that paths are relative, and preventing path
 	// traversal through filenames ("../../../").
-	Name string
+	Name string // 相对路径, 不能以设备或者'/'开头, 路径分隔符只支持'/'
 
 	// Comment is any arbitrary user-defined string shorter than 64KiB.
-	Comment string
+	Comment string //
 
 	// NonUTF8 indicates that Name and Comment are not encoded in UTF-8.
 	//

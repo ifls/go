@@ -171,7 +171,7 @@ func commentText(g *ast.CommentGroup) string {
 		// The parser has given us exactly the comment text.
 		switch c[1] {
 		case '/':
-			//-style comment (no newline at the end)
+			// -style comment (no newline at the end)
 			c = c[2:] + "\n"
 		case '*':
 			/*-style comment */

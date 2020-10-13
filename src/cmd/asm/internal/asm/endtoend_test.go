@@ -7,6 +7,9 @@ package asm
 import (
 	"bufio"
 	"bytes"
+	"cmd/asm/internal/lex"
+	"cmd/internal/obj"
+	"cmd/internal/objabi"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -16,10 +19,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"cmd/asm/internal/lex"
-	"cmd/internal/obj"
-	"cmd/internal/objabi"
 )
 
 // An end-to-end test for the assembler: Do we print what we parse?

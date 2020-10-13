@@ -5,16 +5,15 @@
 package lex
 
 import (
+	"cmd/asm/internal/flags"
+	"cmd/internal/objabi"
+	"cmd/internal/src"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"text/scanner"
-
-	"cmd/asm/internal/flags"
-	"cmd/internal/objabi"
-	"cmd/internal/src"
 )
 
 // Input is the main input: a stack of readers and some macro definitions.

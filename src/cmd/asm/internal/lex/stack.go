@@ -5,9 +5,8 @@
 package lex
 
 import (
-	"text/scanner"
-
 	"cmd/internal/src"
+	"text/scanner"
 )
 
 // A Stack is a stack of TokenReaders. As the top TokenReader hits EOF,

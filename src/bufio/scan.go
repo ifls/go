@@ -158,10 +158,10 @@ func (s *Scanner) Scan() bool {
 			s.token = token
 			if token != nil {
 				if s.err == nil || advance > 0 {
-					//重置
+					// 重置
 					s.empties = 0
 				} else {
-					//防止死循环
+					// 防止死循环
 					// Returning tokens not advancing input at EOF.
 					s.empties++
 					if s.empties > maxConsecutiveEmptyReads {
@@ -190,7 +190,7 @@ func (s *Scanner) Scan() bool {
 			s.start = 0
 		}
 
-		//缓冲区满，太小
+		// 缓冲区满，太小
 		// Is the buffer full? If so, resize.
 		if s.end == len(s.buf) {
 			// Guarantee no overflow in the multiplication below.
@@ -199,7 +199,7 @@ func (s *Scanner) Scan() bool {
 				s.setErr(ErrTooLong)
 				return false
 			}
-			//2 倍
+			// 2 倍
 			newSize := len(s.buf) * 2
 			if newSize == 0 {
 				newSize = startBufSize
@@ -217,9 +217,9 @@ func (s *Scanner) Scan() bool {
 		// Finally we can read some input.
 		// Make sure we don't get stuck with a misbehaving Reader. 避免陷入到行为不断的Reader
 		// Officially正式 we don't need to do this, but let's be extra careful: Scanner is for safe, simple jobs. 额外小心
-		//循环读
+		// 循环读
 		for loop := 0; ; {
-			//先读到缓冲区
+			// 先读到缓冲区
 			n, err := s.r.Read(s.buf[s.end:len(s.buf)])
 			if n < 0 || len(s.buf)-s.end < n {
 				s.setErr(ErrBadReadCount)
@@ -235,7 +235,7 @@ func (s *Scanner) Scan() bool {
 				break
 			}
 
-			//防止过量空读
+			// 防止过量空读
 			loop++
 			if loop > maxConsecutiveEmptyReads {
 				s.setErr(io.ErrNoProgress)
@@ -275,12 +275,12 @@ func (s *Scanner) setErr(err error) {
 // maximum token size to MaxScanTokenSize.
 //
 // Buffer panics if it is called after scanning has started.
-//重设缓冲区
+// 重设缓冲区
 func (s *Scanner) Buffer(buf []byte, max int) {
 	if s.scanCalled {
 		panic("Buffer called after Scan")
 	}
-	//开始扫描后，不允许切换缓冲区
+	// 开始扫描后，不允许切换缓冲区
 	s.buf = buf[0:cap(buf)]
 	s.maxTokenSize = max
 }
@@ -290,7 +290,7 @@ func (s *Scanner) Buffer(buf []byte, max int) {
 //
 // Split panics if it is called after scanning has started.
 func (s *Scanner) Split(split SplitFunc) {
-	//开始扫描后不允许切换
+	// 开始扫描后不允许切换
 	if s.scanCalled {
 		panic("Split called after Scan")
 	}
@@ -299,7 +299,7 @@ func (s *Scanner) Split(split SplitFunc) {
 
 // Split functions
 
-//字节切分
+// 字节切分
 // ScanBytes is a split function for a Scanner that returns each byte as a token.
 func ScanBytes(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF && len(data) == 0 {
@@ -411,7 +411,7 @@ func ScanWords(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	start := 0
 	for width := 0; start < len(data); start += width {
 		var r rune
-		//根据宽度进行偏移，而不是固定的+1
+		// 根据宽度进行偏移，而不是固定的+1
 		r, width = utf8.DecodeRune(data[start:])
 		if !isSpace(r) {
 			break
@@ -422,15 +422,15 @@ func ScanWords(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	for width, i := 0, start; i < len(data); i += width {
 		var r rune
 		r, width = utf8.DecodeRune(data[i:])
-		//[start: i) 就是一个单词
+		// [start: i) 就是一个单词
 		if isSpace(r) {
 			return i + width, data[start:i], nil
 		}
 	}
 
-	//处理结尾
+	// 处理结尾
 	// If we're at EOF, we have a final, non-empty, non-terminated word. Return it.
-	if atEOF && len(data) > start {	//有一个字节以上
+	if atEOF && len(data) > start { // 有一个字节以上
 		return len(data), data[start:], nil
 	}
 

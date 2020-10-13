@@ -5,9 +5,8 @@
 package lex
 
 import (
-	"text/scanner"
-
 	"cmd/internal/src"
+	"text/scanner"
 )
 
 // A Slice reads from a slice of Tokens.

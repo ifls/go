@@ -11,6 +11,8 @@
 package main
 
 import (
+	"cmd/internal/edit"
+	"cmd/internal/objabi"
 	"crypto/md5"
 	"flag"
 	"fmt"
@@ -25,9 +27,6 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-
-	"cmd/internal/edit"
-	"cmd/internal/objabi"
 )
 
 // A Package collects information about the package we're going to write.

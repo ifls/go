@@ -40,7 +40,7 @@ func NewReader(r io.Reader) *Reader {
 	return &Reader{r: r, curr: &regFileReader{r, 0}}
 }
 
-// Next advances to the next entry in the tar archive.
+// Next advances to the next entry in the tar archive. 走到下一个文件条目
 // The Header.Size determines how many bytes can be read for the next file.
 // Any remaining data in the current file is automatically discarded.
 //
@@ -609,7 +609,7 @@ func readGNUSparseMap0x1(paxHdrs map[string]string) (sparseDatas, error) {
 	return spd, nil
 }
 
-// Read reads from the current file in the tar archive.
+// Read reads from the current file in the tar archive. 从当前步进到的文件读取数据
 // It returns (0, io.EOF) when it reaches the end of that file,
 // until Next is called to advance to the next file.
 //

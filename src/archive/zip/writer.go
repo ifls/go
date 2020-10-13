@@ -27,7 +27,7 @@ type Writer struct {
 	last        *fileWriter
 	closed      bool
 	compressors map[uint16]Compressor
-	comment     string
+	comment     string //
 
 	// testHookCloseSizeOffset if non-nil is called with the size
 	// of offset of the central directory at Close.

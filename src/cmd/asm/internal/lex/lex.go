@@ -6,13 +6,12 @@
 package lex
 
 import (
+	"cmd/internal/src"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 	"text/scanner"
-
-	"cmd/internal/src"
 )
 
 // A ScanToken represents an input item. It is a simple wrapping of rune, as

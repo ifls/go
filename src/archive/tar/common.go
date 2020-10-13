@@ -55,16 +55,16 @@ func (he headerError) Error() string {
 // Type flags for Header.Typeflag.
 const (
 	// Type '0' indicates a regular file.
-	TypeReg  = '0'
+	TypeReg  = '0'    // 常规文件
 	TypeRegA = '\x00' // Deprecated: Use TypeReg instead.
 
 	// Type '1' to '6' are header-only flags and may not have a data body.
-	TypeLink    = '1' // Hard link
-	TypeSymlink = '2' // Symbolic link
-	TypeChar    = '3' // Character device node
-	TypeBlock   = '4' // Block device node
-	TypeDir     = '5' // Directory
-	TypeFifo    = '6' // FIFO node
+	TypeLink    = '1' // Hard link 硬链接
+	TypeSymlink = '2' // Symbolic link 软链接
+	TypeChar    = '3' // Character device node 字符设备节点
+	TypeBlock   = '4' // Block device node 块设备节点
+	TypeDir     = '5' // Directory 目录
+	TypeFifo    = '6' // FIFO node fifo 节点
 
 	// Type '7' is reserved.
 	TypeCont = '7'
@@ -141,13 +141,13 @@ type Header struct {
 	// Typeflag is the type of header entry.
 	// The zero value is automatically promoted to either TypeReg or TypeDir
 	// depending on the presence of a trailing slash in Name.
-	Typeflag byte
+	Typeflag byte // 头类型
 
 	Name     string // Name of file entry
-	Linkname string // Target name of link (valid for TypeLink or TypeSymlink)
+	Linkname string // 如果类型是链接, 则保存目标的文件名 Target name of link (valid for TypeLink or TypeSymlink)
 
-	Size  int64  // Logical file size in bytes
-	Mode  int64  // Permission and mode bits
+	Size  int64  // 字节数 Logical file size in bytes
+	Mode  int64  // 权限和模式位, Permission and mode bits
 	Uid   int    // User ID of owner
 	Gid   int    // Group ID of owner
 	Uname string // User name of owner

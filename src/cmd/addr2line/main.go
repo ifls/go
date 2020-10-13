@@ -19,14 +19,13 @@ package main
 
 import (
 	"bufio"
+	"cmd/internal/objfile"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
-
-	"cmd/internal/objfile"
 )
 
 func printUsage(w *os.File) {

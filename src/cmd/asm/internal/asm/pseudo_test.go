@@ -6,10 +6,9 @@ package asm
 
 import (
 	"bytes"
+	"cmd/asm/internal/lex"
 	"strings"
 	"testing"
-
-	"cmd/asm/internal/lex"
 )
 
 func tokenize(s string) [][]lex.Token {

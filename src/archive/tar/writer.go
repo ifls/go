@@ -41,7 +41,7 @@ type fileWriter interface {
 	ReadFrom(io.Reader) (int64, error)
 }
 
-// Flush finishes writing the current file's block padding.
+// Flush finishes writing the current file's block padding. 结束当前文件写入, 填充空白
 // The current file must be fully written before Flush can be called.
 //
 // This is unnecessary as the next call to WriteHeader or Close
@@ -60,7 +60,7 @@ func (tw *Writer) Flush() error {
 	return nil
 }
 
-// WriteHeader writes hdr and prepares to accept the file's contents.
+// WriteHeader writes hdr and prepares to accept the file's contents. 读入头部,准备接收文件内容
 // The Header.Size determines how many bytes can be written for the next file.
 // If the current file is not fully written, then this returns an error.
 // This implicitly flushes any padding necessary before writing the header.
@@ -460,7 +460,7 @@ func (tw *Writer) readFrom(r io.Reader) (int64, error) {
 	return n, err
 }
 
-// Close closes the tar archive by flushing the padding, and writing the footer.
+// Close closes the tar archive by flushing the padding, and writing the footer. 写入尾注
 // If the current file (from a prior call to WriteHeader) is not fully written,
 // then this returns an error.
 func (tw *Writer) Close() error {

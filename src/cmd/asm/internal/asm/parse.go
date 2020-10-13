@@ -7,14 +7,6 @@
 package asm
 
 import (
-	"fmt"
-	"io"
-	"log"
-	"os"
-	"strconv"
-	"text/scanner"
-	"unicode/utf8"
-
 	"cmd/asm/internal/arch"
 	"cmd/asm/internal/flags"
 	"cmd/asm/internal/lex"
@@ -22,6 +14,13 @@ import (
 	"cmd/internal/obj/x86"
 	"cmd/internal/src"
 	"cmd/internal/sys"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"strconv"
+	"text/scanner"
+	"unicode/utf8"
 )
 
 type Parser struct {
@@ -335,7 +334,7 @@ func (p *Parser) parseScale(s string) int8 {
 
 // operand parses a general operand and stores the result in *a.
 func (p *Parser) operand(a *obj.Addr) {
-	//fmt.Printf("Operand: %v\n", p.input)
+	// fmt.Printf("Operand: %v\n", p.input)
 	if len(p.input) == 0 {
 		p.errorf("empty operand: cannot happen")
 		return
