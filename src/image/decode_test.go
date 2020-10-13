@@ -9,12 +9,11 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"os"
-	"testing"
-
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"os"
+	"testing"
 )
 
 type imageTest struct {

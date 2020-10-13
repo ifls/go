@@ -43,9 +43,9 @@ func Is(err, target error) bool {
 		return err == target
 	}
 
-	//target可比较
+	// target可比较
 	isComparable := reflectlite.TypeOf(target).Comparable()
-	//循环解包装
+	// 循环解包装
 	for {
 		if isComparable && err == target {
 			return true
@@ -87,7 +87,7 @@ func As(err error, target interface{}) bool {
 	}
 	val := reflectlite.ValueOf(target)
 	typ := val.Type()
-	//必须是非空指针
+	// 必须是非空指针
 	if typ.Kind() != reflectlite.Ptr || val.IsNil() {
 		panic("errors: target must be a non-nil pointer")
 	}

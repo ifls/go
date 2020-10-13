@@ -85,7 +85,7 @@ func ExampleWithTimeout() {
 
 	select {
 	case <-time.After(1 * time.Second):
-		//睡过了头
+		// 睡过了头
 		fmt.Println("overslept")
 	case <-ctx.Done():
 		fmt.Println(ctx.Err()) // prints "context deadline exceeded"

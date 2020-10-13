@@ -209,7 +209,7 @@ func (fd *FD) incref() error {
 // It also closes fd when the state of fd is set to closed and there
 // is no remaining reference.
 func (fd *FD) decref() error {
-	//true 表示没有引用
+	// true 表示没有引用
 	if fd.fdmu.decref() {
 		// 关闭
 		return fd.destroy()

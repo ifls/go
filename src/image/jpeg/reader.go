@@ -318,6 +318,7 @@ func (d *decoder) processSOF(n int) error {
 	default:
 		return UnsupportedError("number of components")
 	}
+
 	if err := d.readFull(d.tmp[:n]); err != nil {
 		return err
 	}
@@ -325,6 +326,8 @@ func (d *decoder) processSOF(n int) error {
 	if d.tmp[0] != 8 {
 		return UnsupportedError("precision")
 	}
+
+	// 高度和宽度
 	d.height = int(d.tmp[1])<<8 + int(d.tmp[2])
 	d.width = int(d.tmp[3])<<8 + int(d.tmp[4])
 	if int(d.tmp[5]) != d.nComp {
@@ -368,7 +371,6 @@ func (d *decoder) processSOF(n int) error {
 			// the nominal (h, v) is (2, 1), a 20x5 image is encoded in three 8x8
 			// MCUs, not two 16x8 MCUs.
 			h, v = 1, 1
-
 		case 3:
 			// For YCbCr images, we only support 4:4:4, 4:4:0, 4:2:2, 4:2:0,
 			// 4:1:1 or 4:1:0 chroma subsampling ratios. This implies that the
@@ -394,7 +396,6 @@ func (d *decoder) processSOF(n int) error {
 					return errUnsupportedSubsamplingRatio
 				}
 			}
-
 		case 4:
 			// For 4-component images (either CMYK or YCbCrK), we only support two
 			// hv vectors: [0x11 0x11 0x11 0x11] and [0x22 0x11 0x11 0x22].
@@ -540,7 +541,7 @@ func (d *decoder) decode(r io.Reader, configOnly bool) (image.Image, error) {
 		if err != nil {
 			return nil, err
 		}
-		for d.tmp[0] != 0xff {
+		for d.tmp[0] != 0xff { // 丢掉当前字节, 前推一个字节
 			// Strictly speaking, this is a format error. However, libjpeg is
 			// liberal in what it accepts. As of version 9, next_marker in
 			// jdmarker.c treats this as a warning (JWRN_EXTRANEOUS_DATA) and
@@ -569,7 +570,7 @@ func (d *decoder) decode(r io.Reader, configOnly bool) (image.Image, error) {
 		}
 		marker := d.tmp[1]
 		if marker == 0 {
-			// Treat "\xff\x00" as extraneous data.
+			// Treat "\xff\x00" as extraneous外来的,无关的 data.
 			continue
 		}
 		for marker == 0xff {
@@ -580,10 +581,12 @@ func (d *decoder) decode(r io.Reader, configOnly bool) (image.Image, error) {
 				return nil, err
 			}
 		}
-		if marker == eoiMarker { // End Of Image.
+
+		if marker == eoiMarker { // End Of Image. 图片读取结束
 			break
 		}
-		if rst0Marker <= marker && marker <= rst7Marker {
+
+		if rst0Marker <= marker && marker <= rst7Marker { // restart pointer
 			// Figures B.2 and B.16 of the specification suggest that restart markers should
 			// only occur between Entropy Coded Segments and not after the final ECS.
 			// However, some encoders may generate incorrect JPEGs with a final restart
@@ -593,48 +596,49 @@ func (d *decoder) decode(r io.Reader, configOnly bool) (image.Image, error) {
 			continue
 		}
 
-		// Read the 16-bit length of the segment. The value includes the 2 bytes for the
+		// Read the 16-bit length长度 of the segment. The value includes the 2 bytes for the
 		// length itself, so we subtract 2 to get the number of remaining bytes.
 		if err = d.readFull(d.tmp[:2]); err != nil {
 			return nil, err
 		}
-		n := int(d.tmp[0])<<8 + int(d.tmp[1]) - 2
+		n := int(d.tmp[0])<<8 + int(d.tmp[1]) - 2 // 减掉两个字节
 		if n < 0 {
 			return nil, FormatError("short segment length")
 		}
 
 		switch marker {
-		case sof0Marker, sof1Marker, sof2Marker:
+		case sof0Marker, sof1Marker, sof2Marker: // start of frame
 			d.baseline = marker == sof0Marker
 			d.progressive = marker == sof2Marker
+			// 文件开头
 			err = d.processSOF(n)
 			if configOnly && d.jfif {
 				return nil, err
 			}
-		case dhtMarker:
+		case dhtMarker: // define huffman table
 			if configOnly {
 				err = d.ignore(n)
 			} else {
 				err = d.processDHT(n)
 			}
-		case dqtMarker:
+		case dqtMarker: // Define Quantization Table. 质量表
 			if configOnly {
 				err = d.ignore(n)
 			} else {
 				err = d.processDQT(n)
 			}
-		case sosMarker:
+		case sosMarker: // start of scan
 			if configOnly {
 				return nil, nil
 			}
 			err = d.processSOS(n)
-		case driMarker:
+		case driMarker: // define restart interval
 			if configOnly {
 				err = d.ignore(n)
 			} else {
 				err = d.processDRI(n)
 			}
-		case app0Marker:
+		case app0Marker: //
 			err = d.processApp0Marker(n)
 		case app14Marker:
 			err = d.processApp14Marker(n)

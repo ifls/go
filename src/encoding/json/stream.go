@@ -10,7 +10,7 @@ import (
 	"io"
 )
 
-// A Decoder reads and decodes JSON values from an input stream.
+// A Decoder reads and decodes JSON values from an input stream. 流解析
 type Decoder struct {
 	r       io.Reader
 	buf     []byte

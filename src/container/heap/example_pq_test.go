@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//展示如何使用堆接口 构建优先队列
+// 展示如何使用堆接口 构建优先队列
 // This example demonstrates a priority queue built using the heap interface.
 package heap_test
 
@@ -24,7 +24,7 @@ type PriorityQueue []*Item
 
 func (pq PriorityQueue) Len() int { return len(pq) }
 
-//优先级高的在前面
+// 优先级高的在前面
 func (pq PriorityQueue) Less(i, j int) bool {
 	// We want Pop to give us the highest, not lowest, priority so we use greater than here.
 	return pq[i].priority > pq[j].priority

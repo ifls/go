@@ -9,12 +9,11 @@ package registry_test
 import (
 	"bytes"
 	"crypto/rand"
+	"internal/syscall/windows/registry"
 	"os"
 	"syscall"
 	"testing"
 	"unsafe"
-
-	"internal/syscall/windows/registry"
 )
 
 func randKeyName(prefix string) string {

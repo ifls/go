@@ -991,7 +991,7 @@ func load(arch *sys.Arch, localSymVersion int, newSym, lookup lookupFunc, f *bio
 			}
 		}
 
-		//print("rel %s %d %d %s %#llx\n", sect->sym->name, rp->type, rp->siz, rp->sym->name, rp->add);
+		// print("rel %s %d %d %s %#llx\n", sect->sym->name, rp->type, rp->siz, rp->sym->name, rp->add);
 		sort.Sort(sym.RelocByOff(r[:n]))
 		// just in case
 

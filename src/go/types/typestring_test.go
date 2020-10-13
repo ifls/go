@@ -9,10 +9,9 @@ import (
 	"go/importer"
 	"go/parser"
 	"go/token"
+	. "go/types"
 	"internal/testenv"
 	"testing"
-
-	. "go/types"
 )
 
 const filename = "<src>"

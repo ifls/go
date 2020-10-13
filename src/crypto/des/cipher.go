@@ -26,7 +26,7 @@ type desCipher struct {
 }
 
 // NewCipher creates and returns a new cipher.Block.
-func NewCipher(key []byte) (cipher.Block, error) {
+func NewCipher(key []byte) (cipher.Block, error) { // des是块加密
 	if len(key) != 8 {
 		return nil, KeySizeError(len(key))
 	}

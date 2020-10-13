@@ -12,8 +12,8 @@ import (
 // tag, or the empty string. It does not include the leading comma.
 type tagOptions string
 
-// parseTag splits a struct field's json tag into its name and
-// comma-separated options.
+// parseTag splits a struct field's json tag into its name and comma-separated options.
+// 解析name 和tag 只支持 string, ommi
 func parseTag(tag string) (string, tagOptions) {
 	if idx := strings.Index(tag, ","); idx != -1 {
 		return tag[:idx], tagOptions(tag[idx+1:])

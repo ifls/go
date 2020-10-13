@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package elliptic implements several standard elliptic curves over prime
-// fields.
+// Package elliptic implements several standard elliptic椭圆 curves over prime fields.
+// 实现几个覆盖素数的标准椭圆曲线
 package elliptic
 
 // This package operates, internally, on Jacobian coordinates. For a given

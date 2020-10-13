@@ -316,7 +316,7 @@ type FlagSet struct {
 	Usage func()
 
 	name          string
-	parsed        bool		//已解析过参数
+	parsed        bool // 已解析过参数
 	actual        map[string]*Flag
 	formal        map[string]*Flag
 	args          []string // arguments after flags
@@ -347,7 +347,7 @@ func sortFlags(flags map[string]*Flag) []*Flag {
 }
 
 // Output returns the destination for usage and error messages. os.Stderr is returned if output was not set or was set to nil.
-//没设置就是标准错误
+// 没设置就是标准错误
 func (f *FlagSet) Output() io.Writer {
 	if f.output == nil {
 		return os.Stderr
@@ -373,7 +373,7 @@ func (f *FlagSet) SetOutput(output io.Writer) {
 
 // VisitAll visits the flags in lexicographical order, calling fn for each.
 // It visits all flags, even those not set. 没有设置值的标志也遍历
-//遍历
+// 遍历
 func (f *FlagSet) VisitAll(fn func(*Flag)) {
 	for _, flag := range sortFlags(f.formal) {
 		fn(flag)
@@ -414,18 +414,18 @@ func Lookup(name string) *Flag {
 // Set sets the value of the named flag.
 func (f *FlagSet) Set(name, value string) error {
 	flag, ok := f.formal[name]
-	//未绑定无法设置
+	// 未绑定无法设置
 	if !ok {
 		return fmt.Errorf("no such flag -%v", name)
 	}
 
-	//设置
+	// 设置
 	err := flag.Value.Set(value)
 	if err != nil {
 		return err
 	}
 
-	//加入actual map
+	// 加入actual map
 	if f.actual == nil {
 		f.actual = make(map[string]*Flag)
 	}
@@ -493,7 +493,7 @@ func UnquoteUsage(flag *Flag) (name string, usage string) {
 
 // PrintDefaults prints, to standard error unless configured otherwise, the default values of all defined command-line flags in the set.
 // See the documentation for the global function PrintDefaults for more information.
-//打印所有标记的默认值
+// 打印所有标记的默认值
 func (f *FlagSet) PrintDefaults() {
 	f.VisitAll(func(flag *Flag) {
 		s := fmt.Sprintf("  -%s", flag.Name) // Two spaces before -; see next two comments.
@@ -830,7 +830,7 @@ func Duration(name string, value time.Duration, usage string) *time.Duration {
 // caller could create a flag that turns a comma-separated string into a slice
 // of strings by giving the slice the methods of Value; in particular, Set would
 // decompose the comma-separated string into the slice.
-//变量绑定
+// 变量绑定
 func (f *FlagSet) Var(value Value, name string, usage string) {
 	// Remember the default value as a string; it won't change.
 	flag := &Flag{name, usage, value, value.String()}
@@ -885,7 +885,7 @@ func (f *FlagSet) parseOne() (bool, error) {
 		return false, nil
 	}
 
-	//解析 -
+	// 解析 -
 	s := f.args[0]
 	if len(s) < 2 || s[0] != '-' {
 		return false, nil
@@ -899,18 +899,18 @@ func (f *FlagSet) parseOne() (bool, error) {
 		}
 	}
 
-	//解析参数名
+	// 解析参数名
 	name := s[numMinuses:]
 	if len(name) == 0 || name[0] == '-' || name[0] == '=' {
 		return false, f.failf("bad flag syntax: %s", s)
 	}
 
 	// it's a flag. does it have an argument?
-	f.args = f.args[1:]		//是一个flag, 拿出来
+	f.args = f.args[1:] // 是一个flag, 拿出来
 	hasValue := false
 	value := ""
 	for i := 1; i < len(name); i++ { // equals cannot be first at index 0
-		//截取成功
+		// 截取成功
 		if name[i] == '=' {
 			value = name[i+1:]
 			hasValue = true
@@ -922,7 +922,7 @@ func (f *FlagSet) parseOne() (bool, error) {
 	m := f.formal
 	flag, alreadythere := m[name] // BUG 指定name应该早就绑定了
 	if !alreadythere {
-		//未定义
+		// 未定义
 		if name == "help" || name == "h" { // special case for nice help message.
 			f.usage()
 			return false, ErrHelp
@@ -930,24 +930,24 @@ func (f *FlagSet) parseOne() (bool, error) {
 		return false, f.failf("flag provided but not defined: -%s", name)
 	}
 
-	//已定义
-	//bool值单独处理
+	// 已定义
+	// bool值单独处理
 	if fv, ok := flag.Value.(boolFlag); ok && fv.IsBoolFlag() { // special case: doesn't need an arg
 		if hasValue {
 			if err := fv.Set(value); err != nil {
 				return false, f.failf("invalid boolean value %q for -%s: %v", value, name, err)
 			}
 		} else {
-			//设置为true
+			// 设置为true
 			if err := fv.Set("true"); err != nil {
 				return false, f.failf("invalid boolean flag %s: %v", name, err)
 			}
 		}
 	} else {
-		//非bool值
+		// 非bool值
 		// It must have a value, which might be the next argument.
 		// 下一个字符串是值
-		if !hasValue && len(f.args) > 0 {	//
+		if !hasValue && len(f.args) > 0 { //
 			// value is the next arg
 			hasValue = true
 			value, f.args = f.args[0], f.args[1:]
@@ -956,13 +956,13 @@ func (f *FlagSet) parseOne() (bool, error) {
 		if !hasValue {
 			return false, f.failf("flag needs an argument: -%s", name)
 		}
-		//设置值
+		// 设置值
 		if err := flag.Value.Set(value); err != nil {
 			return false, f.failf("invalid value %q for flag -%s: %v", value, name, err)
 		}
 	}
 
-	//设置了值
+	// 设置了值
 	if f.actual == nil {
 		f.actual = make(map[string]*Flag)
 	}
@@ -979,16 +979,16 @@ func (f *FlagSet) Parse(arguments []string) error {
 	f.args = arguments
 	for {
 		seen, err := f.parseOne()
-		//成功解析
+		// 成功解析
 		if seen {
 			continue
 		}
-		//无错表示不需要解析，有错，表示一个解析错误
+		// 无错表示不需要解析，有错，表示一个解析错误
 		if err == nil {
 			break
 		}
 
-		//错误处理
+		// 错误处理
 		switch f.errorHandling {
 		case ContinueOnError:
 			return err

@@ -29,7 +29,7 @@ func (k KeySizeError) Error() string {
 // The key argument should be the AES key,
 // either 16, 24, or 32 bytes to select
 // AES-128, AES-192, or AES-256.
-func NewCipher(key []byte) (cipher.Block, error) {
+func NewCipher(key []byte) (cipher.Block, error) { // aes是块加密
 	k := len(key)
 	switch k {
 	default:

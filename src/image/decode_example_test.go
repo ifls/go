@@ -9,9 +9,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image"
-	"log"
-	"strings"
-
 	// Package image/jpeg is not used explicitly in the code below,
 	// but is imported for its initialization side-effect, which allows
 	// image.Decode to understand JPEG formatted images. Uncomment these
@@ -19,6 +16,8 @@ import (
 	// _ "image/gif"
 	// _ "image/png"
 	_ "image/jpeg"
+	"log"
+	"strings"
 )
 
 func Example_decodeConfig() {

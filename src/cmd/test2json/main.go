@@ -80,13 +80,12 @@
 package main
 
 import (
+	"cmd/internal/test2json"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-
-	"cmd/internal/test2json"
 )
 
 var (

@@ -101,7 +101,9 @@ func (e *encoder) writeChunk(b []byte, name string) {
 		e.err = UnsupportedError(name + " chunk is too large: " + strconv.Itoa(len(b)))
 		return
 	}
+	// 长度
 	binary.BigEndian.PutUint32(e.header[:4], n)
+	// 块类型
 	e.header[4] = name[0]
 	e.header[5] = name[1]
 	e.header[6] = name[2]
@@ -111,26 +113,29 @@ func (e *encoder) writeChunk(b []byte, name string) {
 	crc.Write(b)
 	binary.BigEndian.PutUint32(e.footer[:4], crc.Sum32())
 
-	_, e.err = e.w.Write(e.header[:8])
+	_, e.err = e.w.Write(e.header[:8]) // 长度和type
 	if e.err != nil {
 		return
 	}
-	_, e.err = e.w.Write(b)
+	_, e.err = e.w.Write(b) // 写入数据
 	if e.err != nil {
 		return
 	}
-	_, e.err = e.w.Write(e.footer[:4])
+	_, e.err = e.w.Write(e.footer[:4]) // crc
 }
 
+// 文件头数据块
 func (e *encoder) writeIHDR() {
 	b := e.m.Bounds()
+	// 宽
 	binary.BigEndian.PutUint32(e.tmp[0:4], uint32(b.Dx()))
+	// 高
 	binary.BigEndian.PutUint32(e.tmp[4:8], uint32(b.Dy()))
 	// Set bit depth and color type.
 	switch e.cb {
 	case cbG8:
-		e.tmp[8] = 8
-		e.tmp[9] = ctGrayscale
+		e.tmp[8] = 8           // 图像深度
+		e.tmp[9] = ctGrayscale // 颜色类型
 	case cbTC8:
 		e.tmp[8] = 8
 		e.tmp[9] = ctTrueColor
@@ -159,9 +164,9 @@ func (e *encoder) writeIHDR() {
 		e.tmp[8] = 16
 		e.tmp[9] = ctTrueColorAlpha
 	}
-	e.tmp[10] = 0 // default compression method
-	e.tmp[11] = 0 // default filter method
-	e.tmp[12] = 0 // non-interlaced
+	e.tmp[10] = 0 // default compression method 压缩算法
+	e.tmp[11] = 0 // default filter method 滤波算法
+	e.tmp[12] = 0 // non-interlaced 扫描算法
 	e.writeChunk(e.tmp[:13], "IHDR")
 }
 
@@ -171,6 +176,7 @@ func (e *encoder) writePLTEAndTRNS(p color.Palette) {
 		return
 	}
 	last := -1
+	// 3*p的长度板
 	for i, c := range p {
 		c1 := color.NRGBAModel.Convert(c).(color.NRGBA)
 		e.tmp[3*i+0] = c1.R
@@ -179,6 +185,7 @@ func (e *encoder) writePLTEAndTRNS(p color.Palette) {
 		if c1.A != 0xff {
 			last = i
 		}
+		// p最大255
 		e.tmp[3*256+i] = c1.A
 	}
 	e.writeChunk(e.tmp[:3*len(p)], "PLTE")
@@ -575,7 +582,6 @@ func (enc *Encoder) Encode(w io.Writer, m image.Image) error {
 	if enc.BufferPool != nil {
 		buffer := enc.BufferPool.Get()
 		e = (*encoder)(buffer)
-
 	}
 	if e == nil {
 		e = &encoder{}
@@ -624,12 +630,16 @@ func (enc *Encoder) Encode(w io.Writer, m image.Image) error {
 		}
 	}
 
+	// png 头
 	_, e.err = io.WriteString(w, pngHeader)
+	// 文件头数据块
 	e.writeIHDR()
-	if pal != nil {
+	if pal != nil { // 调色板
 		e.writePLTEAndTRNS(pal)
 	}
 	e.writeIDATs()
+
+	// 写入IEND, 结尾标记
 	e.writeIEND()
 	return e.err
 }

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package ed25519 implements the Ed25519 signature algorithm. See
+// Package ed25519 implements the Ed25519 signature algorithm 签名算法. See
 // https://ed25519.cr.yp.to/.
 //
 // These functions are also compatible with the “Ed25519” function defined in

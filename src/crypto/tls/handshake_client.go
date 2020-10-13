@@ -133,6 +133,7 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, ecdheParameters, error) {
 	return hello, params, nil
 }
 
+// 客户端 hello
 func (c *Conn) clientHandshake() (err error) {
 	if c.config == nil {
 		c.config = defaultConfig()
@@ -163,10 +164,12 @@ func (c *Conn) clientHandshake() (err error) {
 		}()
 	}
 
+	// 发送客户端hello
 	if _, err := c.writeRecord(recordTypeHandshake, hello.marshal()); err != nil {
 		return err
 	}
 
+	// 读取服务器发来的hello
 	msg, err := c.readHandshake()
 	if err != nil {
 		return err
@@ -206,6 +209,7 @@ func (c *Conn) clientHandshake() (err error) {
 		}
 
 		// In TLS 1.3, session tickets are delivered after the handshake.
+		// 第3次包
 		return hs.handshake()
 	}
 
@@ -215,7 +219,7 @@ func (c *Conn) clientHandshake() (err error) {
 		hello:       hello,
 		session:     session,
 	}
-
+	// 第3次包
 	if err := hs.handshake(); err != nil {
 		return err
 	}
@@ -417,6 +421,7 @@ func (hs *clientHandshakeState) handshake() error {
 			return err
 		}
 	} else {
+		// 读握手
 		if err := hs.doFullHandshake(); err != nil {
 			return err
 		}
@@ -426,6 +431,7 @@ func (hs *clientHandshakeState) handshake() error {
 		if err := hs.sendFinished(c.clientFinished[:]); err != nil {
 			return err
 		}
+		// 发送第三次包
 		if _, err := c.flush(); err != nil {
 			return err
 		}
@@ -433,12 +439,15 @@ func (hs *clientHandshakeState) handshake() error {
 		if err := hs.readSessionTicket(); err != nil {
 			return err
 		}
+
+		// 读第四次包
 		if err := hs.readFinished(c.serverFinished[:]); err != nil {
 			return err
 		}
 	}
 
 	c.ekm = ekmFromMasterSecret(c.vers, hs.suite, hs.masterSecret, hs.hello.random, hs.serverHello.random)
+	// 标记握手完成
 	atomic.StoreUint32(&c.handshakeStatus, 1)
 
 	return nil

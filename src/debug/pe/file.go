@@ -405,7 +405,7 @@ func (f *File) ImportedSymbols() ([]string, error) {
 				}
 				if va&0x80000000 > 0 { // is Ordinal
 					// TODO add dynimport ordinal support.
-					//ord := va&0x0000FFFF
+					// ord := va&0x0000FFFF
 				} else {
 					fn, _ := getString(names, int(va-ds.VirtualAddress+2))
 					all = append(all, fn+":"+dt.dll)

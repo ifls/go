@@ -17,7 +17,7 @@ import (
 // field of a larger type representing a network connection or OS file.
 type FD struct {
 	// Lock sysfd and serialize access to Read and Write methods.
-	fdmu fdMutex //保护读写api操作的锁
+	fdmu fdMutex // 保护读写api操作的锁
 
 	// System file descriptor. Immutable until Close.
 	Sysfd int
@@ -43,7 +43,7 @@ type FD struct {
 	ZeroReadIsEOF bool
 
 	// Whether this is a file rather than a network socket.
-	isFile bool //true 表示只是个普通文件
+	isFile bool // true 表示只是个普通文件
 }
 
 // Init initializes the FD. The Sysfd field should already be set.
@@ -53,10 +53,10 @@ type FD struct {
 func (fd *FD) Init(net string, pollable bool) error {
 	// We don't actually care about the various network types.
 	if net == "file" {
-		fd.isFile = true //标记是文件
+		fd.isFile = true // 标记是文件
 	}
 	if !pollable {
-		fd.isBlocking = 1 //非可poll, 就是阻塞访问的
+		fd.isBlocking = 1 // 非可poll, 就是阻塞访问的
 		return nil
 	}
 	err := fd.pd.init(fd)
@@ -73,7 +73,7 @@ func (fd *FD) Init(net string, pollable bool) error {
 func (fd *FD) destroy() error {
 	// Poller may want to unregister fd in readiness notification mechanism,
 	// so this must be executed before CloseFunc.
-	//关闭轮询
+	// 关闭轮询
 	fd.pd.close()
 	// SYS_CLOSE
 	err := CloseFunc(fd.Sysfd)
@@ -95,11 +95,11 @@ func (fd *FD) Close() error {
 	// the final decref will close fd.sysfd. This should happen
 	// fairly quickly, since all the I/O is non-blocking, and any
 	// attempts to block in the pollDesc will return errClosing(fd.isFile).
-	//从轮询中排除 并唤醒等待的g
+	// 从轮询中排除 并唤醒等待的g
 	fd.pd.evict()
 
 	// The call to decref will call destroy if there are no other references.
-	//减引用 == 0 才释放
+	// 减引用 == 0 才释放
 	err := fd.decref()
 
 	// Wait until the descriptor is closed. If this was the only
@@ -156,12 +156,12 @@ func (fd *FD) Read(p []byte) (int, error) {
 		p = p[:maxRW]
 	}
 	for {
-		//系统调用
+		// 系统调用
 		n, err := ignoringEINTR(syscall.Read, fd.Sysfd, p)
 		if err != nil {
 			n = 0
 			if err == syscall.EAGAIN && fd.pd.pollable() {
-				//读不到数据, 需要之后再读
+				// 读不到数据, 需要之后再读
 				// 阻塞
 				if err = fd.pd.waitRead(fd.isFile); err == nil {
 					continue
@@ -267,7 +267,7 @@ func (fd *FD) Write(p []byte) (int, error) {
 	}
 	var nn int
 
-	//循环写直到写完
+	// 循环写直到写完
 	for {
 		max := len(p)
 		if fd.IsStream && max-nn > maxRW {
@@ -282,7 +282,7 @@ func (fd *FD) Write(p []byte) (int, error) {
 			return nn, err
 		}
 		if err == syscall.EAGAIN && fd.pd.pollable() {
-			//阻塞
+			// 阻塞
 			if err = fd.pd.waitWrite(fd.isFile); err == nil {
 				continue
 			}

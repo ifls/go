@@ -86,7 +86,7 @@ func gentext(ctxt *ld.Link) {
 		thunkfunc := ctxt.Syms.Lookup("__x86.get_pc_thunk."+r.name, 0)
 		thunkfunc.Type = sym.STEXT
 		thunkfunc.Attr |= sym.AttrLocal
-		thunkfunc.Attr |= sym.AttrReachable //TODO: remove?
+		thunkfunc.Attr |= sym.AttrReachable // TODO: remove?
 		o := func(op ...uint8) {
 			for _, op1 := range op {
 				thunkfunc.AddUint8(op1)

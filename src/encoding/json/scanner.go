@@ -4,7 +4,7 @@
 
 package json
 
-// JSON value parser state machine.
+// JSON value parser state machine. 解析状态机
 // Just about at the limit of what is reasonable to write by hand.
 // Some parts are a bit tedious, but overall it nicely factors out the
 // otherwise common code from the multiple scanning functions

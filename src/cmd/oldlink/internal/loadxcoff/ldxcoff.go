@@ -68,7 +68,7 @@ func load(arch *sys.Arch, lookup func(string, int) *sym.Symbol, localSymVersion 
 	defer f.Close()
 
 	for _, sect := range f.Sections {
-		//only text, data and bss section
+		// only text, data and bss section
 		if sect.Type < xcoff.STYP_TEXT || sect.Type > xcoff.STYP_BSS {
 			continue
 		}

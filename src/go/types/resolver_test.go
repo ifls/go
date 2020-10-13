@@ -10,11 +10,10 @@ import (
 	"go/importer"
 	"go/parser"
 	"go/token"
+	. "go/types"
 	"internal/testenv"
 	"sort"
 	"testing"
-
-	. "go/types"
 )
 
 type resolveTestImporter struct {

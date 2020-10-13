@@ -47,7 +47,7 @@ func (fd *FD) Fchown(uid, gid int) error {
 	return syscall.Fchown(fd.Sysfd, uid, gid)
 }
 
-//截断文件到指定长度
+// 截断文件到指定长度
 // Ftruncate wraps syscall.Ftruncate.
 func (fd *FD) Ftruncate(size int64) error {
 	if err := fd.incref(); err != nil {

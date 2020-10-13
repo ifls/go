@@ -11,11 +11,10 @@ import (
 	"go/importer"
 	"go/parser"
 	"go/token"
+	. "go/types"
 	"path/filepath"
 	"testing"
 	"time"
-
-	. "go/types"
 )
 
 var benchmark = flag.Bool("b", false, "run benchmarks")

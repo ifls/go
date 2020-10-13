@@ -141,10 +141,10 @@ const (
 	IfOperStatusLowerLayerDown = 7
 )
 
-//sys	GetAdaptersAddresses(family uint32, flags uint32, reserved uintptr, adapterAddresses *IpAdapterAddresses, sizePointer *uint32) (errcode error) = iphlpapi.GetAdaptersAddresses
-//sys	GetComputerNameEx(nameformat uint32, buf *uint16, n *uint32) (err error) = GetComputerNameExW
-//sys	MoveFileEx(from *uint16, to *uint16, flags uint32) (err error) = MoveFileExW
-//sys	GetModuleFileName(module syscall.Handle, fn *uint16, len uint32) (n uint32, err error) = kernel32.GetModuleFileNameW
+// sys	GetAdaptersAddresses(family uint32, flags uint32, reserved uintptr, adapterAddresses *IpAdapterAddresses, sizePointer *uint32) (errcode error) = iphlpapi.GetAdaptersAddresses
+// sys	GetComputerNameEx(nameformat uint32, buf *uint16, n *uint32) (err error) = GetComputerNameExW
+// sys	MoveFileEx(from *uint16, to *uint16, flags uint32) (err error) = MoveFileExW
+// sys	GetModuleFileName(module syscall.Handle, fn *uint16, len uint32) (n uint32, err error) = kernel32.GetModuleFileNameW
 
 const (
 	WSA_FLAG_OVERLAPPED        = 0x01
@@ -189,7 +189,7 @@ type WSAMsg struct {
 	Flags       uint32
 }
 
-//sys	WSASocket(af int32, typ int32, protocol int32, protinfo *syscall.WSAProtocolInfo, group uint32, flags uint32) (handle syscall.Handle, err error) [failretval==syscall.InvalidHandle] = ws2_32.WSASocketW
+// sys	WSASocket(af int32, typ int32, protocol int32, protinfo *syscall.WSAProtocolInfo, group uint32, flags uint32) (handle syscall.Handle, err error) [failretval==syscall.InvalidHandle] = ws2_32.WSASocketW
 
 func loadWSASendRecvMsg() error {
 	sendRecvMsgFunc.once.Do(func() {
@@ -284,8 +284,8 @@ func Rename(oldpath, newpath string) error {
 	return MoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING)
 }
 
-//sys LockFileEx(file syscall.Handle, flags uint32, reserved uint32, bytesLow uint32, bytesHigh uint32, overlapped *syscall.Overlapped) (err error) = kernel32.LockFileEx
-//sys UnlockFileEx(file syscall.Handle, reserved uint32, bytesLow uint32, bytesHigh uint32, overlapped *syscall.Overlapped) (err error) = kernel32.UnlockFileEx
+// sys LockFileEx(file syscall.Handle, flags uint32, reserved uint32, bytesLow uint32, bytesHigh uint32, overlapped *syscall.Overlapped) (err error) = kernel32.LockFileEx
+// sys UnlockFileEx(file syscall.Handle, reserved uint32, bytesLow uint32, bytesHigh uint32, overlapped *syscall.Overlapped) (err error) = kernel32.UnlockFileEx
 
 const (
 	LOCKFILE_FAIL_IMMEDIATELY = 0x00000001
@@ -294,10 +294,10 @@ const (
 
 const MB_ERR_INVALID_CHARS = 8
 
-//sys	GetACP() (acp uint32) = kernel32.GetACP
-//sys	GetConsoleCP() (ccp uint32) = kernel32.GetConsoleCP
-//sys	MultiByteToWideChar(codePage uint32, dwFlags uint32, str *byte, nstr int32, wchar *uint16, nwchar int32) (nwrite int32, err error) = kernel32.MultiByteToWideChar
-//sys	GetCurrentThread() (pseudoHandle syscall.Handle, err error) = kernel32.GetCurrentThread
+// sys	GetACP() (acp uint32) = kernel32.GetACP
+// sys	GetConsoleCP() (ccp uint32) = kernel32.GetConsoleCP
+// sys	MultiByteToWideChar(codePage uint32, dwFlags uint32, str *byte, nstr int32, wchar *uint16, nwchar int32) (nwrite int32, err error) = kernel32.MultiByteToWideChar
+// sys	GetCurrentThread() (pseudoHandle syscall.Handle, err error) = kernel32.GetCurrentThread
 
 const STYPE_DISKTREE = 0x00
 
@@ -312,8 +312,8 @@ type SHARE_INFO_2 struct {
 	Passwd      *uint16
 }
 
-//sys  NetShareAdd(serverName *uint16, level uint32, buf *byte, parmErr *uint16) (neterr error) = netapi32.NetShareAdd
-//sys  NetShareDel(serverName *uint16, netName *uint16, reserved uint32) (neterr error) = netapi32.NetShareDel
+// sys  NetShareAdd(serverName *uint16, level uint32, buf *byte, parmErr *uint16) (neterr error) = netapi32.NetShareAdd
+// sys  NetShareDel(serverName *uint16, netName *uint16, reserved uint32) (neterr error) = netapi32.NetShareDel
 
 const (
 	FILE_NAME_NORMALIZED = 0x0
@@ -325,11 +325,11 @@ const (
 	VOLUME_NAME_NT   = 0x2
 )
 
-//sys	GetFinalPathNameByHandle(file syscall.Handle, filePath *uint16, filePathSize uint32, flags uint32) (n uint32, err error) = kernel32.GetFinalPathNameByHandleW
+// sys	GetFinalPathNameByHandle(file syscall.Handle, filePath *uint16, filePathSize uint32, flags uint32) (n uint32, err error) = kernel32.GetFinalPathNameByHandleW
 
 func LoadGetFinalPathNameByHandle() error {
 	return procGetFinalPathNameByHandleW.Find()
 }
 
-//sys	CreateEnvironmentBlock(block **uint16, token syscall.Token, inheritExisting bool) (err error) = userenv.CreateEnvironmentBlock
-//sys	DestroyEnvironmentBlock(block *uint16) (err error) = userenv.DestroyEnvironmentBlock
+// sys	CreateEnvironmentBlock(block **uint16, token syscall.Token, inheritExisting bool) (err error) = userenv.CreateEnvironmentBlock
+// sys	DestroyEnvironmentBlock(block *uint16) (err error) = userenv.DestroyEnvironmentBlock

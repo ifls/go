@@ -87,7 +87,7 @@ const (
 	maxHash
 )
 
-//单位是字节
+// 单位是字节
 var digestSizes = []uint8{
 	MD4:         16,
 	MD5:         16,
@@ -120,7 +120,7 @@ func (h Hash) Size() int {
 	panic("crypto: Size of unknown hash function")
 }
 
-//全局函数 hash.Hash包定义的函数
+// 全局变量 返回一种hash算法的函数
 var hashes = make([]func() hash.Hash, maxHash)
 
 // New returns a new hash.Hash calculating the given hash function. New panics
@@ -157,11 +157,12 @@ type PublicKey interface{}
 type PrivateKey interface{}
 
 // Signer is an interface for an opaque private key that can be used for
-// signing operations. For example, an RSA key kept in a hardware module.
+// signing operations. 私钥加密就是签名, 让对方拿公钥解密, 解密成功就是身份认证确认成功
+// For example, an RSA key kept in a hardware module.
 type Signer interface {
 	// Public returns the public key corresponding to the opaque,
 	// private key.
-	Public() PublicKey
+	Public() PublicKey // 返回私钥对应的公钥
 
 	// Sign signs digest with the private key, possibly using entropy from
 	// rand. For an RSA key, the resulting signature should be either a
@@ -188,16 +189,16 @@ type SignerOpts interface {
 }
 
 // Decrypter is an interface for an opaque private key that can be used for
-// asymmetric decryption operations. An example would be an RSA key
-// kept in a hardware module.
+// asymmetric decryption operations. 非对称解密
+// An example would be an RSA key kept in a hardware module.
 type Decrypter interface {
 	// Public returns the public key corresponding to the opaque,
 	// private key.
 	Public() PublicKey
 
-	// Decrypt decrypts msg. The opts argument should be appropriate for
-	// the primitive used. See the documentation in each implementation for
-	// details.
+	// Decrypt decrypts msg. 私钥加密, 然后用公钥解密
+	// The opts argument should be appropriate for the primitive used.
+	// See the documentation in each implementation for details.
 	Decrypt(rand io.Reader, msg []byte, opts DecrypterOpts) (plaintext []byte, err error)
 }
 

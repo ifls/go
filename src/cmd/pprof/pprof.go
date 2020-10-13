@@ -10,6 +10,7 @@
 package main
 
 import (
+	"cmd/internal/objfile"
 	"crypto/tls"
 	"debug/dwarf"
 	"fmt"
@@ -22,8 +23,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"cmd/internal/objfile"
 
 	"github.com/google/pprof/driver"
 	"github.com/google/pprof/profile"

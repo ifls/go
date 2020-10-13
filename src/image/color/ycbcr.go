@@ -4,6 +4,8 @@
 
 package color
 
+// YUV Luminance Y 亮度 Chrominance U 色度 V 饱和度
+// YCbCr Y 亮度, Cb 蓝色色度分量, Cr 红色色度分量
 // RGBToYCbCr converts an RGB triple to a Y'CbCr triple.
 func RGBToYCbCr(r, g, b uint8) (uint8, uint8, uint8) {
 	// The JFIF specification says:

@@ -159,8 +159,8 @@ func TestEncoderDecoder(t *testing.T) {
 	if err != nil {
 		t.Error("encoder fail:", err)
 	}
-	//fmt.Printf("% x %q\n", b, b)
-	//Debug(b)
+	// fmt.Printf("% x %q\n", b, b)
+	// Debug(b)
 	dec := NewDecoder(b)
 	newEt0 := new(ET0)
 	err = dec.Decode(newEt0)

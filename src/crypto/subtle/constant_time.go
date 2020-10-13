@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package subtle implements functions that are often useful in cryptographic
+// Package subtle微妙的 implements functions that are often useful in cryptographic
 // code but require careful thought to use correctly.
 package subtle
 
 // ConstantTimeCompare returns 1 if the two slices, x and y, have equal contents
 // and 0 otherwise. The time taken is a function of the length of the slices and
 // is independent of the contents.
+// ^ XOR 相当于减法
 func ConstantTimeCompare(x, y []byte) int {
 	if len(x) != len(y) {
 		return 0
@@ -28,6 +29,15 @@ func ConstantTimeCompare(x, y []byte) int {
 func ConstantTimeSelect(v, x, y int) int { return ^(v-1)&x | (v-1)&y }
 
 // ConstantTimeByteEq returns 1 if x == y and 0 otherwise.
+// 0b 1011 1001
+// 0b 1011 1001
+// 0b 0000 0000
+
+// 0b 1001 1110
+// 0b 1011 1001
+// 0b 0010 0111
+// 0b 0010 0110
+// -1 是为了让0溢出, >>31 可以去掉, 所有uint8位运算的数值
 func ConstantTimeByteEq(x, y uint8) int {
 	return int((uint32(x^y) - 1) >> 31)
 }

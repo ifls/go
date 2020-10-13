@@ -25,17 +25,17 @@ import "io"
 type Hash interface {
 	// Write (via the embedded io.Writer interface) adds more data to the running hash.
 	// It never returns an error.
-	io.Writer		//
+	io.Writer // 内嵌Write方法
 
 	// Sum appends the current hash to b and returns the resulting slice.
 	// It does not change the underlying hash state.
 	Sum(b []byte) []byte
 
 	// Reset resets the Hash to its initial state.
-	Reset()			//
+	Reset() //
 
 	// Size returns the number of bytes Sum() will return.
-	Size() int
+	Size() int // Sum 返回的 []byte 的长度
 
 	// BlockSize returns the hash's underlying block size.
 	// The Write method must be able to accept any amount

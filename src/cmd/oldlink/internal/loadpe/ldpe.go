@@ -194,16 +194,16 @@ func load(arch *sys.Arch, lookup func(string, int) *sym.Symbol, localSymVersion 
 		s := lookup(name, localSymVersion)
 
 		switch sect.Characteristics & (IMAGE_SCN_CNT_UNINITIALIZED_DATA | IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE | IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE) {
-		case IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ: //.rdata
+		case IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ: // .rdata
 			s.Type = sym.SRODATA
 
-		case IMAGE_SCN_CNT_UNINITIALIZED_DATA | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE: //.bss
+		case IMAGE_SCN_CNT_UNINITIALIZED_DATA | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE: // .bss
 			s.Type = sym.SNOPTRBSS
 
-		case IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE: //.data
+		case IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ | IMAGE_SCN_MEM_WRITE: // .data
 			s.Type = sym.SNOPTRDATA
 
-		case IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ: //.text
+		case IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ: // .text
 			s.Type = sym.STEXT
 
 		default:
@@ -490,7 +490,7 @@ func readpesym(arch *sys.Arch, lookup func(string, int) *sym.Symbol, f *pe.File,
 
 	case IMAGE_SYM_DTYPE_FUNCTION, IMAGE_SYM_DTYPE_NULL:
 		switch pesym.StorageClass {
-		case IMAGE_SYM_CLASS_EXTERNAL: //global
+		case IMAGE_SYM_CLASS_EXTERNAL: // global
 			s = lookup(name, 0)
 
 		case IMAGE_SYM_CLASS_NULL, IMAGE_SYM_CLASS_STATIC, IMAGE_SYM_CLASS_LABEL:

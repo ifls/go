@@ -51,7 +51,7 @@ type Reloc struct {
 // extra information.
 // TODO: rename to objReader once the old one is gone?
 type oReader struct {
-	//*goobj2.Reader
+	// *goobj2.Reader
 	unit      *sym.CompilationUnit
 	version   int    // version of static symbol
 	flags     uint32 // read from object file

@@ -145,21 +145,23 @@ func (e *encoder) writeHeader() {
 	if e.err != nil {
 		return
 	}
-	_, e.err = io.WriteString(e.w, "GIF89a")
+	_, e.err = io.WriteString(e.w, "GIF89a") // gif版本号
 	if e.err != nil {
 		return
 	}
 
 	// Logical screen width and height.
+	// 宽
 	writeUint16(e.buf[0:2], uint16(e.g.Config.Width))
+	// 高
 	writeUint16(e.buf[2:4], uint16(e.g.Config.Height))
 	e.write(e.buf[:4])
 
 	if p, ok := e.g.Config.ColorModel.(color.Palette); ok && len(p) > 0 {
-		paddedSize := log2(len(p)) // Size of Global Color Table: 2^(1+n).
-		e.buf[0] = fColorTable | uint8(paddedSize)
-		e.buf[1] = e.g.BackgroundIndex
-		e.buf[2] = 0x00 // Pixel Aspect Ratio.
+		paddedSize := log2(len(p))                 // Size of Global Color Table: 2^(1+n).
+		e.buf[0] = fColorTable | uint8(paddedSize) //
+		e.buf[1] = e.g.BackgroundIndex             // 背景色
+		e.buf[2] = 0x00                            // Pixel Aspect Ratio. 像素宽高比
 		e.write(e.buf[:3])
 		var err error
 		e.globalCT, err = encodeColorTable(e.globalColorTable[:], p, paddedSize)
@@ -238,6 +240,7 @@ func (e *encoder) colorTablesMatch(localLen, transparentIndex int) bool {
 	return bytes.Equal(e.globalColorTable[:localSize], e.localColorTable[:localSize])
 }
 
+// gif 写入每张图片信息
 func (e *encoder) writeImageBlock(pm *image.Paletted, delay int, disposal byte) {
 	if e.err != nil {
 		return
@@ -253,6 +256,7 @@ func (e *encoder) writeImageBlock(pm *image.Paletted, delay int, disposal byte) 
 		e.err = errors.New("gif: image block is too large to encode")
 		return
 	}
+
 	if !b.In(image.Rectangle{Max: image.Point{e.g.Config.Width, e.g.Config.Height}}) {
 		e.err = errors.New("gif: image block is out of bounds")
 		return
@@ -407,8 +411,10 @@ func EncodeAll(w io.Writer, g *GIF) error {
 		if g.Disposal != nil {
 			disposal = g.Disposal[i]
 		}
+		// 写入每张图片
 		e.writeImageBlock(pm, g.Delay[i], disposal)
 	}
+	// 写入尾部标记
 	e.writeByte(sTrailer)
 	e.flush()
 	return e.err

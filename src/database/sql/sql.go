@@ -121,16 +121,16 @@ type IsolationLevel int
 // Various isolation levels that drivers may support in BeginTx事务中.
 // If a driver does not support a given isolation level an error may be returned. 不支持就返回错误
 //
-// See https://en.wikipedia.org/wiki/Isolation_(database_systems)#Isolation_levels.
+// See TODO https://en.wikipedia.org/wiki/Isolation_(database_systems)#Isolation_levels.
 const (
 	LevelDefault         IsolationLevel = iota
-	LevelReadUncommitted                //读未提交
-	LevelReadCommitted                  //读已提交
-	LevelWriteCommitted                 //写已提交
-	LevelRepeatableRead                 //可重复读
-	LevelSnapshot                       //快照隔离
-	LevelSerializable                   //可串行化
-	LevelLinearizable                   //线性化
+	LevelReadUncommitted                // 读未提交
+	LevelReadCommitted                  // 读已提交
+	LevelWriteCommitted                 // 写已提交
+	LevelRepeatableRead                 // 可重复读
+	LevelSnapshot                       // 快照隔离
+	LevelSerializable                   // 可串行化 事务一致性
+	LevelLinearizable                   // 线性化 多副本一致性
 )
 
 // String returns the name of the transaction isolation level.
@@ -164,7 +164,7 @@ type TxOptions struct {
 	// Isolation is the transaction isolation level.
 	// If zero, the driver or database's default level is used. 不复制, 则使用默认隔离级别
 	Isolation IsolationLevel
-	ReadOnly  bool //是否只读
+	ReadOnly  bool // 是否只读
 }
 
 // RawBytes is a byte slice that holds a reference to memory owned by
@@ -402,14 +402,14 @@ type DB struct {
 	// on 32-bit platforms. Of type time.Duration.
 	waitDuration int64 // Total time waited for new connections.
 
-	connector driver.Connector //连接器
+	connector driver.Connector // 连接器
 	// numClosed is an atomic counter which represents a total number of
 	// closed connections. Stmt.openStmt checks it before cleaning closed
 	// connections in Stmt.css.
-	numClosed uint64 //原子操作, 已关闭的网络连接数
+	numClosed uint64 // 原子操作, 已关闭的网络连接数
 
 	mu           sync.Mutex    // protects following fields
-	freeConn     []*driverConn //被释放, 等待复用的空闲链接
+	freeConn     []*driverConn // 被释放, 等待复用的空闲链接
 	connRequests map[uint64]chan connRequest
 	nextRequest  uint64 // 一个请求的唯一标识, Next key to use in connRequests.
 	numOpen      int    // 已打开的连接数量 number of opened and pending open connections
@@ -420,13 +420,13 @@ type DB struct {
 	// goroutine to exit.
 	openerCh     chan struct{}          // 缓冲chan, 收到消息就建立新的连接
 	closed       bool                   // 标记客户端已关闭
-	dep          map[finalCloser]depSet //添加关闭依赖, 只有依赖都被移除, 为空才能关闭
+	dep          map[finalCloser]depSet // 添加关闭依赖, 只有依赖都被移除, 为空才能关闭
 	lastPut      map[*driverConn]string // stacktrace of last conn's put; debug only
 	maxIdleCount int                    // 函数maxIdleConnsLocked() 里定义 0 是默认一个大小, 负数才代表0 zero means defaultMaxIdleConns; negative means 0
 	maxOpen      int                    // 最大网络连接的数量, <= 0 means unlimited不限制
 	maxLifetime  time.Duration          // 小于此时间才能被重用 maximum amount of time a connection may be reused
 	maxIdleTime  time.Duration          // 空闲超过此时间会被主动关闭 maximum amount of time a connection may be idle before being closed
-	cleanerCh    chan struct{}          //通知主动清理连接
+	cleanerCh    chan struct{}          // 通知主动清理连接
 
 	// DBStats 里的统计值
 	waitCount         int64 // Total number of connections waited for.
@@ -453,10 +453,10 @@ const (
 // (including any calls onto interfaces returned via that Conn, such as calls on Tx, Stmt, Result, Rows)
 type driverConn struct {
 	db        *DB
-	createdAt time.Time //建立连接的时间
+	createdAt time.Time // 建立连接的时间
 
 	sync.Mutex              // guards following
-	ci          driver.Conn //封装的 tcp 网络连接
+	ci          driver.Conn // 封装的 tcp 网络连接
 	needReset   bool        // The connection session should be reset before use if true.
 	closed      bool
 	finalClosed bool // ci.Close has been called
@@ -469,7 +469,7 @@ type driverConn struct {
 	dbmuClosed bool      // same as closed, but guarded by db.mu, for removeClosedStmtLocked
 }
 
-//释放连接到空闲池
+// 释放连接到空闲池
 func (dc *driverConn) releaseConn(err error) {
 	dc.db.putConn(dc, err, true)
 }
@@ -701,7 +701,7 @@ type dsnConnector struct {
 	driver driver.Driver
 }
 
-//使用驱动创建 到数据库的网络连接
+// 使用驱动创建 到数据库的网络连接
 func (t dsnConnector) Connect(_ context.Context) (driver.Conn, error) {
 	return t.driver.Open(t.dsn)
 }
@@ -737,7 +737,7 @@ func OpenDB(c driver.Connector) *DB {
 		stop:         cancel,
 	}
 
-	//负责根据开连接的chan读取消息,创建新的连接
+	// 负责根据开连接的chan读取消息,创建新的连接
 	go db.connectionOpener(ctx)
 
 	return db
@@ -769,7 +769,7 @@ func f(driverName, dataSourceName string) (*DB, error) {
 	}
 
 	if driverCtx, ok := driveri.(driver.DriverContext); ok {
-		//带上下文的驱动, go-sql-driver/mysql 是带上下文的驱动
+		// 带上下文的驱动, go-sql-driver/mysql 是带上下文的驱动
 		connector, err := driverCtx.OpenConnector(dataSourceName)
 		if err != nil {
 			return nil, err
@@ -777,7 +777,7 @@ func f(driverName, dataSourceName string) (*DB, error) {
 		return OpenDB(connector), nil
 	}
 
-	//不带上下文
+	// 不带上下文
 	return OpenDB(dsnConnector{dsn: dataSourceName, driver: driveri}), nil
 }
 
@@ -799,7 +799,7 @@ func (db *DB) PingContext(ctx context.Context) error {
 	var err error
 
 	for i := 0; i < maxBadConnRetries; i++ {
-		//建立连接
+		// 建立连接
 		dc, err = db.conn(ctx, cachedOrNewConn)
 		if err != driver.ErrBadConn {
 			break
@@ -844,10 +844,10 @@ func (db *DB) Close() error {
 	fns := make([]func() error, 0, len(db.freeConn))
 
 	for _, dc := range db.freeConn {
-		//保存关闭函数
+		// 保存关闭函数
 		fns = append(fns, dc.closeDBLocked())
 	}
-	//删除所有空闲连接
+	// 删除所有空闲连接
 	db.freeConn = nil
 
 	//
@@ -859,7 +859,7 @@ func (db *DB) Close() error {
 
 	db.mu.Unlock()
 	for _, fn := range fns {
-		//正式关闭连接
+		// 正式关闭连接
 		err1 := fn()
 		if err1 != nil {
 			err = err1
@@ -870,7 +870,7 @@ func (db *DB) Close() error {
 	return err
 }
 
-//默认空闲连接2个
+// 默认空闲连接2个
 const defaultMaxIdleConns = 2
 
 func (db *DB) maxIdleConnsLocked() int {
@@ -1005,7 +1005,7 @@ func (db *DB) startCleanerLocked() {
 	}
 }
 
-//清理连接
+// 清理连接
 func (db *DB) connectionCleaner(d time.Duration) {
 	const minInterval = time.Second
 
@@ -1013,12 +1013,12 @@ func (db *DB) connectionCleaner(d time.Duration) {
 		d = minInterval
 	}
 
-	//定时器不是 ticker
+	// 定时器不是 ticker
 	t := time.NewTimer(d)
 
 	for {
 		select {
-		case <-t.C: //定时清理
+		case <-t.C: // 定时清理
 		case <-db.cleanerCh: // maxLifetime was changed or db was closed.
 		}
 
@@ -1034,7 +1034,7 @@ func (db *DB) connectionCleaner(d time.Duration) {
 		closing := db.connectionCleanerRunLocked()
 		db.mu.Unlock()
 
-		//全部关闭
+		// 全部关闭
 		for _, c := range closing {
 			c.Close()
 		}
@@ -1043,12 +1043,12 @@ func (db *DB) connectionCleaner(d time.Duration) {
 			d = minInterval
 		}
 
-		//重新设置超时时间,
+		// 重新设置超时时间,
 		t.Reset(d)
 	}
 }
 
-//算要关闭的连接
+// 算要关闭的连接
 func (db *DB) connectionCleanerRunLocked() (closing []*driverConn) {
 	if db.maxLifetime > 0 {
 		expiredSince := nowFunc().Add(-db.maxLifetime)
@@ -1235,15 +1235,15 @@ func (db *DB) conn(ctx context.Context, strategy connReuseStrategy) (*driverConn
 
 	// Prefer a free connection, if possible.
 	numFree := len(db.freeConn)
-	//使用缓存连接
+	// 使用缓存连接
 	if strategy == cachedOrNewConn && numFree > 0 {
 		conn := db.freeConn[0]
-		//为什么要拷贝, 不直接切片?
+		// 为什么要拷贝, 不直接切片?
 		copy(db.freeConn, db.freeConn[1:])
 		db.freeConn = db.freeConn[:numFree-1]
 
 		conn.inUse = true
-		//是否过期
+		// 是否过期
 		if conn.expired(lifetime) {
 			db.maxLifetimeClosed++
 			db.mu.Unlock()
@@ -1288,14 +1288,14 @@ func (db *DB) conn(ctx context.Context, strategy connReuseStrategy) (*driverConn
 
 			select {
 			default:
-			case ret, ok := <-req: //同时判断两个 channel
+			case ret, ok := <-req: // 同时判断两个 channel
 				if ok && ret.conn != nil {
-					//放回池子
+					// 放回池子
 					db.putConn(ret.conn, ret.err, false)
 				}
 			}
 			return nil, ctx.Err()
-		case ret, ok := <-req: //在请求中拿到了可用的连接
+		case ret, ok := <-req: // 在请求中拿到了可用的连接
 			atomic.AddInt64(&db.waitDuration, int64(time.Since(waitStart)))
 
 			if !ok {
@@ -1330,7 +1330,7 @@ func (db *DB) conn(ctx context.Context, strategy connReuseStrategy) (*driverConn
 	db.numOpen++ // optimistically
 	db.mu.Unlock()
 
-	//建立网络连接
+	// 建立网络连接
 	// 用的是 mysql 驱动里的连接器
 	ci, err := db.connector.Connect(ctx)
 	if err != nil {
@@ -1343,7 +1343,7 @@ func (db *DB) conn(ctx context.Context, strategy connReuseStrategy) (*driverConn
 
 	db.mu.Lock()
 
-	//封装
+	// 封装
 	dc := &driverConn{
 		db:         db,
 		createdAt:  nowFunc(),
@@ -1431,7 +1431,7 @@ func (db *DB) putConn(dc *driverConn, err error, resetSession bool) {
 	added := db.putConnDBLocked(dc, nil)
 	db.mu.Unlock()
 
-	//不能放要直接关闭
+	// 不能放要直接关闭
 	if !added {
 		dc.Close()
 		return
@@ -1464,7 +1464,7 @@ func (db *DB) putConnDBLocked(dc *driverConn, err error) bool {
 		if err == nil {
 			dc.inUse = true
 		}
-		//直接给其他需要连接的
+		// 直接给其他需要连接的
 		req <- connRequest{
 			conn: dc,
 			err:  err,
@@ -1472,7 +1472,7 @@ func (db *DB) putConnDBLocked(dc *driverConn, err error) bool {
 		return true
 	} else if err == nil && !db.closed {
 		if db.maxIdleConnsLocked() > len(db.freeConn) {
-			//放到连接池
+			// 放到连接池
 			db.freeConn = append(db.freeConn, dc)
 			db.startCleanerLocked()
 			return true
@@ -1627,7 +1627,7 @@ func (db *DB) execDC(ctx context.Context, dc *driverConn, release func(error), q
 
 	var si driver.Stmt
 	withLock(dc, func() {
-		//为什么还要 prepare 一下?
+		// 为什么还要 prepare 一下?
 		si, err = ctxDriverPrepare(ctx, dc.ci, query)
 	})
 	if err != nil {
@@ -2815,7 +2815,7 @@ func (s *Stmt) finalClose() error {
 // Use Next to advance from row to row.
 type Rows struct {
 	dc          *driverConn // owned; must call releaseConn when closed to release
-	releaseConn func(error) //回调
+	releaseConn func(error) // 回调
 	rowsi       driver.Rows //
 	cancel      func()      // called when Rows is closed, may be nil.
 	closeStmt   *driverStmt // if non-nil, statement to Close on close
@@ -3269,7 +3269,7 @@ func (r *Row) Scan(dest ...interface{}) error {
 			return errors.New("sql: RawBytes isn't allowed on Row.Scan")
 		}
 	}
-	//只扫描一行
+	// 只扫描一行
 	if !r.rows.Next() {
 		if err := r.rows.Err(); err != nil {
 			return err

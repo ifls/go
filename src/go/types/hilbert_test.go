@@ -12,10 +12,9 @@ import (
 	"go/importer"
 	"go/parser"
 	"go/token"
+	. "go/types"
 	"io/ioutil"
 	"testing"
-
-	. "go/types"
 )
 
 var (

@@ -12,12 +12,11 @@ import (
 	"go/ast"
 	"go/importer"
 	"go/parser"
+	. "go/types"
 	"internal/testenv"
 	"sort"
 	"strings"
 	"testing"
-
-	. "go/types"
 )
 
 func mustParse(t *testing.T, src string) *ast.File {

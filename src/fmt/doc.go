@@ -9,7 +9,7 @@
 *************	Printing
 	The verbs:
 	General:
-		%v	the value in a default format 打印默认值
+		%v	the value in a default format 打印 值的默认格式
 			when printing structs, the plus flag (%+v) adds field names 结构体使用 %+v, 会额外打印字段名
 		%#v	a Go-syntax representation of the value go语法风格的表示
 		%T	a Go-syntax representation of the type of the value 打印类型

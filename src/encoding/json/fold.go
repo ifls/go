@@ -10,9 +10,9 @@ import (
 )
 
 const (
-	caseMask     = ^byte(0x20) // Mask to ignore case in ASCII.
-	kelvin       = '\u212a'
-	smallLongEss = '\u017f'
+	caseMask     = ^byte(0x20) // Mask to ignore case in ASCII.  A 0x41 0100 0001 a 0x61 0110 0001  小写转大写
+	kelvin       = '\u212a'    // [K]                             Z 0x5A 0101 1010 z 0x7A 0111 1010
+	smallLongEss = '\u017f'    // [ſ]                    1101 1111
 )
 
 // foldFunc returns one of four different case folding equivalence

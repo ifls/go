@@ -17,7 +17,7 @@ type Block interface {
 	BlockSize() int
 
 	// Encrypt encrypts the first block in src into dst.
-	// Dst and src must overlap entirely or not at all.
+	// Dst and src must overlap entirely or not at all. 可以指向同一块地址, 或者是完全不重叠的内存
 	Encrypt(dst, src []byte)
 
 	// Decrypt decrypts the first block in src into dst.
@@ -28,15 +28,16 @@ type Block interface {
 // A Stream represents a stream cipher.
 type Stream interface {
 	// XORKeyStream XORs each byte in the given slice with a byte from the
-	// cipher's key stream. Dst and src must overlap entirely or not at all.
+	// cipher's key stream.
+	// Dst and src must overlap entirely or not at all.
 	//
 	// If len(dst) < len(src), XORKeyStream should panic. It is acceptable
 	// to pass a dst bigger than src, and in that case, XORKeyStream will
 	// only update dst[:len(src)] and will not touch the rest of dst.
 	//
-	// Multiple calls to XORKeyStream behave as if the concatenation of
-	// the src buffers was passed in a single run. That is, Stream
-	// maintains state and does not reset at each XORKeyStream call.
+	// Multiple calls to XORKeyStream behave as if the concatenation关联 of the src buffers was passed in a single run.
+	// That is, Stream maintains state and does not reset at each XORKeyStream call.
+	// key和src的字节, 不断异或, 单字节单字节加密
 	XORKeyStream(dst, src []byte)
 }
 
@@ -47,7 +48,8 @@ type BlockMode interface {
 	BlockSize() int
 
 	// CryptBlocks encrypts or decrypts a number of blocks. The length of
-	// src must be a multiple of the block size. Dst and src must overlap
+	// src must be a multiple of the block size. src的大小必须是块大小的整数倍
+	// Dst and src must overlap
 	// entirely or not at all.
 	//
 	// If len(dst) < len(src), CryptBlocks should panic. It is acceptable

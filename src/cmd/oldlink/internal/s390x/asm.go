@@ -466,7 +466,7 @@ func addpltsym(ctxt *ld.Link, s *sym.Symbol) {
 		plt.AddUint8(0xf4)
 
 		plt.AddUint32(ctxt.Arch, uint32(-((plt.Size - 2) >> 1))) // roll-your-own relocation
-		//.plt index
+		// .plt index
 		plt.AddUint32(ctxt.Arch, uint32(rela.Size)) // rela size before current entry
 
 		// rela

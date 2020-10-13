@@ -135,7 +135,7 @@ type Context interface {
 	// 		return u, ok
 	// 	}
 	Value(key interface{}) interface{}
-	//重复 WithValue() 根据具体实现，可以获取多个值
+	// 重复 WithValue() 根据具体实现，可以获取多个值
 }
 
 // Canceled is the error returned by Context.Err when the context is canceled.
@@ -220,7 +220,7 @@ func WithCancel(parent Context) (ctx Context, cancel CancelFunc) {
 	}
 	c := newCancelCtx(parent)
 	propagateCancel(parent, &c)
-	//子节点主动移除自己，父节点不会统一移除
+	// 子节点主动移除自己，父节点不会统一移除
 	return &c, func() { c.cancel(true, Canceled) }
 }
 
@@ -233,7 +233,7 @@ func newCancelCtx(parent Context) cancelCtx {
 var goroutines int32
 
 // propagateCancel arranges for child to be canceled when parent is.
-//构造父子节点上的取消关系
+// 构造父子节点上的取消关系
 func propagateCancel(parent Context, child canceler) {
 	done := parent.Done()
 	if done == nil {
@@ -257,13 +257,13 @@ func propagateCancel(parent Context, child canceler) {
 			if p.children == nil {
 				p.children = make(map[canceler]struct{})
 			}
-			//记录子节点
+			// 记录子节点
 			p.children[child] = struct{}{}
 		}
 		p.mu.Unlock()
 	} else {
 		atomic.AddInt32(&goroutines, +1)
-		//创建协程，监听取消消息
+		// 创建协程，监听取消消息
 		go func() {
 			select {
 			case <-parent.Done():
@@ -284,19 +284,19 @@ var cancelCtxKey int
 // (If not, the *cancelCtx has been wrapped in a custom implementation providing a different done channel, in which case we should not bypass it.)
 func parentCancelCtx(parent Context) (*cancelCtx, bool) {
 	done := parent.Done()
-	//已取消
+	// 已取消
 	if done == closedchan || done == nil {
 		return nil, false
 	}
 
-	//拿 cancelContext
+	// 拿 cancelContext
 	p, ok := parent.Value(&cancelCtxKey).(*cancelCtx)
 	if !ok {
 		return nil, false
 	}
 
 	p.mu.Lock()
-	//只有父节点就是cancelCtx才行
+	// 只有父节点就是cancelCtx才行
 	ok = p.done == done
 	p.mu.Unlock()
 	if !ok {
@@ -345,17 +345,17 @@ type cancelCtx struct {
 }
 
 func (c *cancelCtx) Value(key interface{}) interface{} {
-	//用于查找cancel上下文
+	// 用于查找cancel上下文
 	if key == &cancelCtxKey {
 		return c
 	}
-	//递归向上
+	// 递归向上
 	return c.Context.Value(key)
 }
 
 func (c *cancelCtx) Done() <-chan struct{} {
 	c.mu.Lock()
-	//lazyInit
+	// lazyInit
 	if c.done == nil {
 		c.done = make(chan struct{})
 	}
@@ -401,7 +401,7 @@ func (c *cancelCtx) cancel(removeFromParent bool, err error) {
 	// 取消需要一个错误作为理由
 	c.err = err
 	if c.done == nil {
-		//不需要new一个再close, 全局变量, 全局复用
+		// 不需要new一个再close, 全局变量, 全局复用
 		c.done = closedchan
 	} else {
 		close(c.done)
@@ -409,14 +409,14 @@ func (c *cancelCtx) cancel(removeFromParent bool, err error) {
 
 	for child := range c.children {
 		// NOTE: acquiring the child's lock while holding parent's lock.
-		//不需要子节点一个一个移出自己
+		// 不需要子节点一个一个移出自己
 		child.cancel(false, err)
 	}
-	//统一移出子节点
+	// 统一移出子节点
 	c.children = nil
 	c.mu.Unlock()
 
-	//移除
+	// 移除
 	if removeFromParent {
 		removeChild(c.Context, c)
 	}
@@ -436,7 +436,7 @@ func WithDeadline(parent Context, d time.Time) (Context, CancelFunc) {
 		panic("cannot create context from nil parent")
 	}
 
-	//父节点更早，无需子节点的超时控制
+	// 父节点更早，无需子节点的超时控制
 	if cur, ok := parent.Deadline(); ok && cur.Before(d) {
 		// The current deadline is already sooner than the new one.
 		return WithCancel(parent)
@@ -448,10 +448,10 @@ func WithDeadline(parent Context, d time.Time) (Context, CancelFunc) {
 	}
 
 	propagateCancel(parent, c)
-	//时长
+	// 时长
 	dur := time.Until(d)
 	if dur <= 0 {
-		//已经超时，直接取消
+		// 已经超时，直接取消
 		c.cancel(true, DeadlineExceeded) // deadline has already passed
 		return c, func() { c.cancel(false, Canceled) }
 	}
@@ -459,7 +459,7 @@ func WithDeadline(parent Context, d time.Time) (Context, CancelFunc) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.err == nil {
-		//超时函数就是取消
+		// 超时函数就是取消
 		c.timer = time.AfterFunc(dur, func() {
 			c.cancel(true, DeadlineExceeded)
 		})
@@ -471,8 +471,8 @@ func WithDeadline(parent Context, d time.Time) (Context, CancelFunc) {
 // It embeds a cancelCtx 内嵌 取消上下文 to implement Done and Err.
 // It implements cancel by stopping its timer then delegating委托 to cancelCtx.cancel.
 type timerCtx struct {
-	cancelCtx		//带取消
-	timer *time.Timer // Under cancelCtx.mu.
+	cancelCtx             // 带取消
+	timer     *time.Timer // Under cancelCtx.mu.
 
 	deadline time.Time
 }
@@ -495,7 +495,7 @@ func (c *timerCtx) cancel(removeFromParent bool, err error) {
 	}
 	c.mu.Lock()
 	if c.timer != nil {
-		//停止定时器
+		// 停止定时器
 		c.timer.Stop()
 		c.timer = nil
 	}
@@ -572,6 +572,6 @@ func (c *valueCtx) Value(key interface{}) interface{} {
 	if c.key == key {
 		return c.val
 	}
-	//递归访问父context的value
+	// 递归访问父context的value
 	return c.Context.Value(key)
 }

@@ -37,22 +37,28 @@ const (
 )
 
 const (
-	maxPlaintext       = 16384        // maximum plaintext payload length
+	maxPlaintext       = 16384        // 0x4000 maximum plaintext payload length
 	maxCiphertext      = 16384 + 2048 // maximum ciphertext payload length
 	maxCiphertextTLS13 = 16384 + 256  // maximum ciphertext length in TLS 1.3
-	recordHeaderLen    = 5            // record header length
-	maxHandshake       = 65536        // maximum handshake we support (protocol max is 16 MB)
-	maxUselessRecords  = 16           // maximum number of consecutive non-advancing records
+
+	recordHeaderLen = 5 // record header length 头部5字节, 1Btype, 2Bversion, 2Blength
+
+	maxHandshake      = 65536 // maximum handshake we support (protocol max is 16 MB)
+	maxUselessRecords = 16    // maximum number of consecutive non-advancing records
 )
 
 // TLS record types.
 type recordType uint8
 
 const (
+	// 改变加密方式
 	recordTypeChangeCipherSpec recordType = 20
-	recordTypeAlert            recordType = 21
-	recordTypeHandshake        recordType = 22
-	recordTypeApplicationData  recordType = 23
+	// 警报
+	recordTypeAlert recordType = 21
+	// 握手
+	recordTypeHandshake recordType = 22
+	// 上层数据
+	recordTypeApplicationData recordType = 23
 )
 
 // TLS handshake message types.

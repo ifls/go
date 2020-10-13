@@ -89,10 +89,10 @@ func New(n int) *Ring {
 // The result points to the element following the last element of s after insertion.
 //
 func (r *Ring) Link(s *Ring) *Ring {
-	//r头
+	// r头
 	n := r.Next()
 	if s != nil {
-		//s尾
+		// s尾
 		p := s.Prev()
 		// Note: Cannot use multiple assignment because
 		// evaluation order of LHS is not specified.

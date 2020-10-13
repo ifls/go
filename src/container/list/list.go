@@ -109,10 +109,10 @@ func (l *List) insertValue(v interface{}, at *Element) *Element {
 
 // remove removes e from its list, decrements l.len, and returns e.
 func (l *List) remove(e *Element) *Element {
-	//摘除
+	// 摘除
 	e.prev.next = e.next
 	e.next.prev = e.prev
-	//reset
+	// reset
 	e.next = nil // avoid memory leaks
 	e.prev = nil // avoid memory leaks
 	e.list = nil
@@ -125,11 +125,11 @@ func (l *List) move(e, at *Element) *Element {
 	if e == at {
 		return e
 	}
-	//摘除
+	// 摘除
 	e.prev.next = e.next
 	e.next.prev = e.prev
 
-	//插入到at之后
+	// 插入到at之后
 	e.prev = at
 	e.next = at.next
 	e.prev.next = e

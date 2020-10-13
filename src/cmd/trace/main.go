@@ -15,12 +15,11 @@ import (
 	"log"
 	"net"
 	"net/http"
+	_ "net/http/pprof" // Required to use pprof
 	"os"
 	"runtime"
 	"runtime/debug"
 	"sync"
-
-	_ "net/http/pprof" // Required to use pprof
 )
 
 const usageMessage = "" +

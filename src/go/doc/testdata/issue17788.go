@@ -4,5 +4,5 @@
 
 package issue17788
 
-func ( /* receiver type */ ) f0() {
+func ( /* receiver type */) f0() {
 }

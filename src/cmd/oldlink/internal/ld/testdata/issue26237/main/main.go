@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
-
 	b "cmd/oldlink/internal/ld/testdata/issue26237/b.dir"
+	"fmt"
 )
 
 var skyx int

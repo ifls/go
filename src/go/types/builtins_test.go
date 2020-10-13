@@ -9,9 +9,8 @@ import (
 	"go/ast"
 	"go/importer"
 	"go/parser"
-	"testing"
-
 	. "go/types"
+	"testing"
 )
 
 var builtinCalls = []struct {

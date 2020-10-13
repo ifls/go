@@ -65,9 +65,12 @@ func (hs *serverHandshakeStateTLS13) handshake() error {
 	// Note that at this point we could start sending application data without
 	// waiting for the client's second flight, but the application might not
 	// expect the lack of replay protection of the ClientHello parameters.
+	// 发送服务器证书
 	if _, err := c.flush(); err != nil {
 		return err
 	}
+
+	// 读客户端证书
 	if err := hs.readClientCertificate(); err != nil {
 		return err
 	}
@@ -75,6 +78,7 @@ func (hs *serverHandshakeStateTLS13) handshake() error {
 		return err
 	}
 
+	// 标记握手成功
 	atomic.StoreUint32(&c.handshakeStatus, 1)
 
 	return nil

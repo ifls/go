@@ -15,6 +15,7 @@ import (
 	"go/parser"
 	"go/scanner"
 	"go/token"
+	. "go/types"
 	"internal/testenv"
 	"io/ioutil"
 	"os"
@@ -23,8 +24,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	. "go/types"
 )
 
 var (

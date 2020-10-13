@@ -37,6 +37,7 @@ type serverHandshakeState struct {
 
 // serverHandshake performs a TLS handshake as a server.
 func (c *Conn) serverHandshake() error {
+	// 读客户端hello
 	clientHello, err := c.readClientHello()
 	if err != nil {
 		return err
@@ -122,6 +123,7 @@ func (hs *serverHandshakeState) handshake() error {
 	}
 
 	c.ekm = ekmFromMasterSecret(c.vers, hs.suite, hs.masterSecret, hs.clientHello.random, hs.hello.random)
+	// // 标记握手成功
 	atomic.StoreUint32(&c.handshakeStatus, 1)
 
 	return nil

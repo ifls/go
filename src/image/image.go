@@ -960,7 +960,7 @@ func NewCMYK(r Rectangle) *CMYK {
 	}
 }
 
-// Paletted is an in-memory image of uint8 indices into a given palette.
+// Paletted is an in-memory image of uint8 indices into a given palette. 调色板
 type Paletted struct {
 	// Pix holds the image's pixels, as palette indices. The pixel at
 	// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*1].

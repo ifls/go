@@ -12,11 +12,10 @@ import (
 	"go/importer"
 	"go/parser"
 	"go/token"
+	. "go/types"
 	"internal/testenv"
 	"strings"
 	"testing"
-
-	. "go/types"
 )
 
 func testEval(t *testing.T, fset *token.FileSet, pkg *Package, pos token.Pos, expr string, typ Type, typStr, valStr string) {

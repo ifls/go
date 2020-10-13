@@ -2,7 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package adler32 implements the Adler-32 checksum.
+// Package adler32 implements the Adler-32 checksum. 校验和, crc是一种形式的校验和, 校验和一定是一个hash码, 验证数据完整性, 检测数据损坏, 保证数据一致,
+// 添加校验和, 等于双重保证, 99% * 99% = 99.99% * 99.99% = 99.999999% 足够了, 无法保证100%
 //
 // It is defined in RFC 1950:
 //	Adler-32 is composed of two sums accumulated per byte: s1 is

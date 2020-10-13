@@ -3,10 +3,10 @@
 // license that can be found in the LICENSE file.
 
 /*
-Package hmac implements the Keyed-Hash Message Authentication Code (HMAC) as
+Package hmac implements the Keyed-Hash Message Authentication认证 Code (HMAC) as 密钥散列消息认证码
 defined in U.S. Federal Information Processing Standards Publication 198.
-An HMAC is a cryptographic hash that uses a key to sign a message.
-The receiver verifies the hash by recomputing it using the same key.
+An HMAC is a cryptographic hash加密哈希 that uses a key to sign a message. 使用key签名一段消息
+The receiver verifies the hash by recomputing it using the same key. 消息认证码是对消息进行认证并确认其完整性的技术
 
 Receivers should be careful to use Equal to compare MACs in order to avoid
 timing side-channels:

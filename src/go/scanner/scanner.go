@@ -161,7 +161,7 @@ func (s *Scanner) scanComment() string {
 	numCR := 0
 
 	if s.ch == '/' {
-		//-style comment
+		// -style comment
 		// (the final '\n' is not considered part of the comment)
 		s.next()
 		for s.ch != '\n' && s.ch >= 0 {
@@ -309,7 +309,7 @@ func (s *Scanner) findLineEnd() bool {
 	// read ahead until a newline, EOF, or non-comment token is found
 	for s.ch == '/' || s.ch == '*' {
 		if s.ch == '/' {
-			//-style comment always contains a newline
+			// -style comment always contains a newline
 			return true
 		}
 		/*-style comment: look for newline */

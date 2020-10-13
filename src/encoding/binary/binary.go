@@ -66,8 +66,8 @@ func (littleEndian) Uint32(b []byte) uint32 {
 }
 
 func (littleEndian) PutUint32(b []byte, v uint32) {
-	_ = b[3] // early bounds check to guarantee safety of writes below
-	b[0] = byte(v)		//低地址保存最小位的数
+	_ = b[3]       // early bounds check to guarantee safety of writes below
+	b[0] = byte(v) // 低地址保存最小位的数
 	b[1] = byte(v >> 8)
 	b[2] = byte(v >> 16)
 	b[3] = byte(v >> 24)

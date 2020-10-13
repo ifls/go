@@ -224,7 +224,7 @@ type encoder struct {
 	buf [16]byte
 	// bits and nBits are accumulated bits to write to w.
 	bits, nBits uint32
-	// quant is the scaled quantization tables, in zig-zag order.
+	// quant is the scaled quantization tables, in zig-zag 之字形 order.
 	quant [nQuantIndex][blockSize]byte
 }
 
@@ -305,8 +305,8 @@ func (e *encoder) writeMarkerHeader(marker uint8, markerlen int) {
 func (e *encoder) writeDQT() {
 	const markerlen = 2 + int(nQuantIndex)*(1+blockSize)
 	e.writeMarkerHeader(dqtMarker, markerlen)
-	for i := range e.quant {
-		e.writeByte(uint8(i))
+	for i := range e.quant { // [2][64]byte
+		e.writeByte(uint8(i)) // 0,1
 		e.write(e.quant[i][:])
 	}
 }
@@ -314,13 +314,18 @@ func (e *encoder) writeDQT() {
 // writeSOF0 writes the Start Of Frame (Baseline Sequential) marker.
 func (e *encoder) writeSOF0(size image.Point, nComponent int) {
 	markerlen := 8 + 3*nComponent
+	// 标记和长度
 	e.writeMarkerHeader(sof0Marker, markerlen)
-	e.buf[0] = 8 // 8-bit color.
+	e.buf[0] = 8 // 8-bit color. 精度
+	// 高度
 	e.buf[1] = uint8(size.Y >> 8)
 	e.buf[2] = uint8(size.Y & 0xff)
+	// 宽度
 	e.buf[3] = uint8(size.X >> 8)
 	e.buf[4] = uint8(size.X & 0xff)
+	// 颜色分量数
 	e.buf[5] = uint8(nComponent)
+	// 颜色分量信息
 	if nComponent == 1 {
 		e.buf[6] = 1
 		// No subsampling for grayscale image.
@@ -348,7 +353,9 @@ func (e *encoder) writeDHT(nComponent int) {
 	for _, s := range specs {
 		markerlen += 1 + 16 + len(s.value)
 	}
+
 	e.writeMarkerHeader(dhtMarker, markerlen)
+	// 写入huffman树
 	for i, s := range specs {
 		e.writeByte("\x00\x10\x01\x11"[i])
 		e.write(s.count[:])
@@ -572,17 +579,20 @@ type Options struct {
 
 // Encode writes the Image m to w in JPEG 4:2:0 baseline format with the given
 // options. Default parameters are used if a nil *Options is passed.
+// 先了解生成, 再了解读
 func Encode(w io.Writer, m image.Image, o *Options) error {
 	b := m.Bounds()
-	if b.Dx() >= 1<<16 || b.Dy() >= 1<<16 {
+	if b.Dx() >= 1<<16 || b.Dy() >= 1<<16 { // Dx宽, Dy高
 		return errors.New("jpeg: image is too large to encode")
 	}
+
 	var e encoder
 	if ww, ok := w.(writer); ok {
 		e.w = ww
 	} else {
 		e.w = bufio.NewWriter(w)
 	}
+
 	// Clip quality to [1, 100].
 	quality := DefaultQuality
 	if o != nil {
@@ -624,6 +634,7 @@ func Encode(w io.Writer, m image.Image, o *Options) error {
 	e.buf[0] = 0xff
 	e.buf[1] = 0xd8
 	e.write(e.buf[:2])
+
 	// Write the quantization tables.
 	e.writeDQT()
 	// Write the image dimensions.
@@ -632,6 +643,7 @@ func Encode(w io.Writer, m image.Image, o *Options) error {
 	e.writeDHT(nComponent)
 	// Write the image data.
 	e.writeSOS(m)
+
 	// Write the End Of Image marker.
 	e.buf[0] = 0xff
 	e.buf[1] = 0xd9

@@ -6,7 +6,6 @@ package x509
 
 import (
 	"bytes"
-	"crypto/x509/internal/macOS"
 	"fmt"
 	"os"
 	"strings"

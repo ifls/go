@@ -6,9 +6,8 @@ package types_test
 
 import (
 	"go/parser"
-	"testing"
-
 	. "go/types"
+	"testing"
 )
 
 var testExprs = []testEntry{

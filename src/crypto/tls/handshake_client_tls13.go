@@ -82,6 +82,7 @@ func (hs *clientHandshakeStateTLS13) handshake() error {
 	if err := hs.readServerParameters(); err != nil {
 		return err
 	}
+	// 读服务器证书
 	if err := hs.readServerCertificate(); err != nil {
 		return err
 	}
@@ -94,10 +95,12 @@ func (hs *clientHandshakeStateTLS13) handshake() error {
 	if err := hs.sendClientFinished(); err != nil {
 		return err
 	}
+	// 发送客户端证书到网卡
 	if _, err := c.flush(); err != nil {
 		return err
 	}
 
+	// 标记握手成功
 	atomic.StoreUint32(&c.handshakeStatus, 1)
 
 	return nil

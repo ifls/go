@@ -18,7 +18,7 @@ func Errorf(format string, a ...interface{}) error {
 	p.wrapErrs = true
 	p.doPrintf(format, a)
 	s := string(p.buf)
-	//以err作为返回值
+	// 以err作为返回值
 	var err error
 	if p.wrappedErr == nil {
 		err = errors.New(s)

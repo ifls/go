@@ -156,12 +156,14 @@ import (
 // an error.
 //
 func Marshal(v interface{}) ([]byte, error) {
+	// 状态机对象
 	e := newEncodeState()
 
 	err := e.marshal(v, encOpts{escapeHTML: true})
 	if err != nil {
 		return nil, err
 	}
+	// clone的效果
 	buf := append([]byte(nil), e.Bytes()...)
 
 	encodeStatePool.Put(e)
@@ -376,6 +378,7 @@ func valueEncoder(v reflect.Value) encoderFunc {
 	return typeEncoder(v.Type())
 }
 
+// 返回一个指定类型 json格式编码函数
 func typeEncoder(t reflect.Type) encoderFunc {
 	if fi, ok := encoderCache.Load(t); ok {
 		return fi.(encoderFunc)
@@ -399,6 +402,7 @@ func typeEncoder(t reflect.Type) encoderFunc {
 	}
 
 	// Compute the real encoder and replace the indirect func with it.
+	// 找编码函数
 	f = newTypeEncoder(t, true)
 	wg.Done()
 	encoderCache.Store(t, f)
@@ -417,19 +421,27 @@ func newTypeEncoder(t reflect.Type, allowAddr bool) encoderFunc {
 	// Marshaler with a value receiver, then we're better off taking
 	// the address of the value - otherwise we end up with an
 	// allocation as we cast the value to an interface.
+	// 自定义 json序列化函数
+	// 指针 MarshalJSON
 	if t.Kind() != reflect.Ptr && allowAddr && reflect.PtrTo(t).Implements(marshalerType) {
 		return newCondAddrEncoder(addrMarshalerEncoder, newTypeEncoder(t, false))
 	}
+	// 非指针 MarshalJSON
 	if t.Implements(marshalerType) {
 		return marshalerEncoder
 	}
+
+	// 指针 MarshalText
 	if t.Kind() != reflect.Ptr && allowAddr && reflect.PtrTo(t).Implements(textMarshalerType) {
 		return newCondAddrEncoder(addrTextMarshalerEncoder, newTypeEncoder(t, false))
 	}
+
+	// 非指针 MarshalText
 	if t.Implements(textMarshalerType) {
 		return textMarshalerEncoder
 	}
 
+	// 默认序列化函数
 	switch t.Kind() {
 	case reflect.Bool:
 		return boolEncoder
@@ -443,7 +455,7 @@ func newTypeEncoder(t reflect.Type, allowAddr bool) encoderFunc {
 		return float64Encoder
 	case reflect.String:
 		return stringEncoder
-	case reflect.Interface:
+	case reflect.Interface: // 递归调用 reflectValue
 		return interfaceEncoder
 	case reflect.Struct:
 		return newStructEncoder(t)
@@ -455,7 +467,7 @@ func newTypeEncoder(t reflect.Type, allowAddr bool) encoderFunc {
 		return newArrayEncoder(t)
 	case reflect.Ptr:
 		return newPtrEncoder(t)
-	default:
+	default: // chan, func, 不支持
 		return unsupportedTypeEncoder
 	}
 }
@@ -464,6 +476,7 @@ func invalidValueEncoder(e *encodeState, v reflect.Value, _ encOpts) {
 	e.WriteString("null")
 }
 
+// 非指针
 func marshalerEncoder(e *encodeState, v reflect.Value, opts encOpts) {
 	if v.Kind() == reflect.Ptr && v.IsNil() {
 		e.WriteString("null")
@@ -484,6 +497,7 @@ func marshalerEncoder(e *encodeState, v reflect.Value, opts encOpts) {
 	}
 }
 
+// 指针
 func addrMarshalerEncoder(e *encodeState, v reflect.Value, opts encOpts) {
 	va := v.Addr()
 	if va.IsNil() {
@@ -634,6 +648,8 @@ func stringEncoder(e *encodeState, v reflect.Value, opts encOpts) {
 		}
 		return
 	}
+
+	// options string
 	if opts.quoted {
 		e2 := newEncodeState()
 		// Since we encode the string twice, we only need to escape HTML
@@ -756,6 +772,7 @@ FieldLoop:
 			e.WriteString(f.nameNonEsc)
 		}
 		opts.quoted = f.quoted
+		// 编码字段
 		f.encoder(e, fv, opts)
 	}
 	if next == '{' {
@@ -766,6 +783,7 @@ FieldLoop:
 }
 
 func newStructEncoder(t reflect.Type) encoderFunc {
+	// 指定各个字段的编码函数
 	se := structEncoder{fields: cachedTypeFields(t)}
 	return se.encode
 }
@@ -805,7 +823,7 @@ func (me mapEncoder) encode(e *encodeState, v reflect.Value, opts encOpts) {
 
 func newMapEncoder(t reflect.Type) encoderFunc {
 	switch t.Key().Kind() {
-	case reflect.String,
+	case reflect.String, // 基本类型
 		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 	default:
@@ -889,6 +907,7 @@ func (ae arrayEncoder) encode(e *encodeState, v reflect.Value, opts encOpts) {
 }
 
 func newArrayEncoder(t reflect.Type) encoderFunc {
+	// 根据elum 确定编码函数
 	enc := arrayEncoder{typeEncoder(t.Elem())}
 	return enc.encode
 }
@@ -1009,9 +1028,9 @@ func (e *encodeState) string(s string, escapeHTML bool) {
 			if start < i {
 				e.WriteString(s[start:i])
 			}
-			e.WriteByte('\\')
+			e.WriteByte('\\') // 写入 '\' "
 			switch b {
-			case '\\', '"':
+			case '\\', '"': // 写入 '"'  所以 有'\"'
 				e.WriteByte(b)
 			case '\n':
 				e.WriteByte('n')
@@ -1180,6 +1199,7 @@ func (x byIndex) Less(i, j int) bool {
 // typeFields returns a list of fields that JSON should recognize for the given type.
 // The algorithm is breadth-first search over the set of structs to include - the top struct
 // and then any reachable anonymous structs.
+// 给每个结构体字段, 计算编码函数
 func typeFields(t reflect.Type) structFields {
 	// Anonymous fields to explore at the current level and the next.
 	current := []field{}
@@ -1230,6 +1250,7 @@ func typeFields(t reflect.Type) structFields {
 				if tag == "-" {
 					continue
 				}
+				// 第一个是名字
 				name, opts := parseTag(tag)
 				if !isValidTag(name) {
 					name = ""
@@ -1352,6 +1373,7 @@ func typeFields(t reflect.Type) structFields {
 
 	for i := range fields {
 		f := &fields[i]
+		// 给每个字段, 计算 编码函数
 		f.encoder = typeEncoder(typeByIndex(t, f.index))
 	}
 	nameIndex := make(map[string]int, len(fields))
@@ -1384,6 +1406,7 @@ func cachedTypeFields(t reflect.Type) structFields {
 	if f, ok := fieldCache.Load(t); ok {
 		return f.(structFields)
 	}
+	// 计算编码函数
 	f, _ := fieldCache.LoadOrStore(t, typeFields(t))
 	return f.(structFields)
 }

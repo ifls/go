@@ -9,7 +9,7 @@ import (
 )
 
 // Compact appends to dst the JSON-encoded src with
-// insignificant space characters elided.
+// insignificant space characters elided. 和下面的Indent是反向操作
 func Compact(dst *bytes.Buffer, src []byte) error {
 	return compact(dst, src, false)
 }
@@ -78,6 +78,7 @@ func newline(dst *bytes.Buffer, prefix, indent string, depth int) {
 // at the end of src are preserved and copied to dst.
 // For example, if src has no trailing spaces, neither will dst;
 // if src ends in a trailing newline, so will dst.
+// 添加对齐换行,
 func Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error {
 	origLen := dst.Len()
 	scan := newScanner()

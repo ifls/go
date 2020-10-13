@@ -5,7 +5,6 @@
 package poll_test
 
 import (
-	. "internal/poll"
 	"math/rand"
 	"runtime"
 	"strings"

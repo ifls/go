@@ -2,17 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package dsa implements the Digital Signature Algorithm, as defined in FIPS 186-3.
+// Package dsa implements the Digital Signature Algorithm 数字签名算法, as defined in FIPS 186-3.
 //
 // The DSA operations in this package are not implemented using constant-time algorithms.
 package dsa
 
 import (
+	"crypto/internal/randutil"
 	"errors"
 	"io"
 	"math/big"
-
-	"crypto/internal/randutil"
 )
 
 // Parameters represents the domain parameters for a key. These parameters can
@@ -196,6 +195,7 @@ func fermatInverse(k, P *big.Int) *big.Int {
 //
 // Be aware that calling Sign with an attacker-controlled PrivateKey may
 // require an arbitrary amount of CPU.
+// 私钥签名
 func Sign(rand io.Reader, priv *PrivateKey, hash []byte) (r, s *big.Int, err error) {
 	randutil.MaybeReadByte(rand)
 
@@ -264,6 +264,7 @@ func Sign(rand io.Reader, priv *PrivateKey, hash []byte) (r, s *big.Int, err err
 // Note that FIPS 186-3 section 4.6 specifies that the hash should be truncated
 // to the byte-length of the subgroup. This function does not perform that
 // truncation itself.
+// 公钥验证
 func Verify(pub *PublicKey, hash []byte, r, s *big.Int) bool {
 	// FIPS 186-3, section 4.7
 

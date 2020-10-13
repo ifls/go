@@ -24,6 +24,7 @@ package rsa
 
 import (
 	"crypto"
+	"crypto/internal/randutil"
 	"crypto/rand"
 	"crypto/subtle"
 	"errors"
@@ -31,8 +32,6 @@ import (
 	"io"
 	"math"
 	"math/big"
-
-	"crypto/internal/randutil"
 )
 
 var bigZero = big.NewInt(0)
@@ -40,7 +39,7 @@ var bigOne = big.NewInt(1)
 
 // A PublicKey represents the public part of an RSA key.
 type PublicKey struct {
-	N *big.Int // modulus
+	N *big.Int // modulus 模数
 	E int      // public exponent
 }
 
@@ -50,7 +49,7 @@ type PublicKey struct {
 // Size returns the modulus size in bytes. Raw signatures and ciphertexts
 // for or by this public key will have the same size.
 func (pub *PublicKey) Size() int {
-	return (pub.N.BitLen() + 7) / 8
+	return (pub.N.BitLen() + 7) / 8 // 向上取整
 }
 
 // Equal reports whether pub and x have the same value.
@@ -238,6 +237,7 @@ func (priv *PrivateKey) Validate() error {
 
 // GenerateKey generates an RSA keypair of the given bit size using the
 // random source random (for example, crypto/rand.Reader).
+// 生成私钥和公钥
 func GenerateKey(random io.Reader, bits int) (*PrivateKey, error) {
 	return GenerateMultiPrimeKey(random, 2, bits)
 }
@@ -390,7 +390,7 @@ func encrypt(c *big.Int, pub *PublicKey, m *big.Int) *big.Int {
 	return c
 }
 
-// EncryptOAEP encrypts the given message with RSA-OAEP.
+// EncryptOAEP encrypts the given message with RSA-OAEP. 使用 RSA-OAEP加密算法加密
 //
 // OAEP is parameterised by a hash function that is used as a random oracle.
 // Encryption and decryption of a given message must use the same hash function

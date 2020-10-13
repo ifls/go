@@ -28,7 +28,7 @@ import (
 // the underlying io.Writer.  Any errors that occurred should
 // be checked by calling the Error method.
 type Writer struct {
-	Comma   rune // Field delimiter (set to ',' by NewWriter)
+	Comma   rune // Field delimiter 不一定是, (set to ',' by NewWriter)
 	UseCRLF bool // True to use \r\n as the line terminator
 	w       *bufio.Writer
 }
@@ -51,7 +51,7 @@ func (w *Writer) Write(record []string) error {
 	}
 
 	for n, field := range record {
-		if n > 0 {
+		if n > 0 { // 非第一个字段, 前面写入,
 			if _, err := w.w.WriteRune(w.Comma); err != nil {
 				return err
 			}
@@ -59,17 +59,17 @@ func (w *Writer) Write(record []string) error {
 
 		// If we don't have to have a quoted field then just
 		// write out the field and continue to the next field.
-		if !w.fieldNeedsQuotes(field) {
+		if !w.fieldNeedsQuotes(field) { // 不需要 ""
 			if _, err := w.w.WriteString(field); err != nil {
 				return err
 			}
-			continue
+			continue // 跳过
 		}
 
 		if err := w.w.WriteByte('"'); err != nil {
 			return err
 		}
-		for len(field) > 0 {
+		for len(field) > 0 { // "" 里需要处理转义,
 			// Search for special characters.
 			i := strings.IndexAny(field, "\"\r\n")
 			if i < 0 {

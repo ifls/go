@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package rc4 implements RC4 encryption, as defined in Bruce Schneier's
-// Applied Cryptography.
+// Applied Cryptography. 块加密算法
 //
 // RC4 is cryptographically broken and should not be used for secure
 // applications.

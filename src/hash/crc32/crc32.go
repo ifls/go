@@ -21,7 +21,7 @@ import (
 // The size of a CRC-32 checksum in bytes.
 const Size = 4
 
-// Predefined polynomials.
+// Predefined polynomials. 预定义的多项式
 const (
 	// IEEE is by far and away the most common CRC-32 polynomial.
 	// Used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
@@ -38,7 +38,7 @@ const (
 	Koopman = 0xeb31d82e
 )
 
-// Table is a 256-word table representing the polynomial for efficient processing.
+// Table is a 256-word table representing the polynomial for efficient processing. 有效处理
 type Table [256]uint32
 
 // This file makes use of functions implemented in architecture-specific files.

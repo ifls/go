@@ -98,6 +98,7 @@ func Unmarshal(data []byte, v interface{}) error {
 	// Avoids filling out half a data structure
 	// before discovering a JSON syntax error.
 	var d decodeState
+	// 验证, 符合json格式
 	err := checkValid(data, &d.scan)
 	if err != nil {
 		return err
@@ -169,7 +170,7 @@ func (e *InvalidUnmarshalError) Error() string {
 
 func (d *decodeState) unmarshal(v interface{}) error {
 	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+	if rv.Kind() != reflect.Ptr || rv.IsNil() { // 必须是指针类型
 		return &InvalidUnmarshalError{reflect.TypeOf(v)}
 	}
 
@@ -201,9 +202,9 @@ func (n Number) Int64() (int64, error) {
 
 // decodeState represents the state while decoding a JSON value.
 type decodeState struct {
-	data         []byte
-	off          int // next read offset in data
-	opcode       int // last read result
+	data         []byte // 保存原始数据
+	off          int    // 偏移 next read offset in data
+	opcode       int    // last read result
 	scan         scanner
 	errorContext struct { // provides context for type errors
 		Struct     reflect.Type
@@ -349,7 +350,7 @@ Switch:
 			}
 		}
 	case 't': // true
-		i += len("rue")
+		i += len("rue") // 比 += 3 易懂, len是编译优化, 和 += 3 性能一样
 	case 'f': // false
 		i += len("alse")
 	case 'n': // null
@@ -371,7 +372,7 @@ func (d *decodeState) value(v reflect.Value) error {
 	default:
 		panic(phasePanicMsg)
 
-	case scanBeginArray:
+	case scanBeginArray: // 数组开头[
 		if v.IsValid() {
 			if err := d.array(v); err != nil {
 				return err
@@ -381,7 +382,7 @@ func (d *decodeState) value(v reflect.Value) error {
 		}
 		d.scanNext()
 
-	case scanBeginObject:
+	case scanBeginObject: // 对象开头{
 		if v.IsValid() {
 			if err := d.object(v); err != nil {
 				return err
@@ -391,7 +392,7 @@ func (d *decodeState) value(v reflect.Value) error {
 		}
 		d.scanNext()
 
-	case scanBeginLiteral:
+	case scanBeginLiteral: // 常量, 普通类型
 		// All bytes inside literal return scanContinue op code.
 		start := d.readIndex()
 		d.rescanLiteral()
@@ -622,13 +623,14 @@ var textUnmarshalerType = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem(
 // object consumes an object from d.data[d.off-1:], decoding into v.
 // The first byte ('{') of the object has been read already.
 func (d *decodeState) object(v reflect.Value) error {
-	// Check for unmarshaler.
+	// Check for unmarshaler. 判断自定义反序列化
 	u, ut, pv := indirect(v, false)
 	if u != nil {
 		start := d.readIndex()
 		d.skip()
 		return u.UnmarshalJSON(d.data[start:d.off])
 	}
+
 	if ut != nil {
 		d.saveError(&UnmarshalTypeError{Value: "object", Type: v.Type(), Offset: int64(d.off)})
 		d.skip()
@@ -679,7 +681,7 @@ func (d *decodeState) object(v reflect.Value) error {
 
 	origErrorContext := d.errorContext
 
-	for {
+	for { //
 		// Read opening " of string key or closing }.
 		d.scanWhile(scanSkipSpace)
 		if d.opcode == scanEndObject {
@@ -692,6 +694,7 @@ func (d *decodeState) object(v reflect.Value) error {
 
 		// Read key.
 		start := d.readIndex()
+		// 扫描 字面值
 		d.rescanLiteral()
 		item := d.data[start:d.readIndex()]
 		key, ok := d.unquoteBytes(item)
@@ -884,7 +887,7 @@ var numberType = reflect.TypeOf(Number(""))
 func (d *decodeState) literalStore(item []byte, v reflect.Value, fromQuoted bool) error {
 	// Check for unmarshaler.
 	if len(item) == 0 {
-		//Empty string given
+		// Empty string given
 		d.saveError(fmt.Errorf("json: invalid use of ,string struct tag, trying to unmarshal %q into %v", item, v.Type()))
 		return nil
 	}

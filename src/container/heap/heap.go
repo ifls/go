@@ -38,7 +38,7 @@ type Interface interface {
 
 // The complexity is O(n) where n = h.Len().
 func Init(h Interface) {
-	//建立堆不变式
+	// 建立堆不变式
 	// heapify 从最后一个父节点开始下沉,
 	n := h.Len()
 	for i := n/2 - 1; i >= 0; i-- {
@@ -51,9 +51,9 @@ func Init(h Interface) {
 
 // The complexity is O(log n) where n = h.Len().
 func Push(h Interface, x interface{}) {
-	//放在最后
+	// 放在最后
 	h.Push(x)
-	//尝试上浮
+	// 尝试上浮
 	up(h, h.Len()-1)
 }
 
@@ -64,7 +64,7 @@ func Push(h Interface, x interface{}) {
 // Pop is equivalent to Remove(h, 0). 等价于 Remove(h, 0)
 func Pop(h Interface) interface{} {
 	n := h.Len() - 1
-	//交换到最后
+	// 交换到最后
 	h.Swap(0, n)
 	// [0, len-1) 之间下沉
 	down(h, 0, n)
@@ -76,13 +76,13 @@ func Pop(h Interface) interface{} {
 func Remove(h Interface, i int) interface{} {
 	n := h.Len() - 1
 	if n != i {
-		//i 与结尾交换
+		// i 与结尾交换
 		h.Swap(i, n)
 
-		//相当于h[i]上的元素被修改了，需要Fix
-		//下沉无效，尝试上浮
+		// 相当于h[i]上的元素被修改了，需要Fix
+		// 下沉无效，尝试上浮
 		if !down(h, i, n) {
-			//上浮
+			// 上浮
 			up(h, i)
 		}
 	}
@@ -96,7 +96,7 @@ func Remove(h Interface, i int) interface{} {
 
 // The complexity is O(log n) where n = h.Len().
 func Fix(h Interface, i int) {
-	//下沉无效，尝试上浮
+	// 下沉无效，尝试上浮
 	if !down(h, i, h.Len()) {
 		up(h, i)
 	}
@@ -109,26 +109,26 @@ func up(h Interface, j int) {
 			// i <= j 已满足条件，无需上浮
 			break
 		}
-		//与父节点交换
+		// 与父节点交换
 		h.Swap(i, j)
-		//在父节点继续进行下一轮交换判断
+		// 在父节点继续进行下一轮交换判断
 		j = i
 	}
 }
 
-//[i0, n)
+// [i0, n)
 func down(h Interface, i0, n int) bool {
 	i := i0
 	for {
-		j1 := 2*i + 1	//children left
+		j1 := 2*i + 1          // children left
 		if j1 >= n || j1 < 0 { // j1 < 0 after int overflow
-			//越界
+			// 越界
 			break
 		}
 
 		j := j1 // left child
 		if j2 := j1 + 1; j2 < n && h.Less(j2, j1) {
-			//取最小的
+			// 取最小的
 			j = j2 // = 2*i + 2  // right child
 		}
 
@@ -136,9 +136,9 @@ func down(h Interface, i0, n int) bool {
 			// i <= j 退出
 			break
 		}
-		//交换
+		// 交换
 		h.Swap(i, j)
-		//父节点继续
+		// 父节点继续
 		i = j
 	}
 	// 成功下沉

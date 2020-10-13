@@ -8,7 +8,7 @@ package poll
 
 import "syscall"
 
-//可以赋值不同函数, 用于测试
+// 可以赋值不同函数, 用于测试
 // CloseFunc is used to hook the close call.
 var CloseFunc func(int) error = syscall.Close
 

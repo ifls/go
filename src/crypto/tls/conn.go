@@ -150,7 +150,7 @@ func (c *Conn) SetWriteDeadline(t time.Time) error {
 	return c.conn.SetWriteDeadline(t)
 }
 
-// A halfConn represents one direction of the record layer
+// A halfConn represents one direction单向 of the record layer
 // connection, either sending or receiving.
 type halfConn struct {
 	sync.Mutex
@@ -322,6 +322,7 @@ type cbcMode interface {
 // this stage. The returned plaintext might overlap with the input.
 func (hc *halfConn) decrypt(record []byte) ([]byte, recordType, error) {
 	var plaintext []byte
+	// 1B type
 	typ := recordType(record[0])
 	payload := record[recordHeaderLen:]
 
@@ -421,6 +422,7 @@ func (hc *halfConn) decrypt(record []byte) ([]byte, recordType, error) {
 
 		n := len(payload) - macSize - paddingLen
 		n = subtle.ConstantTimeSelect(int(uint32(n)>>31), 0, n) // if n < 0 { n = 0 }
+		// 取出长度
 		record[3] = byte(n >> 8)
 		record[4] = byte(n)
 		remoteMAC := payload[n : n+macSize]
@@ -657,8 +659,9 @@ func (c *Conn) readRecordOrCCS(expectChangeCipherSpec bool) error {
 		return err
 	}
 
-	// Process message.
+	// Process message. 读取缓冲区 之后的 字节数组
 	record := c.rawInput.Next(recordHeaderLen + n)
+	// 解密读取的记录, 获取body和recordType
 	data, typ, err := c.in.decrypt(record)
 	if err != nil {
 		return c.in.setErrorLocked(c.sendAlert(err.(alert)))
@@ -956,13 +959,17 @@ func (c *Conn) writeRecordLocked(typ recordType, data []byte) (int, error) {
 		c.outBuf[4] = byte(m)
 
 		var err error
+		// 加密
 		c.outBuf, err = c.out.encrypt(c.outBuf, data[:m], c.config.rand())
 		if err != nil {
 			return n, err
 		}
+
+		// 写到网络上
 		if _, err := c.write(c.outBuf); err != nil {
 			return n, err
 		}
+
 		n += m
 		data = data[m:]
 	}
@@ -1169,6 +1176,7 @@ func (c *Conn) handleRenegotiation() error {
 	c.handshakeMutex.Lock()
 	defer c.handshakeMutex.Unlock()
 
+	// 需要重新开始握手
 	atomic.StoreUint32(&c.handshakeStatus, 0)
 	if c.handshakeErr = c.clientHandshake(); c.handshakeErr == nil {
 		c.handshakes++
@@ -1236,6 +1244,7 @@ func (c *Conn) handleKeyUpdate(keyUpdate *keyUpdateMsg) error {
 // Read can be made to time out and return a net.Error with Timeout() == true
 // after a fixed time limit; see SetDeadline and SetReadDeadline.
 func (c *Conn) Read(b []byte) (int, error) {
+	// 如果已经握手, 会立刻返回
 	if err := c.Handshake(); err != nil {
 		return 0, err
 	}
@@ -1281,7 +1290,7 @@ func (c *Conn) Read(b []byte) (int, error) {
 // Close closes the connection.
 func (c *Conn) Close() error {
 	// Interlock with Conn.Write above.
-	var x int32
+	var x int32 // 等待写操作完成
 	for {
 		x = atomic.LoadInt32(&c.activeCall)
 		if x&1 != 0 {
@@ -1346,12 +1355,14 @@ func (c *Conn) closeNotify() error {
 // For control over canceling or setting a timeout on a handshake, use
 // the Dialer's DialContext method.
 func (c *Conn) Handshake() error {
+	// 握手完成前, 只有一个调用在继续, 其他调用会检查到错误或者握手完成返回
 	c.handshakeMutex.Lock()
 	defer c.handshakeMutex.Unlock()
 
 	if err := c.handshakeErr; err != nil {
 		return err
 	}
+	// 握手完成直接返回
 	if c.handshakeComplete() {
 		return nil
 	}
@@ -1359,6 +1370,7 @@ func (c *Conn) Handshake() error {
 	c.in.Lock()
 	defer c.in.Unlock()
 
+	// 进行四次或者三次握手流程
 	c.handshakeErr = c.handshakeFn()
 	if c.handshakeErr == nil {
 		c.handshakes++
@@ -1410,8 +1422,9 @@ func (c *Conn) connectionStateLocked() ConnectionState {
 	return state
 }
 
-// OCSPResponse returns the stapled OCSP response from the TLS server, if
+// OCSPResponse returns the stapled主要额 OCSP response from the TLS server, if
 // any. (Only valid for client connections.)
+// Online Certificate Status Protocol ）是TLS协议的扩展协议
 func (c *Conn) OCSPResponse() []byte {
 	c.handshakeMutex.Lock()
 	defer c.handshakeMutex.Unlock()

@@ -276,7 +276,7 @@ func TestScan(t *testing.T) {
 		case token.COMMENT:
 			// no CRs in comments
 			elit = string(stripCR([]byte(e.lit), e.lit[1] == '*'))
-			//-style comment literal doesn't contain newline
+			// -style comment literal doesn't contain newline
 			if elit[1] == '/' {
 				elit = elit[0 : len(elit)-1]
 			}

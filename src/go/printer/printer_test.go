@@ -218,7 +218,7 @@ func TestFiles(t *testing.T) {
 			t.Parallel()
 			check(t, source, golden, mode)
 			// TODO(gri) check that golden is idempotent
-			//check(t, golden, golden, e.mode)
+			// check(t, golden, golden, e.mode)
 		})
 	}
 }

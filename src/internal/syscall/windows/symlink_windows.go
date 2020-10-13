@@ -36,4 +36,4 @@ type FILE_ATTRIBUTE_TAG_INFO struct {
 	ReparseTag     uint32
 }
 
-//sys	GetFileInformationByHandleEx(handle syscall.Handle, class uint32, info *byte, bufsize uint32) (err error)
+// sys	GetFileInformationByHandleEx(handle syscall.Handle, class uint32, info *byte, bufsize uint32) (err error)

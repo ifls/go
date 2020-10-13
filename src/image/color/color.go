@@ -5,13 +5,13 @@
 // Package color implements a basic color library.
 package color
 
-// Color can convert itself to alpha-premultiplied 16-bits per channel RGBA.
-// The conversion may be lossy.
+// Color can convert itself to alpha-premultiplied预乘 16-bits per channel RGBA.
+// The conversion may be lossy. 有损
 type Color interface {
 	// RGBA returns the alpha-premultiplied red, green, blue and alpha values
-	// for the color. Each value ranges within [0, 0xffff], but is represented
-	// by a uint32 so that multiplying by a blend factor up to 0xffff will not
-	// overflow.
+	// for the color.
+	// Each value ranges within [0, 0xffff], but is represented by a uint32 so that multiplying by a blend factor up to 0xffff will not
+	// overflow. 32bit保证不溢出
 	//
 	// An alpha-premultiplied color component c has been scaled by alpha (a),
 	// so has valid values 0 <= c <= a.
@@ -29,7 +29,7 @@ type RGBA struct {
 
 func (c RGBA) RGBA() (r, g, b, a uint32) {
 	r = uint32(c.R)
-	r |= r << 8
+	r |= r << 8 // 0x 00 00 c.R c.R
 	g = uint32(c.G)
 	g |= g << 8
 	b = uint32(c.B)
@@ -62,6 +62,7 @@ func (c NRGBA) RGBA() (r, g, b, a uint32) {
 	r |= r << 8
 	r *= uint32(c.A)
 	r /= 0xff
+
 	g = uint32(c.G)
 	g |= g << 8
 	g *= uint32(c.A)
@@ -137,8 +138,8 @@ func (c Gray16) RGBA() (r, g, b, a uint32) {
 	return y, y, y, 0xffff
 }
 
-// Model can convert any Color to one from its own color model. The conversion
-// may be lossy.
+// Model can convert any Color to one from its own color model. 颜色空间转换
+// The conversion may be lossy.
 type Model interface {
 	Convert(c Color) Color
 }
@@ -277,7 +278,7 @@ func gray16Model(c Color) Color {
 }
 
 // Palette is a palette of colors.
-type Palette []Color
+type Palette []Color // 颜色板
 
 // Convert returns the palette color closest to c in Euclidean R,G,B space.
 func (p Palette) Convert(c Color) Color {
@@ -308,7 +309,7 @@ func (p Palette) Index(c Color) int {
 }
 
 // sqDiff returns the squared-difference of x and y, shifted by 2 so that
-// adding four of those won't overflow a uint32.
+// adding four of those won't overflow a uint32. 平方距离,右移2位, 保证不超出范围,
 //
 // x and y are both assumed to be in the range [0, 0xffff].
 func sqDiff(x, y uint32) uint32 {
@@ -335,7 +336,7 @@ func sqDiff(x, y uint32) uint32 {
 	// called in the hot paths (x,y loops), it is reduced to the below code
 	// which is slightly faster. See TestSqDiff for correctness check.
 	d := x - y
-	return (d * d) >> 2
+	return (d * d) >> 2 // 生成的指令层面, 如何处理范围溢出??
 }
 
 // Standard colors.
@@ -343,5 +344,5 @@ var (
 	Black       = Gray16{0}
 	White       = Gray16{0xffff}
 	Transparent = Alpha16{0}
-	Opaque      = Alpha16{0xffff}
+	Opaque      = Alpha16{0xffff} // 不透明
 )

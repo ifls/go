@@ -118,7 +118,7 @@ var safeSet = [utf8.RuneSelf]bool{
 // All values are true except for the ASCII control characters (0-31), the
 // double quote ("), the backslash character ("\"), HTML opening and closing
 // tags ("<" and ">"), and the ampersand ("&").
-var htmlSafeSet = [utf8.RuneSelf]bool{
+var htmlSafeSet = [utf8.RuneSelf]bool{ // 0x00 0x7F
 	' ':      true,
 	'!':      true,
 	'"':      false,

@@ -7,6 +7,8 @@ package gcimporter
 import (
 	"bytes"
 	"fmt"
+	"go/token"
+	"go/types"
 	"internal/testenv"
 	"io/ioutil"
 	"os"
@@ -16,9 +18,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"go/token"
-	"go/types"
 )
 
 // skipSpecialPlatforms causes the test to be skipped for platforms where

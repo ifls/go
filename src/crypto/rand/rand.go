@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package rand implements a cryptographically secure
-// random number generator.
+// random number generator. 密码安全的随机数生产器
 package rand
 
 import "io"

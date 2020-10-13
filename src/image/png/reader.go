@@ -99,7 +99,7 @@ const (
 	dsSeenIEND
 )
 
-const pngHeader = "\x89PNG\r\n\x1a\n"
+const pngHeader = "\x89PNG\r\n\x1a\n" // png 文件签名
 
 type decoder struct {
 	r             io.Reader

@@ -6,7 +6,6 @@ package cpu_test
 
 import (
 	"errors"
-	. "internal/cpu"
 	"io/ioutil"
 	"regexp"
 	"testing"

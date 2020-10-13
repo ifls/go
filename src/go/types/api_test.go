@@ -11,13 +11,12 @@ import (
 	"go/importer"
 	"go/parser"
 	"go/token"
+	. "go/types"
 	"internal/testenv"
 	"reflect"
 	"regexp"
 	"strings"
 	"testing"
-
-	. "go/types"
 )
 
 func pkgFor(path, source string, info *Info) (*Package, error) {
@@ -459,7 +458,7 @@ func TestPredicatesInfo(t *testing.T) {
 		// look for expression predicates
 		got := "<missing>"
 		for e, tv := range info.Types {
-			//println(name, ExprString(e))
+			// println(name, ExprString(e))
 			if ExprString(e) == test.expr {
 				got = predString(tv)
 				break

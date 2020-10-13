@@ -5,7 +5,6 @@
 package context_test
 
 import (
-	. "context"
 	"testing"
 )
 
