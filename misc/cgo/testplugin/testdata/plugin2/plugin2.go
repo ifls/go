@@ -4,8 +4,8 @@
 
 package main
 
-//#include <errno.h>
-//#include <string.h>
+// #include <errno.h>
+// #include <string.h>
 import "C"
 
 // #include

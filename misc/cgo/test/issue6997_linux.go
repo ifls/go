@@ -17,8 +17,10 @@ extern int CancelThread();
 */
 import "C"
 
-import "testing"
-import "time"
+import (
+	"testing"
+	"time"
+)
 
 func test6997(t *testing.T) {
 	r := C.StartThread()

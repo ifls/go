@@ -4,7 +4,7 @@
 
 package cgotest
 
-//void testHandleLeaks();
+// void testHandleLeaks();
 import "C"
 
 import (

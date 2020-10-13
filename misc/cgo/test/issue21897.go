@@ -36,21 +36,21 @@ var byteSliceSink []byte
 func testCFNumberRef() {
 	var v int64 = 0
 	xCFNumberRef = C.CFNumberCreate(C.kCFAllocatorSystemDefault, C.kCFNumberSInt64Type, unsafe.Pointer(&v))
-	//fmt.Printf("CFNumberRef: %x\n", uintptr(unsafe.Pointer(xCFNumberRef)))
+	// fmt.Printf("CFNumberRef: %x\n", uintptr(unsafe.Pointer(xCFNumberRef)))
 }
 
 var xCFNumberRef C.CFNumberRef
 
 func testCFDateRef() {
 	xCFDateRef = C.CFDateCreate(C.kCFAllocatorSystemDefault, 0) // 0 value is 1 Jan 2001 00:00:00 GMT
-	//fmt.Printf("CFDateRef: %x\n", uintptr(unsafe.Pointer(xCFDateRef)))
+	// fmt.Printf("CFDateRef: %x\n", uintptr(unsafe.Pointer(xCFDateRef)))
 }
 
 var xCFDateRef C.CFDateRef
 
 func testCFBooleanRef() {
 	xCFBooleanRef = C.kCFBooleanFalse
-	//fmt.Printf("CFBooleanRef: %x\n", uintptr(unsafe.Pointer(xCFBooleanRef)))
+	// fmt.Printf("CFBooleanRef: %x\n", uintptr(unsafe.Pointer(xCFBooleanRef)))
 }
 
 var xCFBooleanRef C.CFBooleanRef

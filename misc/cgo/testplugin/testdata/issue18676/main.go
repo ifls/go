@@ -18,6 +18,7 @@ package main
 import (
 	"encoding/json"
 	"plugin"
+
 	"testplugin/issue18676/dynamodbstreamsevt"
 )
 

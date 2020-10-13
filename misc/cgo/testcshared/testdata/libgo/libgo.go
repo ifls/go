@@ -6,8 +6,9 @@ package main
 
 import (
 	"syscall"
-	_ "testcshared/p"
 	"time"
+
+	_ "testcshared/p"
 )
 
 import "C"

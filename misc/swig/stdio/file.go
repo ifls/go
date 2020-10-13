@@ -9,7 +9,7 @@
 
 package file
 
-//int F(void) { return 1; }
+// int F(void) { return 1; }
 import "C"
 
 func F() int { return int(C.F()) }
