@@ -6,9 +6,14 @@
 
 package main
 
-import "fmt"
-import "io" // OMIT
-import "os" // OMIT
+import (
+	"fmt"
+	"io"
+	"os"
+)
+
+// OMIT
+// OMIT
 
 func main() {
 	f()
