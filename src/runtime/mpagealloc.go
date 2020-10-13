@@ -56,7 +56,7 @@ import (
 const (
 	// The size of a bitmap chunk, i.e. the amount of bits (that is, pages) to consider
 	// in the bitmap at once.
-	//1^9 512
+	// 1^9 512
 	pallocChunkPages = 1 << logPallocChunkPages
 	// 2^13 * 2^9 = 2 ^ 22
 	pallocChunkBytes = pallocChunkPages * pageSize
@@ -301,7 +301,7 @@ type pageAlloc struct {
 
 	// mheap_.lock. This level of indirection makes it possible
 	// to test pageAlloc indepedently of the runtime allocator.
-	mheapLock *mutex //堆锁 init()函数里赋值
+	mheapLock *mutex // 堆锁 init()函数里赋值
 
 	// sysStat is the runtime memstat to update when new system
 	// memory is committed by the pageAlloc for allocation metadata.
@@ -321,7 +321,7 @@ func (s *pageAlloc) init(mheapLock *mutex, sysStat *uint64) {
 		throw("root level max pages doesn't fit in summary")
 	}
 
-	//统计数 gc_sys
+	// 统计数 gc_sys
 	s.sysStat = sysStat
 
 	// Initialize s.inUse. 地址范围列表

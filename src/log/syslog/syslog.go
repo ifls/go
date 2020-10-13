@@ -76,9 +76,9 @@ const (
 type Writer struct {
 	priority Priority
 	tag      string
-	hostname string		// 主机名
-	network  string		// 网络
-	raddr    string		//
+	hostname string // 主机名
+	network  string // 网络
+	raddr    string //
 
 	mu   sync.Mutex // guards conn
 	conn serverConn

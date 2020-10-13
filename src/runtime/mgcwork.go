@@ -549,7 +549,7 @@ func freeSomeWbufs(preemptible bool) bool {
 				break
 			}
 			work.wbufSpans.free.remove(span)
-			//释放手动管理的内存
+			// 释放手动管理的内存
 			mheap_.freeManual(span, &memstats.gc_sys)
 		}
 	})

@@ -485,7 +485,7 @@ func (r *Reader) ReadMIMEHeader() (MIMEHeader, error) {
 	// Avoid lots of small slice allocations later by allocating one
 	// large one ahead of time which we'll cut up into smaller
 	// slices. If this isn't big enough later, we allocate small ones.
-	var strs []string
+	var strs []string // 暂存空间, 避免频繁分配空间
 	hint := r.upcomingHeaderNewlines()
 	if hint > 0 {
 		strs = make([]string, hint)
@@ -493,7 +493,7 @@ func (r *Reader) ReadMIMEHeader() (MIMEHeader, error) {
 
 	m := make(MIMEHeader, hint)
 
-	// The first line cannot start with a leading space.
+	// 返回错误 The first line cannot start with a leading space.
 	if buf, err := r.R.Peek(1); err == nil && (buf[0] == ' ' || buf[0] == '\t') {
 		line, err := r.readLineSlice()
 		if err != nil {
@@ -502,7 +502,7 @@ func (r *Reader) ReadMIMEHeader() (MIMEHeader, error) {
 		return m, ProtocolError("malformed MIME header initial line: " + string(line))
 	}
 
-	for {
+	for { // 读取每一行
 		kv, err := r.readContinuedLineSlice(mustHaveFieldNameColon)
 		if len(kv) == 0 {
 			return m, err
@@ -513,6 +513,7 @@ func (r *Reader) ReadMIMEHeader() (MIMEHeader, error) {
 		if i < 0 {
 			return m, ProtocolError("malformed MIME header line: " + string(kv))
 		}
+		// 键
 		key := canonicalMIMEHeaderKey(kv[:i])
 
 		// As per RFC 7230 field-name is a token, tokens consist of one or more chars.
@@ -523,7 +524,7 @@ func (r *Reader) ReadMIMEHeader() (MIMEHeader, error) {
 		}
 
 		// Skip initial spaces in value.
-		i++ // skip colon
+		i++ // skip colon 跳过:
 		for i < len(kv) && (kv[i] == ' ' || kv[i] == '\t') {
 			i++
 		}
@@ -535,7 +536,8 @@ func (r *Reader) ReadMIMEHeader() (MIMEHeader, error) {
 			// Most headers aren't multi-valued.
 			// Set the capacity on strs[0] to 1, so any future append
 			// won't extend the slice into the other strings.
-			vv, strs = strs[:1:1], strs[1:]
+			// strs = strs[1:]
+			vv, strs = strs[:1:1], strs[1:] // low:high:max
 			vv[0] = value
 			m[key] = vv
 		} else {

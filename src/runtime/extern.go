@@ -177,7 +177,7 @@ package runtime
 
 import "runtime/internal/sys"
 
-//返回当前调用点的信息
+// 返回当前调用点的信息
 // Caller reports file and line number information about function invocations on
 // the calling goroutine's stack. The argument skip is the number of stack frames
 // to ascend, with 0 identifying the caller of Caller.  (For historical reasons the

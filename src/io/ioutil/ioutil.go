@@ -28,16 +28,16 @@ func readAll(r io.Reader, capacity int64) (b []byte, err error) {
 		if panicErr, ok := e.(error); ok && panicErr == bytes.ErrTooLarge {
 			err = panicErr
 		} else {
-			//继续传递
+			// 继续传递
 			panic(e)
 		}
 	}()
 
-	//64位
+	// 64位
 	if int64(int(capacity)) == capacity {
 		buf.Grow(int(capacity))
 	}
-	//读完
+	// 读完
 	_, err = buf.ReadFrom(r)
 	return buf.Bytes(), err
 }
@@ -45,7 +45,7 @@ func readAll(r io.Reader, capacity int64) (b []byte, err error) {
 // ReadAll reads from r until an error or EOF and returns the data it read.
 // A successful call returns err == nil, not err == EOF.
 // Because ReadAll is defined to read from src until EOF, it does not treat an EOF from Read as an error to be reported.
-//使用默认cap
+// 使用默认cap
 func ReadAll(r io.Reader) ([]byte, error) {
 	return readAll(r, bytes.MinRead)
 }
@@ -102,7 +102,7 @@ func ReadDir(dirname string) ([]os.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	//File.Readdir
+	// File.Readdir
 	list, err := f.Readdir(-1)
 	f.Close()
 	if err != nil {
@@ -112,7 +112,7 @@ func ReadDir(dirname string) ([]os.FileInfo, error) {
 	return list, nil
 }
 
-//faker closer
+// faker closer
 type nopCloser struct {
 	io.Reader
 }
@@ -124,7 +124,6 @@ func (nopCloser) Close() error { return nil }
 func NopCloser(r io.Reader) io.ReadCloser {
 	return nopCloser{r}
 }
-
 
 type devNull int
 
@@ -140,7 +139,7 @@ func (devNull) WriteString(s string) (int, error) {
 	return len(s), nil
 }
 
-//无限缓存
+// 无限缓存
 var blackHolePool = sync.Pool{
 	New: func() interface{} {
 		b := make([]byte, 8192)
@@ -152,7 +151,7 @@ func (devNull) ReadFrom(r io.Reader) (n int64, err error) {
 	bufp := blackHolePool.Get().(*[]byte)
 	readSize := 0
 	for {
-		//直到读完
+		// 直到读完
 		readSize, err = r.Read(*bufp)
 		n += int64(readSize)
 		if err != nil {

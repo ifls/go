@@ -28,8 +28,8 @@ func newFD(sysfd, family, sotype int, net string) (*netFD, error) {
 	ret := &netFD{
 		pfd: poll.FD{
 			Sysfd:         sysfd,
-			IsStream:      sotype == syscall.SOCK_STREAM,		// stream socket
-			ZeroReadIsEOF: sotype != syscall.SOCK_DGRAM && sotype != syscall.SOCK_RAW,	// udp包和ip包 是false, 标明读0字节不是EOF
+			IsStream:      sotype == syscall.SOCK_STREAM,                              // stream socket
+			ZeroReadIsEOF: sotype != syscall.SOCK_DGRAM && sotype != syscall.SOCK_RAW, // udp包和ip包 是false, 标明读0字节不是EOF
 		},
 		family: family,
 		sotype: sotype,
@@ -178,18 +178,18 @@ func (fd *netFD) accept() (netfd *netFD, err error) {
 		return nil, err
 	}
 
-	//包装对象
+	// 包装对象
 	if netfd, err = newFD(d, fd.family, fd.sotype, fd.net); err != nil {
 		poll.CloseFunc(d)
 		return nil, err
 	}
-	//初始化 加入轮询
+	// 初始化 加入轮询
 	if err = netfd.init(); err != nil {
 		netfd.Close()
 		return nil, err
 	}
 	lsa, _ := syscall.Getsockname(netfd.pfd.Sysfd)
-	//设置 local addr remote addr
+	// 设置 local addr remote addr
 	netfd.setAddr(netfd.addrFunc()(lsa), netfd.addrFunc()(rsa))
 	return netfd, nil
 }

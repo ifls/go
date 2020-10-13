@@ -115,7 +115,7 @@ func LookupEnv(key string) (string, bool) {
 	return syscall.Getenv(key)
 }
 
-//定义
+// 定义
 // Setenv sets the value of the environment variable named by the key.
 // It returns an error, if any.
 func Setenv(key, value string) error {
@@ -132,13 +132,13 @@ func Unsetenv(key string) error {
 	return syscall.Unsetenv(key)
 }
 
-//清除所有环境变量，批量unsetenv
+// 清除所有环境变量，批量unsetenv
 // Clearenv deletes all environment variables.
 func Clearenv() {
 	syscall.Clearenv()
 }
 
-//获取所有环境变量 从runtime拿
+// 获取所有环境变量 从runtime拿
 // Environ returns a copy of strings representing the environment,
 // in the form "key=value".
 func Environ() []string {

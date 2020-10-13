@@ -77,17 +77,19 @@ func WithClientTrace(ctx context.Context, trace *ClientTrace) context.Context {
 // of redirected requests.
 //
 // See TODO https://blog.golang.org/http-tracing for more.
-type ClientTrace struct {
+type ClientTrace struct { // 一些钩子函数
 	// GetConn is called before a connection is created or
 	// retrieved from an idle pool. The hostPort is the
 	// "host:port" of the target or proxy. GetConn is called even
 	// if there's already an idle cached connection available.
+	// 获取连接前
 	GetConn func(hostPort string)
 
 	// GotConn is called after a successful connection is
 	// obtained. There is no hook for failure to obtain a
 	// connection; instead, use the error from
 	// Transport.RoundTrip.
+	// 拿到连接时
 	GotConn func(GotConnInfo)
 
 	// PutIdleConn is called when the connection is returned to
@@ -98,31 +100,38 @@ type ClientTrace struct {
 	// PutIdleConn is called before the caller's Response.Body.Close
 	// call returns.
 	// For HTTP/2, this hook is not currently used.
+	// 放回连接池
 	PutIdleConn func(err error)
 
 	// GotFirstResponseByte is called when the first byte of the response
 	// headers is available.
+	// 读到response的第一个字节
 	GotFirstResponseByte func()
 
 	// Got100Continue is called if the server replies with a "100
 	// Continue" response.
+	// 碰到100重定向响应
 	Got100Continue func()
 
 	// Got1xxResponse is called for each 1xx informational response header
 	// returned before the final non-1xx response. Got1xxResponse is called
 	// for "100 Continue" responses, even if Got100Continue is also defined.
 	// If it returns an error, the client request is aborted with that error value.
+	// 碰到1xx重定向响应
 	Got1xxResponse func(code int, header textproto.MIMEHeader) error
 
 	// DNSStart is called when a DNS lookup begins.
+	// dns查询
 	DNSStart func(DNSStartInfo)
 
 	// DNSDone is called when a DNS lookup ends.
+	// dns 截止
 	DNSDone func(DNSDoneInfo)
 
 	// ConnectStart is called when a new connection's Dial begins.
 	// If net.Dialer.DualStack (IPv6 "Happy Eyeballs") support is
 	// enabled, this may be called multiple times.
+	// 拨号开始
 	ConnectStart func(network, addr string)
 
 	// ConnectDone is called when a new connection's Dial
@@ -130,36 +139,43 @@ type ClientTrace struct {
 	// connection completedly successfully.
 	// If net.Dialer.DualStack ("Happy Eyeballs") support is
 	// enabled, this may be called multiple times.
+	// 拨号连接结束
 	ConnectDone func(network, addr string, err error)
 
 	// TLSHandshakeStart is called when the TLS handshake is started. When
 	// connecting to an HTTPS site via an HTTP proxy, the handshake happens
 	// after the CONNECT request is processed by the proxy.
+	// tls 握手开始
 	TLSHandshakeStart func()
 
 	// TLSHandshakeDone is called after the TLS handshake with either the
 	// successful handshake's connection state, or a non-nil error on handshake
 	// failure.
+	// tls 握手结束
 	TLSHandshakeDone func(tls.ConnectionState, error)
 
 	// WroteHeaderField is called after the Transport has written
 	// each request header. At the time of this call the values
 	// might be buffered and not yet written to the network.
+	// 请求头已写入
 	WroteHeaderField func(key string, value []string)
 
 	// WroteHeaders is called after the Transport has written
 	// all request headers.
+	// 请求头已写完
 	WroteHeaders func()
 
 	// Wait100Continue is called if the Request specified
 	// "Expect: 100-continue" and the Transport has written the
 	// request headers but is waiting for "100 Continue" from the
 	// server before writing the request body.
+	//
 	Wait100Continue func()
 
 	// WroteRequest is called with the result of writing the
 	// request and any body. It may be called multiple times
 	// in the case of retried requests.
+	// 请求头和body都写完了
 	WroteRequest func(WroteRequestInfo)
 }
 

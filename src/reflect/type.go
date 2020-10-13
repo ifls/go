@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package reflect implements run-time reflection, 
+// Package reflect implements run-time reflection,
 // allowing a program to manipulate objects with arbitrary types. 允许程序操作任意类型的对象
 // The typical use is to take a value with static type interface{}
 // and extract its dynamic type information by calling TypeOf, which returns a Type.
@@ -64,47 +64,47 @@ type Type interface {
 	//
 	// For an interface type, the returned Method's Type field gives the
 	// method signature, without a receiver, and the Func field is nil.
-	MethodByName(string) (Method, bool)		//根据方法名获得方法信息
+	MethodByName(string) (Method, bool) // 根据方法名获得方法信息
 
 	// NumMethod returns the number of exported methods导出方法数 in the type's method set.
-	NumMethod() int		//方法集里的方法数量，和
+	NumMethod() int // 方法集里的方法数量，和
 
 	// Name returns the type's name within its package for a defined type.
 	// For other (non-defined) types it returns the empty string.
-	Name() string	//类型名，其他未定义的类型返回空
+	Name() string // 类型名，其他未定义的类型返回空
 
 	// PkgPath returns a defined type's package path, that is, the import path
 	// that uniquely identifies the package, such as "encoding/base64".
 	// If the type was predeclared (string, error) or not defined (*T, struct{},
 	// []int, or A where A is an alias for a non-defined type), the package path
 	// will be the empty string.
-	PkgPath() string		//包名
+	PkgPath() string // 包名
 
 	// Size returns the number of bytes needed to store
 	// a value of the given type; it is analogous to unsafe.Sizeof.
-	Size() uintptr //占用的内存空间大小
+	Size() uintptr // 占用的内存空间大小
 
 	// String returns a string representation of the type.
 	// The string representation may use shortened package names
 	// (e.g., base64 instead of "encoding/base64") and is not
 	// guaranteed to be unique among types. To test for type identity,
 	// compare the Types directly.
-	String() string		//返回类型的字符串表示，包含包名
+	String() string // 返回类型的字符串表示，包含包名
 
 	// Kind returns the specific kind of this type.
-	Kind() Kind			//类型
+	Kind() Kind // 类型
 
 	// Implements reports whether the type implements the interface type u.
-	Implements(u Type) bool		// 是否实现了一个 接口类型u
+	Implements(u Type) bool // 是否实现了一个 接口类型u
 
 	// AssignableTo reports whether a value of the type is assignable to type u.
-	AssignableTo(u Type) bool		//此类型的值是否可赋值给u类型
+	AssignableTo(u Type) bool // 此类型的值是否可赋值给u类型
 
 	// ConvertibleTo reports whether a value of the type is convertible to type u.
-	ConvertibleTo(u Type) bool		//是否可转换为u类型
+	ConvertibleTo(u Type) bool // 是否可转换为u类型
 
 	// Comparable reports whether values of this type are comparable.
-	Comparable() bool		//值是否可比较
+	Comparable() bool // 值是否可比较
 
 	// Methods applicable only to some types, depending on Kind.
 	// 以下部分方法只对部分类型有用
@@ -122,11 +122,11 @@ type Type interface {
 	// Bits returns the size of the type in bits.
 	// It panics if the type's Kind is not one of the
 	// sized or unsized Int, Uint, Float, or Complex kinds.
-	Bits() int   //只对数值类型有效， 类型占用的比特位数量
+	Bits() int // 只对数值类型有效， 类型占用的比特位数量
 
 	// ChanDir returns a channel type's direction.
 	// It panics if the type's Kind is not Chan.
-	ChanDir() ChanDir		//只对chan有效, 返回chan的方向
+	ChanDir() ChanDir // 只对chan有效, 返回chan的方向
 
 	// IsVariadic reports whether a function type's final input parameter
 	// is a "..." parameter. If so, t.In(t.NumIn() - 1) returns the parameter's
@@ -140,16 +140,16 @@ type Type interface {
 	//	t.IsVariadic() == true
 	//
 	// IsVariadic panics if the type's Kind is not Func.
-	IsVariadic() bool		//函数类型的最后一个参数是否是可变类型
+	IsVariadic() bool // 函数类型的最后一个参数是否是可变类型
 
 	// Elem returns a type's element type.
 	// It panics if the type's Kind is not Array, Chan, Map, Ptr, or Slice.
-	Elem() Type		// Array chan map *type []type
+	Elem() Type // Array chan map *type []type
 
 	// Field returns a struct type's i'th field.
 	// It panics if the type's Kind is not Struct.
 	// It panics if i is not in the range [0, NumField()).
-	Field(i int) StructField	//只用于结构体
+	Field(i int) StructField // 只用于结构体
 
 	// FieldByIndex returns the nested field corresponding
 	// to the index sequence. It is equivalent to calling Field
@@ -182,11 +182,11 @@ type Type interface {
 
 	// Key returns a map type's key type.
 	// It panics if the type's Kind is not Map.
-	Key() Type		//只用于map
+	Key() Type // 只用于map
 
 	// Len returns an array type's length.
 	// It panics if the type's Kind is not Array.
-	Len() int		//只用于数组
+	Len() int // 只用于数组
 
 	// NumField returns a struct type's field count.  字段数
 	// It panics if the type's Kind is not Struct. 必须是结构体，结构体指针都不行
@@ -300,7 +300,7 @@ const (
 // 实现 Type接口
 // rtype must be kept in sync with ../runtime/type.go:/^type._type.
 type rtype struct {
-	size       uintptr	// 占用字节数
+	size       uintptr // 占用字节数
 	ptrdata    uintptr // number of bytes in the type that can contain pointers
 	hash       uint32  // hash of type; avoids computation in hash tables
 	tflag      tflag   // extra type information flags
@@ -749,7 +749,7 @@ func (t *rtype) uncommon() *uncommonType {
 	}
 }
 
-//类型名
+// 类型名
 func (t *rtype) String() string {
 	s := t.nameOff(t.str).name()
 	if t.tflag&tflagExtraStar != 0 {
@@ -757,7 +757,8 @@ func (t *rtype) String() string {
 	}
 	return s
 }
-//占用的内存大小
+
+// 占用的内存大小
 func (t *rtype) Size() uintptr { return t.size }
 
 func (t *rtype) Bits() int {
@@ -791,11 +792,7 @@ func (t *rtype) exportedMethods() []method {
 }
 
 func (t *rtype) NumMethod() int {
-	if t.Kind() == Inte
-
-
-
-	rface {
+	if t.Kind() == Inte; rface {
 		tt := (*interfaceType)(unsafe.Pointer(t))
 		return tt.NumMethod()
 	}
@@ -1370,7 +1367,7 @@ func (t *structType) FieldByName(name string) (f StructField, present bool) {
 // If i is a nil interface value, TypeOf returns nil.
 // 返回*type指针
 func TypeOf(i interface{}) Type {
-	//空接口
+	// 空接口
 	eface := *(*emptyInterface)(unsafe.Pointer(&i))
 	return toType(eface.typ)
 }

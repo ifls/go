@@ -25,7 +25,7 @@ func Stack() []byte {
 		if n < len(buf) {
 			return buf[:n]
 		}
-		//扩栈, 保证打印所有信息
+		// 扩栈, 保证打印所有信息
 		buf = make([]byte, 2*len(buf))
 	}
 }

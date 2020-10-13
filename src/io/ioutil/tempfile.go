@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-//生成随机临时文件
+// 生成随机临时文件
 // Random number state.
 // We generate random temporary file names so that there's a good
 // chance the file doesn't exist yet - keeps the number of tries in
@@ -67,10 +67,10 @@ func TempFile(dir, pattern string) (f *os.File, err error) {
 	for i := 0; i < 10000; i++ {
 		name := filepath.Join(dir, prefix+nextRandom()+suffix)
 		f, err = os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
-		//文件已存在
+		// 文件已存在
 		if os.IsExist(err) {
 			if nconflict++; nconflict > 10 {
-				//加锁，使用新的随机数
+				// 加锁，使用新的随机数
 				randmu.Lock()
 				rand = reseed()
 				randmu.Unlock()
@@ -87,7 +87,7 @@ var errPatternHasSeparator = errors.New("pattern contains path separator")
 // prefixAndSuffix splits pattern by the last wildcard通配符 "*", if applicable适用,
 // returning prefix as the part before "*" and suffix as the part after "*".
 func prefixAndSuffix(pattern string) (prefix, suffix string, err error) {
-	//如果包含 / 就会报错
+	// 如果包含 / 就会报错
 	if strings.ContainsRune(pattern, os.PathSeparator) {
 		err = errPatternHasSeparator
 		return
@@ -124,7 +124,7 @@ func TempDir(dir, pattern string) (name string, err error) {
 	nconflict := 0
 	for i := 0; i < 10000; i++ {
 		try := filepath.Join(dir, prefix+nextRandom()+suffix)
-		//使用权限创建
+		// 使用权限创建
 		err = os.Mkdir(try, 0700)
 		if os.IsExist(err) {
 			if nconflict++; nconflict > 10 {
@@ -134,7 +134,7 @@ func TempDir(dir, pattern string) (name string, err error) {
 			}
 			continue
 		}
-		//未创建成功
+		// 未创建成功
 		if os.IsNotExist(err) {
 			if _, err := os.Stat(dir); os.IsNotExist(err) {
 				return "", err

@@ -139,7 +139,7 @@ func internetSocket(ctx context.Context, net string, laddr, raddr sockaddr, soty
 		raddr = raddr.toLocal(net)
 	}
 	family, ipv6only := favoriteAddrFamily(net, laddr, raddr, mode)
-	//family AF_INET AF_INET6
+	// family AF_INET AF_INET6
 	// type sock SOCK_RAW SOCK_STREAM SOCK_DGRAM
 	return socket(ctx, net, family, sotype, proto, ipv6only, laddr, raddr, ctrlFn)
 }

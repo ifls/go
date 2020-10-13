@@ -22,7 +22,7 @@ import (
 )
 
 // A Server is an HTTP server listening on a system-chosen port on the
-// local loopback interface, for use in end-to-end HTTP tests.
+// local loopback interface, for use in end-to-end HTTP tests. 本地服务器, 用于测试
 type Server struct {
 	URL      string // base URL of form http://ipaddr:port with no trailing slash
 	Listener net.Listener

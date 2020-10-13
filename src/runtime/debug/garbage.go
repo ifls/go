@@ -28,7 +28,7 @@ type GCStats struct {
 // summarizing the distribution of pause time. For example, if
 // len(stats.PauseQuantiles) is 5, it will be filled with the minimum,
 // 25%, 50%, 75%, and maximum pause times.
-//读取gc统计
+// 读取gc统计
 func ReadGCStats(stats *GCStats) {
 	// Create a buffer with space for at least two copies of the
 	// pause history tracked by the runtime. One will be returned
@@ -89,14 +89,14 @@ func ReadGCStats(stats *GCStats) {
 // The initial setting is the value of the GOGC environment variable
 // at startup, or 100 if the variable is not set.
 // A negative percentage disables garbage collection.
-//设置回收百分比
+// 设置回收百分比
 func SetGCPercent(percent int) int {
 	return int(setGCPercent(int32(percent)))
 }
 
 // FreeOSMemory forces a garbage collection followed by an attempt to return as much memory to the operating system as possible.
 // (Even if this is not called, the runtime gradually returns memory to the operating system in a background task.)
-//主动要求gc返还 内存给操作系统
+// 主动要求gc返还 内存给操作系统
 func FreeOSMemory() {
 	freeOSMemory()
 }
@@ -162,5 +162,5 @@ func WriteHeapDump(fd uintptr)
 // See the package runtime documentation for details.
 // If SetTraceback is called with a level lower than that of the
 // environment variable, the call is ignored.
-//设置 打印追踪的详细程度
+// 设置 打印追踪的详细程度
 func SetTraceback(level string)

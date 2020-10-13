@@ -304,15 +304,15 @@ func interpreter(level int, maxlevel int, rec int) {
 			return
 		}
 		if level != e.(int) {
-			//fmt.Fprintln(os.Stderr, "re-panicing, level", level)
+			// fmt.Fprintln(os.Stderr, "re-panicing, level", level)
 			panic(e)
 		}
-		//fmt.Fprintln(os.Stderr, "Recovered, level", level)
+		// fmt.Fprintln(os.Stderr, "Recovered, level", level)
 	}()
 	if level+1 < maxlevel {
 		interpreter(level+1, maxlevel, rec)
 	} else {
-		//fmt.Fprintln(os.Stderr, "Initiating panic")
+		// fmt.Fprintln(os.Stderr, "Initiating panic")
 		panic(rec)
 	}
 }

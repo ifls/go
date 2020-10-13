@@ -18,10 +18,10 @@ package plugin
 
 // Plugin is a loaded Go plugin.
 type Plugin struct {
-	pluginpath string		//路径
-	err        string        // set if plugin failed to load
-	loaded     chan struct{} // closed when loaded 加载完成就关闭
-	syms       map[string]interface{}	//符号表
+	pluginpath string                 // 路径
+	err        string                 // set if plugin failed to load
+	loaded     chan struct{}          // closed when loaded 加载完成就关闭
+	syms       map[string]interface{} // 符号表
 }
 
 // Open opens a Go plugin.

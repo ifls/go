@@ -198,8 +198,10 @@ func ReadResponse(r *bufio.Reader, req *Request) (*Response, error) {
 	}
 	resp.Header = Header(mimeHeader)
 
+	// Pragma: no-cache 的特殊处理
 	fixPragmaCacheControl(resp.Header)
 
+	// 处理一些字段赋值
 	err = readTransfer(resp, r)
 	if err != nil {
 		return nil, err

@@ -34,7 +34,7 @@ static void* pluginLookup(uintptr_t h, const char* name, char** err) {
 	return r;
 }
 */
-import "C"		//c代码
+import "C" // c代码
 
 import (
 	"errors"
@@ -58,7 +58,7 @@ func open(name string) (*Plugin, error) {
 
 	pluginsMu.Lock()
 	if p := plugins[filepath]; p != nil {
-		//已加载过此插件
+		// 已加载过此插件
 		pluginsMu.Unlock()
 		if p.err != "" {
 			return nil, errors.New(`plugin.Open("` + name + `"): ` + p.err + ` (previous failure)`)
@@ -68,9 +68,9 @@ func open(name string) (*Plugin, error) {
 	}
 
 	var cErr *C.char
-	//打开动态库
+	// 打开动态库
 	h := C.pluginOpen((*C.char)(unsafe.Pointer(&cPath[0])), &cErr)
-	//失败
+	// 失败
 	if h == 0 {
 		pluginsMu.Unlock()
 		return nil, errors.New(`plugin.Open("` + name + `"): ` + C.GoString(cErr))
@@ -78,7 +78,7 @@ func open(name string) (*Plugin, error) {
 
 	// TODO(crawshaw): look for plugin note, confirm it is a Go plugin
 	// and it was built with the correct toolchain.
-	//去掉so后缀
+	// 去掉so后缀
 	if len(name) > 3 && name[len(name)-3:] == ".so" {
 		name = name[:len(name)-3]
 	}
@@ -87,10 +87,10 @@ func open(name string) (*Plugin, error) {
 		plugins = make(map[string]*Plugin)
 	}
 
-	//读取刚加载的插件的路径，符号表，错误
+	// 读取刚加载的插件的路径，符号表，错误
 	pluginpath, syms, errstr := lastmoduleinit()
 	if errstr != "" {
-		//加载失败
+		// 加载失败
 		plugins[filepath] = &Plugin{
 			pluginpath: pluginpath,
 			err:        errstr,
@@ -105,11 +105,11 @@ func open(name string) (*Plugin, error) {
 		pluginpath: pluginpath,
 		loaded:     make(chan struct{}),
 	}
-	//加入插件表
+	// 加入插件表
 	plugins[filepath] = p
 	pluginsMu.Unlock()
 
-	//找到init函数并执行
+	// 找到init函数并执行
 	initStr := make([]byte, len(pluginpath)+len("..inittask")+1) // +1 for terminating NUL
 	copy(initStr, pluginpath)
 	copy(initStr[len(pluginpath):], "..inittask")
@@ -123,7 +123,7 @@ func open(name string) (*Plugin, error) {
 	// Fill out the value of each plugin symbol.
 	updatedSyms := map[string]interface{}{}
 	for symName, sym := range syms {
-		//函数 特殊处理
+		// 函数 特殊处理
 		isFunc := symName[0] == '.'
 		if isFunc {
 			delete(syms, symName)
@@ -134,7 +134,7 @@ func open(name string) (*Plugin, error) {
 		fullName := pluginpath + "." + symName
 		cname := make([]byte, len(fullName)+1)
 		copy(cname, fullName)
-		//符号查找
+		// 符号查找
 		p := C.pluginLookup(h, (*C.char)(unsafe.Pointer(&cname[0])), &cErr)
 		if p == nil {
 			return nil, errors.New(`plugin.Open("` + name + `"): could not find symbol ` + symName + `: ` + C.GoString(cErr))
@@ -150,10 +150,10 @@ func open(name string) (*Plugin, error) {
 		// some symbols twice with the inability to tell if the symbol is a function
 		updatedSyms[symName] = sym
 	}
-	//设置符号表
+	// 设置符号表
 	p.syms = updatedSyms
 
-	//表示已加载完成
+	// 表示已加载完成
 	close(p.loaded)
 	return p, nil
 }

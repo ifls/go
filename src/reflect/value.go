@@ -66,9 +66,9 @@ type Value struct {
 type flag uintptr
 
 const (
-	flagKindWidth        = 5 // there are 27 kinds 2^5 = 32 0b 0010 0000
-	flagKindMask    flag = 1<<flagKindWidth - 1  // 0b 0001 1111
-	flagStickyRO    flag = 1 << 5				//
+	flagKindWidth        = 5                    // there are 27 kinds 2^5 = 32 0b 0010 0000
+	flagKindMask    flag = 1<<flagKindWidth - 1 // 0b 0001 1111
+	flagStickyRO    flag = 1 << 5               //
 	flagEmbedRO     flag = 1 << 6
 	flagIndir       flag = 1 << 7
 	flagAddr        flag = 1 << 8
@@ -191,7 +191,7 @@ func methodNameSkip() string {
 
 // emptyInterface is the header for an interface{} value.
 type emptyInterface struct {
-	typ  *rtype		//*_type
+	typ  *rtype // *_type
 	word unsafe.Pointer
 }
 

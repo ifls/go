@@ -1760,7 +1760,7 @@ func isCommonNetReadError(err error) bool {
 	return false
 }
 
-// Serve a new connection.
+// Serve a new connection. 从单个连接, 处理http请求
 func (c *conn) serve(ctx context.Context) {
 	c.remoteAddr = c.rwc.RemoteAddr().String()
 	ctx = context.WithValue(ctx, LocalAddrContextKey, c.rwc.LocalAddr())
@@ -2153,7 +2153,7 @@ func RedirectHandler(url string, code int) Handler {
 	return &redirectHandler{url, code}
 }
 
-// ServeMux is an HTTP request multiplexer.
+// ServeMux is an HTTP request multiplexer. 多路复用器
 // It matches the URL of each incoming request against a list of registered
 // patterns and calls the handler for the pattern that
 // most closely matches the URL.
@@ -2191,7 +2191,7 @@ func RedirectHandler(url string, code int) Handler {
 type ServeMux struct {
 	mu    sync.RWMutex
 	m     map[string]muxEntry
-	es    []muxEntry // slice of entries sorted from longest to shortest.
+	es    []muxEntry // slice of entries sorted from longest to shortest. 从最长到最短
 	hosts bool       // whether any patterns contain hostnames
 }
 
@@ -2246,14 +2246,14 @@ func stripHostPort(h string) string {
 // Find a handler on a handler map given a path string.
 // Most-specific (longest) pattern wins.
 func (mux *ServeMux) match(path string) (h Handler, pattern string) {
-	// Check for exact match first.
+	// Check for exact match 准确匹配 first.
 	v, ok := mux.m[path]
 	if ok {
 		return v.h, v.pattern
 	}
 
-	// Check for longest valid match.  mux.es contains all patterns
-	// that end in / sorted from longest to shortest.
+	// Check for longest valid match. 最长有效匹配
+	// mux.es contains all patterns that end in / sorted from longest to shortest.
 	for _, e := range mux.es {
 		if strings.HasPrefix(path, e.pattern) {
 			return e.h, e.pattern
@@ -2320,7 +2320,7 @@ func (mux *ServeMux) shouldRedirectRLocked(host, path string) bool {
 // Handler returns a ``page not found'' handler and an empty pattern.
 func (mux *ServeMux) Handler(r *Request) (h Handler, pattern string) {
 
-	// CONNECT requests are not canonicalized.
+	// CONNECT requests are not canonicalized. 规范化
 	if r.Method == "CONNECT" {
 		// If r.URL.Path is /tree and its handler is not registered,
 		// the /tree -> /tree/ redirect applies to CONNECT requests
@@ -2335,6 +2335,7 @@ func (mux *ServeMux) Handler(r *Request) (h Handler, pattern string) {
 	// All other requests have any port stripped and path cleaned
 	// before passing to mux.handler.
 	host := stripHostPort(r.Host)
+	// 简化path
 	path := cleanPath(r.URL.Path)
 
 	// If the given path is /tree and its handler is not registered,
@@ -2373,7 +2374,7 @@ func (mux *ServeMux) handler(host, path string) (h Handler, pattern string) {
 }
 
 // ServeHTTP dispatches the request to the handler whose
-// pattern most closely matches the request URL.
+// pattern most closely matches the request URL. 多路复用器, 处理 request的入口
 func (mux *ServeMux) ServeHTTP(w ResponseWriter, r *Request) {
 	if r.RequestURI == "*" {
 		if r.ProtoAtLeast(1, 1) {
@@ -2382,12 +2383,15 @@ func (mux *ServeMux) ServeHTTP(w ResponseWriter, r *Request) {
 		w.WriteHeader(StatusBadRequest)
 		return
 	}
+	// 找到处理函数
 	h, _ := mux.Handler(r)
+	// 处理请求
 	h.ServeHTTP(w, r)
 }
 
 // Handle registers the handler for the given pattern.
 // If a handler already exists for pattern, Handle panics.
+// 添加处理函数
 func (mux *ServeMux) Handle(pattern string, handler Handler) {
 	mux.mu.Lock()
 	defer mux.mu.Unlock()
@@ -2406,8 +2410,9 @@ func (mux *ServeMux) Handle(pattern string, handler Handler) {
 		mux.m = make(map[string]muxEntry)
 	}
 	e := muxEntry{h: handler, pattern: pattern}
+	// 保存的还是模式串
 	mux.m[pattern] = e
-	if pattern[len(pattern)-1] == '/' {
+	if pattern[len(pattern)-1] == '/' { // 有序保存 路径模式
 		mux.es = appendSorted(mux.es, e)
 	}
 
@@ -2801,6 +2806,7 @@ type serverHandler struct {
 	srv *Server
 }
 
+// http 请求 处理 入口
 func (sh serverHandler) ServeHTTP(rw ResponseWriter, req *Request) {
 	handler := sh.srv.Handler
 	if handler == nil {

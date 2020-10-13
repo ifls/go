@@ -40,7 +40,7 @@ func (e *PtyError) Error() string {
 
 func (e *PtyError) Unwrap() error { return e.Errno }
 
-//打开一个伪终端，就是一个文件，返回终端名
+// 打开一个伪终端，就是一个文件，返回终端名
 // Open returns a master pty and the name of the linked slave tty.
 func Open() (master *os.File, slave string, err error) {
 	m, err := C.posix_openpt(C.O_RDWR)

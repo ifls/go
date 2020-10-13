@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-//内存页大小
+// 内存页大小
 // Getpagesize returns the underlying system's memory page size.
 func Getpagesize() int { return syscall.Getpagesize() }
 
@@ -109,8 +109,7 @@ func (m FileMode) Perm() FileMode {
 func (fs *fileStat) Name() string { return fs.name }
 func (fs *fileStat) IsDir() bool  { return fs.Mode().IsDir() }
 
-
-//是否是同一个文件
+// 是否是同一个文件
 // SameFile reports whether fi1 and fi2 describe the same file.
 // For example, on Unix this means that the device and inode fields
 // of the two underlying structures are identical; on other systems

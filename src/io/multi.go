@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-
 // multiReader & multiWriter
 package io
 
@@ -20,7 +19,7 @@ type multiReader struct {
 func (mr *multiReader) Read(p []byte) (n int, err error) {
 	for len(mr.readers) > 0 {
 		// Optimization to flatten nested multiReaders (Issue 13558).
-		//防止嵌套结构
+		// 防止嵌套结构
 		if len(mr.readers) == 1 {
 			if r, ok := mr.readers[0].(*multiReader); ok {
 				mr.readers = r.readers
@@ -59,7 +58,7 @@ type multiWriter struct {
 	writers []Writer
 }
 
-//写入每一个writer
+// 写入每一个writer
 func (t *multiWriter) Write(p []byte) (n int, err error) {
 	for _, w := range t.writers {
 		n, err = w.Write(p)
@@ -77,7 +76,7 @@ func (t *multiWriter) Write(p []byte) (n int, err error) {
 
 var _ StringWriter = (*multiWriter)(nil)
 
-//写入每一个
+// 写入每一个
 func (t *multiWriter) WriteString(s string) (n int, err error) {
 	var p []byte // lazily initialized if/when needed
 	for _, w := range t.writers {
@@ -110,7 +109,7 @@ func MultiWriter(writers ...Writer) Writer {
 	allWriters := make([]Writer, 0, len(writers))
 	for _, w := range writers {
 		if mw, ok := w.(*multiWriter); ok {
-			//扁平化
+			// 扁平化
 			allWriters = append(allWriters, mw.writers...)
 		} else {
 			allWriters = append(allWriters, w)

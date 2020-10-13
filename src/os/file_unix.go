@@ -51,8 +51,8 @@ func rename(oldname, newname string) error {
 // can overwrite this data, which could cause the finalizer
 // to close the wrong file descriptor.
 type file struct {
-	pfd         poll.FD		//poll fd
-	name        string     //文件名
+	pfd         poll.FD  // poll fd
+	name        string   // 文件名
 	dirinfo     *dirInfo // nil unless directory being read
 	nonblock    bool     // 阻塞or非阻塞 whether we set nonblocking mode
 	stdoutOrErr bool     // 是不是 标准输出 whether this is stdout or stderr
@@ -120,7 +120,7 @@ func newFile(fd uintptr, name string, kind newFileKind) *File {
 		stdoutOrErr: fdi == 1 || fdi == 2,
 	}}
 
-	//true 表示 被netpoll 管理
+	// true 表示 被netpoll 管理
 	pollable := kind == kindOpenFile || kind == kindPipe || kind == kindNonBlock
 
 	// If the caller passed a non-blocking filedes (kindNonBlock),

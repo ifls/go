@@ -31,9 +31,9 @@ type mcache struct {
 	// tiny is a heap pointer堆指针. Since mcache is in non-GC'd memory,
 	// we handle it by clearing it in releaseAll during mark
 	// termination.
-	tiny             uintptr	//基址
-	tinyoffset       uintptr	// 相对于tiny的偏移量
-	local_tinyallocs uintptr 	// 分配对象个数 number of tiny allocs not counted in other stats
+	tiny             uintptr // 基址
+	tinyoffset       uintptr // 相对于tiny的偏移量
+	local_tinyallocs uintptr // 分配对象个数 number of tiny allocs not counted in other stats
 
 	// The rest is not accessed on every malloc.
 	// 67 * 2 种不同size的mspan列表
@@ -83,17 +83,17 @@ type stackfreelist struct {
 // dummy mspan that contains no free objects.
 var emptymspan mspan
 
-//初始化分配mcache
+// 初始化分配mcache
 func allocmcache() *mcache {
 	var c *mcache
 	systemstack(func() {
 		lock(&mheap_.lock)
-		//分配 mcache对象
+		// 分配 mcache对象
 		c = (*mcache)(mheap_.cachealloc.alloc())
 		c.flushGen = mheap_.sweepgen
 		unlock(&mheap_.lock)
 	})
-	//默认初始化
+	// 默认初始化
 	for i := range c.alloc {
 		c.alloc[i] = &emptymspan
 	}
@@ -128,7 +128,7 @@ func (c *mcache) refill(spc spanClass) {
 	// Return the current cached span to the central lists.
 	s := c.alloc[spc]
 
-	//必须是已满的
+	// 必须是已满的
 	if uintptr(s.allocCount) != s.nelems {
 		throw("refill of span with free space remaining")
 	}
@@ -145,7 +145,7 @@ func (c *mcache) refill(spc spanClass) {
 	}
 
 	// Get a new cached span from the central lists.
-	//从中心缓存拿一个mspan
+	// 从中心缓存拿一个mspan
 	s = mheap_.central[spc].mcentral.cacheSpan()
 	if s == nil {
 		throw("out of memory")

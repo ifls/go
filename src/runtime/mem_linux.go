@@ -18,7 +18,7 @@ const (
 
 // Don't split the stack as this method may be invoked without a valid G, which
 // prevents us from allocating more stack.
-//向系统申请内存
+// 向系统申请内存
 //go:nosplit
 func sysAlloc(n uintptr, sysStat *uint64) unsafe.Pointer {
 	p, err := mmap(nil, n, _PROT_READ|_PROT_WRITE, _MAP_ANON|_MAP_PRIVATE, -1, 0)
@@ -38,7 +38,8 @@ func sysAlloc(n uintptr, sysStat *uint64) unsafe.Pointer {
 }
 
 var adviseUnused = uint32(_MADV_FREE)
-//通知系统物理内存不再需要
+
+// 通知系统物理内存不再需要
 func sysUnused(v unsafe.Pointer, n uintptr) {
 	// By default, Linux's "transparent huge page" support will
 	// merge pages into a huge page if there's even a single
@@ -119,7 +120,7 @@ func sysUnused(v unsafe.Pointer, n uintptr) {
 	}
 }
 
-//保证内存区域可安全访问
+// 保证内存区域可安全访问
 func sysUsed(v unsafe.Pointer, n uintptr) {
 	// Partially undo the NOHUGEPAGE marks from sysUnused
 	// for whole huge pages between v and v+n. This may
@@ -140,7 +141,7 @@ func sysHugePage(v unsafe.Pointer, n uintptr) {
 		end := alignDown(uintptr(v)+n, physHugePageSize)
 
 		if beg < end {
-			//系统调用
+			// 系统调用
 			// 函数建议内核，在从 addr 指定的地址开始，长度等于 len 参数值的范围内，该区域的用户虚拟内存应遵循特定的使用模式
 			madvise(unsafe.Pointer(beg), end-beg, _MADV_HUGEPAGE)
 		}
@@ -153,16 +154,16 @@ func sysHugePage(v unsafe.Pointer, n uintptr) {
 //go:nosplit
 func sysFree(v unsafe.Pointer, n uintptr, sysStat *uint64) {
 	mSysStatDec(sysStat, n)
-	//释放内存
+	// 释放内存
 	munmap(v, n)
 }
 
-//将内存区域转换为保留状态，主要用于调试
+// 将内存区域转换为保留状态，主要用于调试
 func sysFault(v unsafe.Pointer, n uintptr) {
 	mmap(v, n, _PROT_NONE, _MAP_ANON|_MAP_PRIVATE|_MAP_FIXED, -1, 0)
 }
 
-//保留一片内存区域，访问会触发异常
+// 保留一片内存区域，访问会触发异常
 func sysReserve(v unsafe.Pointer, n uintptr) unsafe.Pointer {
 	p, err := mmap(v, n, _PROT_NONE, _MAP_ANON|_MAP_PRIVATE, -1, 0)
 	if err != 0 {
@@ -171,7 +172,7 @@ func sysReserve(v unsafe.Pointer, n uintptr) unsafe.Pointer {
 	return p
 }
 
-//保证内存区域可以快速转换至准备就绪
+// 保证内存区域可以快速转换至准备就绪
 func sysMap(v unsafe.Pointer, n uintptr, sysStat *uint64) {
 	mSysStatInc(sysStat, n)
 

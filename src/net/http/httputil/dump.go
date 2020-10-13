@@ -72,9 +72,8 @@ func outgoingLength(req *http.Request) int64 {
 	return -1
 }
 
-// DumpRequestOut is like DumpRequest but for outgoing client requests. It
-// includes any headers that the standard http.Transport adds, such as
-// User-Agent.
+// DumpRequestOut is like DumpRequest but for outgoing client requests.
+// It includes any headers that the standard http.Transport adds, such as User-Agent.
 func DumpRequestOut(req *http.Request, body bool) ([]byte, error) {
 	save := req.Body
 	dummyBody := false
@@ -193,8 +192,8 @@ var reqWriteExcludeHeaderDump = map[string]bool{
 	"Trailer":           true,
 }
 
-// DumpRequest returns the given request in its HTTP/1.x wire
-// representation. It should only be used by servers to debug client
+// DumpRequest returns the given request in its HTTP/1.x wire representation.
+// It should only be used by servers to debug client
 // requests. The returned representation is an approximation only;
 // some details of the initial request are lost while parsing it into
 // an http.Request. In particular, the order and case of header field
@@ -209,6 +208,7 @@ var reqWriteExcludeHeaderDump = map[string]bool{
 //
 // The documentation for http.Request.Write details which fields
 // of req are included in the dump.
+// 传输协议格式打印
 func DumpRequest(req *http.Request, body bool) ([]byte, error) {
 	var err error
 	save := req.Body
@@ -223,7 +223,7 @@ func DumpRequest(req *http.Request, body bool) ([]byte, error) {
 
 	var b bytes.Buffer
 
-	// By default, print out the unmodified req.RequestURI, which
+	// By default, print out the unmodified未修改的 req.RequestURI, which
 	// is always set for incoming server requests. But because we
 	// previously used req.URL.RequestURI and the docs weren't
 	// always so clear about when to use DumpRequest vs
@@ -234,6 +234,7 @@ func DumpRequest(req *http.Request, body bool) ([]byte, error) {
 		reqURI = req.URL.RequestURI()
 	}
 
+	// 请求行
 	fmt.Fprintf(&b, "%s %s HTTP/%d.%d\r\n", valueOrDefault(req.Method, "GET"),
 		reqURI, req.ProtoMajor, req.ProtoMinor)
 
@@ -244,18 +245,22 @@ func DumpRequest(req *http.Request, body bool) ([]byte, error) {
 			host = req.URL.Host
 		}
 		if host != "" {
+			// Host
 			fmt.Fprintf(&b, "Host: %s\r\n", host)
 		}
 	}
 
 	chunked := len(req.TransferEncoding) > 0 && req.TransferEncoding[0] == "chunked"
 	if len(req.TransferEncoding) > 0 {
+		// 传输编码
 		fmt.Fprintf(&b, "Transfer-Encoding: %s\r\n", strings.Join(req.TransferEncoding, ","))
 	}
 	if req.Close {
+		// 关闭连接
 		fmt.Fprintf(&b, "Connection: close\r\n")
 	}
 
+	// 其他请求头
 	err = req.Header.WriteSubset(&b, reqWriteExcludeHeaderDump)
 	if err != nil {
 		return nil, err
@@ -268,9 +273,11 @@ func DumpRequest(req *http.Request, body bool) ([]byte, error) {
 		if chunked {
 			dest = NewChunkedWriter(dest)
 		}
+		// 读取body
 		_, err = io.Copy(dest, req.Body)
 		if chunked {
 			dest.(io.Closer).Close()
+			// chunked 编码传输需要额外的\r\n
 			io.WriteString(&b, "\r\n")
 		}
 	}

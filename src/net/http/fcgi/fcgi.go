@@ -3,8 +3,9 @@
 // license that can be found in the LICENSE file.
 
 // Package fcgi implements the FastCGI protocol.
-//
-// See https://fast-cgi.github.io/ for an unofficial mirror of the
+// Common Gateway Interface web服务器扩展功能规范
+// TODO https://www.infoq.cn/article/vIcwtItzVK7B4YNOEj3e
+// See TODO https://fast-cgi.github.io/ for an unofficial mirror of the
 // original documentation.
 //
 // Currently only the responder role is supported.

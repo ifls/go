@@ -6,8 +6,7 @@ package os
 
 import "syscall"
 
-
-//新建管道，返回两个文件
+// 新建管道，返回两个文件
 // Pipe returns a connected pair of Files; reads from r return bytes written to w.
 // It returns the files and an error, if any.
 func Pipe() (r *File, w *File, err error) {

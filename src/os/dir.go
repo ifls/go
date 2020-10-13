@@ -10,7 +10,6 @@ package os
 // by Lstat, in directory order. Subsequent calls on the same file will yield
 // further FileInfos.
 
-
 // 切片长度最多为n
 // If n > 0, Readdir returns at most n FileInfo structures. In this case, if
 // Readdir returns an empty slice, it will return a non-nil error

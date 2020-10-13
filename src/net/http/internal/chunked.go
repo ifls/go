@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// The wire protocol for HTTP's "chunked" Transfer-Encoding.
-
+// The wire protocol for HTTP's "chunked" Transfer-Encoding. 读比写难
+// https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Transfer-Encoding
 // Package internal contains HTTP internals shared by net/http and
 // net/http/httputil.
 package internal
@@ -200,9 +200,12 @@ func (cw *chunkedWriter) Write(data []byte) (n int, err error) {
 		return 0, nil
 	}
 
+	// 长度\r\n
 	if _, err = fmt.Fprintf(cw.Wire, "%x\r\n", len(data)); err != nil {
 		return 0, err
 	}
+
+	// data
 	if n, err = cw.Wire.Write(data); err != nil {
 		return
 	}
@@ -210,6 +213,8 @@ func (cw *chunkedWriter) Write(data []byte) (n int, err error) {
 		err = io.ErrShortWrite
 		return
 	}
+
+	// \r\n
 	if _, err = io.WriteString(cw.Wire, "\r\n"); err != nil {
 		return
 	}
@@ -219,6 +224,8 @@ func (cw *chunkedWriter) Write(data []byte) (n int, err error) {
 	return
 }
 
+// 0\r\n chunked 传输结尾
+// \r\n  body结尾
 func (cw *chunkedWriter) Close() error {
 	_, err := io.WriteString(cw.Wire, "0\r\n")
 	return err

@@ -1058,11 +1058,11 @@ func TestPathEscape(t *testing.T) {
 	}
 }
 
-//var userinfoTests = []UserinfoTest{
+// var userinfoTests = []UserinfoTest{
 //	{"user", "password", "user:password"},
 //	{"foo:bar", "~!@#$%^&*()_+{}|[]\\-=`:;'\"<>?,./",
 //		"foo%3Abar:~!%40%23$%25%5E&*()_+%7B%7D%7C%5B%5D%5C-=%60%3A;'%22%3C%3E?,.%2F"},
-//}
+// }
 
 type EncodeQueryTest struct {
 	m        Values

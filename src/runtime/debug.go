@@ -44,7 +44,7 @@ func NumCPU() int {
 	return int(ncpu)
 }
 
-//返回cgo调用次数
+// 返回cgo调用次数
 // NumCgoCall returns the number of cgo calls made by the current process.
 func NumCgoCall() int64 {
 	var n int64
@@ -54,7 +54,7 @@ func NumCgoCall() int64 {
 	return n
 }
 
-//返回当前创建的协程数量 用于 metrics
+// 返回当前创建的协程数量 用于 metrics
 // NumGoroutine returns the number of goroutines that currently exist.
 func NumGoroutine() int {
 	return int(gcount())

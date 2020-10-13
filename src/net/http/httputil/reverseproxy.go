@@ -23,8 +23,8 @@ import (
 )
 
 // ReverseProxy is an HTTP Handler that takes an incoming request and
-// sends it to another server, proxying the response back to the
-// client.
+// sends it to another server, 将请求转发给其他服务器
+// proxying the response back to the client.
 //
 // ReverseProxy by default sets the client IP as the value of the
 // X-Forwarded-For header.
@@ -230,6 +230,7 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}()
 	}
 
+	// 拷贝请求
 	outreq := req.Clone(ctx)
 	if req.ContentLength == 0 {
 		outreq.Body = nil // Issue 16036: nil Body for http.Transport retries
@@ -238,6 +239,7 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		outreq.Header = make(http.Header) // Issue 33142: historical behavior was to always allocate
 	}
 
+	// 重定向
 	p.Director(outreq)
 	outreq.Close = false
 
@@ -281,10 +283,12 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			clientIP = strings.Join(prior, ", ") + ", " + clientIP
 		}
 		if !omit {
+			// 转发, 可以被用来获取最初发起请求的客户端的IP地址  https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/X-Forwarded-For
 			outreq.Header.Set("X-Forwarded-For", clientIP)
 		}
 	}
 
+	// 到其他服务器的请求
 	res, err := transport.RoundTrip(outreq)
 	if err != nil {
 		p.getErrorHandler()(rw, outreq, err)
@@ -323,8 +327,10 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		rw.Header().Add("Trailer", strings.Join(trailerKeys, ", "))
 	}
 
+	// 发送请求头到客户端
 	rw.WriteHeader(res.StatusCode)
 
+	// 发送body到客户端
 	err = p.copyResponse(rw, res.Body, p.flushInterval(req, res))
 	if err != nil {
 		defer res.Body.Close()

@@ -223,7 +223,7 @@ func markroot(gcw *gcWork, i uint32) {
 			userG := getg().m.curg
 			selfScan := gp == userG && readgstatus(userG) == _Grunning
 			if selfScan {
-				//自我扫描，进入等待状态
+				// 自我扫描，进入等待状态
 				casgstatus(userG, _Grunning, _Gwaiting)
 				userG.waitreason = waitReasonGarbageCollectionScan
 			}
@@ -248,7 +248,7 @@ func markroot(gcw *gcWork, i uint32) {
 			resumeG(stopped)
 
 			if selfScan {
-				//扫描完成恢复运行状态
+				// 扫描完成恢复运行状态
 				casgstatus(userG, _Gwaiting, _Grunning)
 			}
 		})
@@ -300,7 +300,7 @@ func markrootFreeGStacks() {
 	// Free stacks.
 	q := gQueue{list.head, list.head}
 	for gp := list.head.ptr(); gp != nil; gp = gp.schedlink.ptr() {
-		//g is dead 释放栈空间
+		// g is dead 释放栈空间
 		stackfree(gp.stack)
 		gp.stack.lo = 0
 		gp.stack.hi = 0
@@ -638,7 +638,7 @@ func gcAssistAlloc1(gp *g, scanWork int64) {
 	// will be more cache friendly.
 	gcw := &getg().m.p.ptr().gcw
 	workDone := gcDrainN(gcw, scanWork)
-	//执行完退出
+	// 执行完退出
 	casgstatus(gp, _Gwaiting, _Grunning)
 
 	// Record that we did this much scan work.
@@ -814,13 +814,13 @@ func scanstack(gp *g, gcw *gcWork) {
 		throw("can't scan our own stack")
 	}
 
-	//如果缩栈安全
+	// 如果缩栈安全
 	if isShrinkStackSafe(gp) {
 		// Shrink the stack if not much of it is being used.
 		shrinkstack(gp)
 	} else {
 		// Otherwise, shrink the stack at the next sync safe point.
-		//标记，等待下一个安全点缩栈
+		// 标记，等待下一个安全点缩栈
 		gp.preemptShrink = true
 	}
 

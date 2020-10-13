@@ -14,7 +14,7 @@ import (
 )
 
 func unixSocket(ctx context.Context, net string, laddr, raddr sockaddr, mode string, ctrlFn func(string, string, syscall.RawConn) error) (*netFD, error) {
-	var sotype int	//unix socket 具体类型
+	var sotype int // unix socket 具体类型
 	switch net {
 	case "unix":
 		sotype = syscall.SOCK_STREAM

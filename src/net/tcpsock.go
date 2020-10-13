@@ -324,7 +324,7 @@ func (l *TCPListener) File() (f *os.File, err error) {
 // sysListener.listenTCP
 func ListenTCP(network string, laddr *TCPAddr) (*TCPListener, error) {
 	switch network {
-	//只认这3种
+	// 只认这3种
 	case "tcp", "tcp4", "tcp6":
 	default:
 		return nil, &OpError{Op: "listen", Net: network, Source: nil, Addr: laddr.opAddr(), Err: UnknownNetworkError(network)}

@@ -33,7 +33,6 @@ func (a *onceError) Load() error {
 	return a.err
 }
 
-
 // ErrClosedPipe is the error used for read or write operations on a closed pipe.
 var ErrClosedPipe = errors.New("io: read/write on closed pipe")
 
@@ -62,7 +61,7 @@ func (p *pipe) Read(b []byte) (n int, err error) {
 		p.rdCh <- nr
 		return nr, nil
 	case <-p.done:
-		//这里为什么再case一个 p.done
+		// 这里为什么再case一个 p.done
 		return 0, p.readCloseError()
 	}
 }
@@ -93,7 +92,7 @@ func (p *pipe) Write(b []byte) (n int, err error) {
 		defer p.wrMu.Unlock()
 	}
 
-	//nb
+	// nb
 	for once := true; once || len(b) > 0; once = false {
 		select {
 		case p.wrCh <- b:

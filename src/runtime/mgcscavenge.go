@@ -91,7 +91,7 @@ const (
 	//
 	// This ratio is used as part of multiplicative factor to help the scavenger account
 	// for the additional costs of using scavenged memory in its pacing.
-	//0
+	// 0
 	scavengeCostRatio = 0.7 * sys.GoosDarwin
 
 	// scavengeReservationShards determines the amount of memory the scavenger
@@ -260,13 +260,13 @@ func bgscavenge(c chan int) {
 
 	scavenge.timer = new(timer)
 	scavenge.timer.f = func(_ interface{}, _ uintptr) {
-		//定时唤醒 清道工作
+		// 定时唤醒 清道工作
 		wakeScavenger()
 	}
 
-	//进行上面的初始化，然后解除阻塞
+	// 进行上面的初始化，然后解除阻塞
 	c <- 1
-	//暂停，等其他地方需要的时候，唤醒
+	// 暂停，等其他地方需要的时候，唤醒
 	goparkunlock(&scavenge.lock, waitReasonGCScavengeWait, traceEvGoBlock, 1)
 
 	// Exponentially-weighted moving average of the fraction of time this
@@ -397,7 +397,7 @@ func bgscavenge(c chan int) {
 //
 // s.mheapLock must be held, but may be temporarily released if
 // mayUnlock == true.
-//
+// 将span释放给os, 通知os可以进行回收
 // Must run on the system stack because s.mheapLock must be held.
 //
 //go:systemstack

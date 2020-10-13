@@ -15,7 +15,7 @@ import (
 
 // Process stores the information about a process created by StartProcess.
 type Process struct {
-	Pid    int			//进程id
+	Pid    int          // 进程id
 	handle uintptr      // handle is accessed atomically on Windows
 	isdone uint32       // process has been successfully waited on, non zero if true
 	sigMu  sync.RWMutex // avoid race between wait and signal
@@ -70,7 +70,7 @@ type Signal interface {
 // Getpid returns the process id of the caller.
 func Getpid() int { return syscall.Getpid() }
 
-//父进程 pid
+// 父进程 pid
 // Getppid returns the process id of the caller's parent.
 func Getppid() int { return syscall.Getppid() }
 

@@ -8,7 +8,7 @@ import (
 	"syscall"
 )
 
-//递归创建目录
+// 递归创建目录
 // MkdirAll creates a directory named path, along with any necessary parents,
 // and returns nil, or else returns an error.
 
@@ -59,7 +59,7 @@ func MkdirAll(path string, perm FileMode) error {
 	return nil
 }
 
-//递归删除目录
+// 递归删除目录
 // RemoveAll removes path and any children it contains.
 // It removes everything it can but returns the first error
 // it encounters. If the path does not exist, RemoveAll

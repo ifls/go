@@ -13,7 +13,7 @@ import (
 	"syscall"
 )
 
-//递归删除目录和文件的实现代码
+// 递归删除目录和文件的实现代码
 func removeAll(path string) error {
 	if path == "" {
 		// fail silently to retain compatibility with previous behavior

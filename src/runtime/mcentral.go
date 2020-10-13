@@ -19,7 +19,7 @@ import "runtime/internal/atomic"
 //go:notinheap
 type mcentral struct {
 	lock      mutex
-	spanclass spanClass		//uint8
+	spanclass spanClass // uint8
 
 	// For !go115NewMCentralImpl.
 	nonempty mSpanList // 非空闲span列表 list of spans with a free object, ie a nonempty free list
@@ -55,7 +55,7 @@ type mcentral struct {
 
 // Initialize a single central free list.
 func (c *mcentral) init(spc spanClass) {
-	//设置尺寸
+	// 设置尺寸
 	c.spanclass = spc
 	if go115NewMCentralImpl {
 		lockInit(&c.partial[0].spineLock, lockRankSpanSetSpine)
@@ -63,7 +63,7 @@ func (c *mcentral) init(spc spanClass) {
 		lockInit(&c.full[0].spineLock, lockRankSpanSetSpine)
 		lockInit(&c.full[1].spineLock, lockRankSpanSetSpine)
 	} else {
-		//重置链表
+		// 重置链表
 		c.nonempty.init()
 		c.empty.init()
 		lockInit(&c.lock, lockRankMcentral)
@@ -135,14 +135,14 @@ func (c *mcentral) cacheSpan() *mspan {
 
 	// Now try partial unswept spans.
 	for ; spanBudget >= 0; spanBudget-- {
-		//部分满
+		// 部分满
 		s = c.partialUnswept(sg).pop()
 		if s == nil {
 			break
 		}
 		if atomic.Load(&s.sweepgen) == sg-2 && atomic.Cas(&s.sweepgen, sg-2, sg-1) {
 			// We got ownership of the span, so let's sweep it and use it.
-			s.sweep(true)  //清扫了，就直接重用
+			s.sweep(true) // 清扫了，就直接重用
 			goto havespan
 		}
 		// We failed to get ownership of the span, which means it's being or
@@ -164,14 +164,14 @@ func (c *mcentral) cacheSpan() *mspan {
 			s.sweep(true)
 
 			// Check if there's any free space.
-			//检查是否确实有空闲空间
+			// 检查是否确实有空闲空间
 			freeIndex := s.nextFreeIndex()
 			if freeIndex != s.nelems {
 				s.freeindex = freeIndex
 				goto havespan
 			}
 			// Add it to the swept list, because sweeping didn't give us any free space.
-			//扫不出，还是满的，放回列表
+			// 扫不出，还是满的，放回列表
 			c.fullSwept(sg).push(s)
 		}
 		// See comment for partial unswept spans.
@@ -182,7 +182,7 @@ func (c *mcentral) cacheSpan() *mspan {
 	}
 
 	// We failed to get a span from the mcentral so get one from mheap.
-	//从堆mheap申请新的一块span
+	// 从堆mheap申请新的一块span
 	s = c.grow()
 	if s == nil {
 		return nil
@@ -213,13 +213,12 @@ havespan:
 		gcController.revise()
 	}
 
-
 	freeByteBase := s.freeindex &^ (64 - 1)
 	whichByte := freeByteBase / 8
 	// Init alloc bits cache.
 	s.refillAllocCache(whichByte)
 	// Adjust the allocCache so that s.freeindex corresponds to the low bit in s.allocCache.
-	//更新占用信息
+	// 更新占用信息
 	s.allocCache >>= s.freeindex % 64
 
 	return s
@@ -516,7 +515,7 @@ func (c *mcentral) grow() *mspan {
 	npages := uintptr(class_to_allocnpages[c.spanclass.sizeclass()])
 	size := uintptr(class_to_size[c.spanclass.sizeclass()])
 
-	//堆中申请mspan
+	// 堆中申请mspan
 	s := mheap_.alloc(npages, c.spanclass, true)
 	if s == nil {
 		return nil
@@ -525,9 +524,9 @@ func (c *mcentral) grow() *mspan {
 	// Use division by multiplication and shifts to quickly compute:
 	// n := (npages << _PageShift) / size
 	n := (npages << _PageShift) >> s.divShift * uintptr(s.divMul) >> s.divShift2
-	//初始化界限
+	// 初始化界限
 	s.limit = s.base() + size*n
-	//初始化
+	// 初始化
 	heapBitsForAddr(s.base()).initSpan(s)
 	return s
 }

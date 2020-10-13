@@ -56,13 +56,13 @@ func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only
 	// 只有本地地址就是listen
 	if laddr != nil && raddr == nil {
 		switch sotype {
-		case syscall.SOCK_STREAM, syscall.SOCK_SEQPACKET:	//流式
+		case syscall.SOCK_STREAM, syscall.SOCK_SEQPACKET: // 流式
 			if err := fd.listenStream(laddr, listenerBacklog(), ctrlFn); err != nil {
 				fd.Close()
 				return nil, err
 			}
 			return fd, nil
-		case syscall.SOCK_DGRAM:		//数据报
+		case syscall.SOCK_DGRAM: // 数据报
 			if err := fd.listenDatagram(laddr, ctrlFn); err != nil {
 				fd.Close()
 				return nil, err
@@ -71,7 +71,7 @@ func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only
 		}
 	}
 
-	//否则就是dial
+	// 否则就是dial
 	if err := fd.dial(ctx, laddr, raddr, ctrlFn); err != nil {
 		fd.Close()
 		return nil, err
@@ -195,7 +195,7 @@ func (fd *netFD) listenStream(laddr sockaddr, backlog int, ctrlFn func(string, s
 			return err
 		}
 	}
-	//绑定地址 SYS_BIND
+	// 绑定地址 SYS_BIND
 	if err = syscall.Bind(fd.pfd.Sysfd, lsa); err != nil {
 		return os.NewSyscallError("bind", err)
 	}

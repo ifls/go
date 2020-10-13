@@ -10,6 +10,7 @@ import (
 	"runtime/internal/atomic"
 	"unsafe"
 )
+
 // 基于futex实现 sleep/wake Fast userspace mutex
 // This implementation depends on OS-specific implementations of
 //
@@ -42,9 +43,9 @@ func key32(p *uintptr) *uint32 {
 	return (*uint32)(unsafe.Pointer(p))
 }
 
-//lock
+// lock
 func lock(l *mutex) {
-	//call lock2()
+	// call lock2()
 	lockWithRank(l, getLockRank(l))
 }
 
@@ -54,11 +55,11 @@ func lock2(l *mutex) {
 	if gp.m.locks < 0 {
 		throw("runtime·lock: lock count")
 	}
-	//锁住
+	// 锁住
 	gp.m.locks++
 
 	// Speculative grab投机式的获取 for lock.
-	//如果旧值是未加锁，则表示加锁成功，返回
+	// 如果旧值是未加锁，则表示加锁成功，返回
 	v := atomic.Xchg(key32(&l.key), mutex_locked)
 	if v == mutex_unlocked {
 		return
@@ -88,7 +89,7 @@ func lock2(l *mutex) {
 					return
 				}
 			}
-			//自旋等待
+			// 自旋等待
 			procyield(active_spin_cnt)
 		}
 
@@ -99,26 +100,26 @@ func lock2(l *mutex) {
 					return
 				}
 			}
-			//让出线程执行权
+			// 让出线程执行权
 			osyield()
 		}
 
 		// Sleep.
 		v = atomic.Xchg(key32(&l.key), mutex_sleeping)
 		if v == mutex_unlocked {
-			//锁成功
+			// 锁成功
 			return
 		}
-		//锁不成功
+		// 锁不成功
 		wait = mutex_sleeping
 		// if *key == mutex_sleeping {sleep no timeout}
 		futexsleep(key32(&l.key), mutex_sleeping, -1)
 	}
 }
 
-//unlock
+// unlock
 func unlock(l *mutex) {
-	//call unlock2
+	// call unlock2
 	unlockWithRank(l)
 }
 
@@ -128,19 +129,19 @@ func unlock2(l *mutex) {
 		throw("unlock of unlocked lock")
 	}
 
-	//唤醒一个
+	// 唤醒一个
 	if v == mutex_sleeping {
 		futexwakeup(key32(&l.key), 1)
 	}
 
-	//解锁m
+	// 解锁m
 	gp := getg()
 	gp.m.locks--
 	if gp.m.locks < 0 {
 		throw("runtime·unlock: lock count")
 	}
 
-	//恢复抢占请求?
+	// 恢复抢占请求?
 	if gp.m.locks == 0 && gp.preempt { // restore the preemption request in case we've cleared it in newstack
 		gp.stackguard0 = stackPreempt
 	}
@@ -148,40 +149,40 @@ func unlock2(l *mutex) {
 
 // One-time notifications.
 func noteclear(n *note) {
-	n.key = 0	//0就进入睡眠，1表示唤醒
+	n.key = 0 // 0就进入睡眠，1表示唤醒
 }
 
 func notewakeup(n *note) {
 	old := atomic.Xchg(key32(&n.key), 1)
-	//使用前必须 = 0，
+	// 使用前必须 = 0，
 	if old != 0 {
 		print("notewakeup - double wakeup (", old, ")\n")
 		throw("notewakeup - double wakeup")
 	}
-	//key的地址做唯一标记
-	//唤醒一个
+	// key的地址做唯一标记
+	// 唤醒一个
 	futexwakeup(key32(&n.key), 1)
 }
 
 func notesleep(n *note) {
 	gp := getg()
-	//只能在系统栈上执行sleep
+	// 只能在系统栈上执行sleep
 	if gp != gp.m.g0 {
 		throw("notesleep not on g0")
 	}
 
-	//forever
+	// forever
 	ns := int64(-1)
 	if *cgo_yield != nil {
 		// Sleep for an arbitrary-but-moderate interval to poll libc interceptors.
 		ns = 10e6
 	}
 
-	//不能使用if
+	// 不能使用if
 	for atomic.Load(key32(&n.key)) == 0 {
-		//标记阻塞
+		// 标记阻塞
 		gp.m.blocked = true
-		//阻塞os线程
+		// 阻塞os线程
 		futexsleep(key32(&n.key), 0, ns)
 		if *cgo_yield != nil {
 			asmcgocall(*cgo_yield, nil)

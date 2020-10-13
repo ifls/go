@@ -612,7 +612,7 @@ func writeBarrierBenchmark(b *testing.B, f func()) {
 	runtime.GC()
 	var ms runtime.MemStats
 	runtime.ReadMemStats(&ms)
-	//b.Logf("heap size: %d MB", ms.HeapAlloc>>20)
+	// b.Logf("heap size: %d MB", ms.HeapAlloc>>20)
 
 	// Keep GC running continuously during the benchmark, which in
 	// turn keeps the write barrier on continuously.

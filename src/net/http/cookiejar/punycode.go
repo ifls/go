@@ -4,7 +4,8 @@
 
 package cookiejar
 
-// This file implements the Punycode algorithm from RFC 3492.
+// This file implements the Punycode algorithm from RFC 3492. 国际化域名编码
+// https://zh.wikipedia.org/wiki/%E5%9B%BD%E9%99%85%E5%8C%96%E5%9F%9F%E5%90%8D%E7%BC%96%E7%A0%81
 
 import (
 	"fmt"

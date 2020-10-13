@@ -34,7 +34,7 @@ func mmap(addr unsafe.Pointer, n uintptr, prot, flags, fd int32, off uint32) (un
 		// an errno value.
 		var ret uintptr
 		systemstack(func() {
-			//通过cgo调用
+			// 通过cgo调用
 			ret = callCgoMmap(addr, n, prot, flags, fd, off)
 		})
 		if ret < 4096 {
@@ -53,7 +53,7 @@ func munmap(addr unsafe.Pointer, n uintptr) {
 	sysMunmap(addr, n)
 }
 
-//调用 mmap系统调用， 汇编实现 sys_linux_amd64.s
+// 调用 mmap系统调用， 汇编实现 sys_linux_amd64.s
 // sysMmap calls the mmap system call. It is implemented in assembly.
 func sysMmap(addr unsafe.Pointer, n uintptr, prot, flags, fd int32, off uint32) (p unsafe.Pointer, err int)
 

@@ -95,25 +95,25 @@ const DefaultMaxIdleConnsPerHost = 2
 
 // RoundTripper的实现,
 type Transport struct {
-	idleMu       sync.Mutex
-	closeIdle    bool                                // user has requested to close all idle conns
-	idleConn     map[connectMethodKey][]*persistConn // most recently used at end
-	idleConnWait map[connectMethodKey]wantConnQueue  // waiting getConns
+	idleMu    sync.Mutex
+	closeIdle bool // 标记用户请求关闭空闲连接,
+	// 当调用getConn获取连接时, 会置为false user has requested to close all idle conns
+	idleConn     map[connectMethodKey][]*persistConn // most recently used at end 每个host, 的空闲连接
+	idleConnWait map[connectMethodKey]wantConnQueue  // waiting getConns ???
 	idleLRU      connLRU
 
 	reqMu       sync.Mutex
 	reqCanceler map[*Request]func(error)
 
-	altMu    sync.Mutex   // guards changing altProto only
+	altMu    sync.Mutex   // guards changing altProto only 已经是原子对象, 还要锁保护???
 	altProto atomic.Value // of nil or map[string]RoundTripper, key is URI scheme  保存各种RoundTripper实现, 支持多种应用层协议
 
 	connsPerHostMu   sync.Mutex
-	connsPerHost     map[connectMethodKey]int
+	connsPerHost     map[connectMethodKey]int           // 每个host的空闲连接数量
 	connsPerHostWait map[connectMethodKey]wantConnQueue // waiting getConns
 
-	// Proxy specifies a function to return a proxy for a given
-	// Request. If the function returns a non-nil error, the
-	// request is aborted with the provided error.
+	// Proxy specifies a function to return a proxy for a given Request.
+	// If the function returns a non-nil error, the request is aborted with the provided error.
 	//
 	// The proxy type is determined by the URL scheme. "http",
 	// "https", and "socks5" are supported. If the scheme is empty,
@@ -172,14 +172,14 @@ type Transport struct {
 
 	// TLSHandshakeTimeout specifies the maximum amount of time waiting to
 	// wait for a TLS handshake. Zero means no timeout.
-	TLSHandshakeTimeout time.Duration
+	TLSHandshakeTimeout time.Duration // tls 握手超时
 
 	// DisableKeepAlives, if true, disables HTTP keep-alives and
 	// will only use the connection to the server for a single
 	// HTTP request.
 	//
 	// This is unrelated to the similarly named TCP keep-alives.
-	DisableKeepAlives bool
+	DisableKeepAlives bool // 禁用http 连接复用
 
 	// DisableCompression, if true, prevents the Transport from
 	// requesting compression with an "Accept-Encoding: gzip"
@@ -267,26 +267,28 @@ type Transport struct {
 	h2transport        h2Transport // non-nil if http2 wired up
 	tlsNextProtoWasNil bool        // whether TLSNextProto was nil when the Once fired
 
-	// ForceAttemptHTTP2 controls whether HTTP/2 is enabled when a non-zero
+	// ForceAttemptHTTP2 controls whether HTTP/2 is enabled when a non-zero 非零值
 	// Dial, DialTLS, or DialContext func or TLSClientConfig is provided.
-	// By default, use of any those fields conservatively disables HTTP/2.
+
+	// By default, use of any those fields conservatively disables保守禁用 HTTP/2.
+
 	// To use a custom dialer or TLS config and still attempt HTTP/2
 	// upgrades, set this to true.
-	ForceAttemptHTTP2 bool
+	ForceAttemptHTTP2 bool // 开启http2
 }
 
 func (t *Transport) writeBufferSize() int {
 	if t.WriteBufferSize > 0 {
 		return t.WriteBufferSize
 	}
-	return 4 << 10
+	return 4 << 10 // 4K
 }
 
 func (t *Transport) readBufferSize() int {
 	if t.ReadBufferSize > 0 {
 		return t.ReadBufferSize
 	}
-	return 4 << 10
+	return 4 << 10 // 4K
 }
 
 // Clone returns a deep copy of t's exported fields.
@@ -492,10 +494,12 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
 		req.closeBody()
 		return nil, errors.New("http: nil Request.URL")
 	}
+
 	if req.Header == nil {
 		req.closeBody()
 		return nil, errors.New("http: nil Request.Header")
 	}
+
 	scheme := req.URL.Scheme
 	isHTTP := scheme == "http" || scheme == "https"
 	if isHTTP {
@@ -551,7 +555,7 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
 		// host (for http or https), the http proxy, or the http proxy
 		// pre-CONNECTed to https server. In any case, we'll be ready
 		// to send it requests.
-		// 创建新的连接
+		// 获取persist conn, 可能也会创建新的连接
 		pconn, err := t.getConn(treq, cm)
 		if err != nil {
 			t.setReqCanceler(req, nil)
@@ -565,7 +569,7 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
 			t.setReqCanceler(req, nil) // not cancelable with CancelRequest
 			resp, err = pconn.alt.RoundTrip(req)
 		} else {
-			// http/1.x
+			// http/1.x 请求-响应
 			resp, err = pconn.roundTrip(treq)
 		}
 		if err == nil {
@@ -602,7 +606,7 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
 
 // shouldRetryRequest reports whether we should retry sending a failed
 // HTTP request on a new connection. The non-nil input error is the
-// error from roundTrip.
+// error from roundTrip. 根据错误判断, 此错误是否可以重试
 func (pc *persistConn) shouldRetryRequest(req *Request, err error) bool {
 	if http2isNoCachedConnError(err) {
 		// Issue 16582: if the user started a bunch of
@@ -710,6 +714,7 @@ func (t *Transport) CancelRequest(req *Request) {
 	t.cancelRequest(req, errRequestCanceled)
 }
 
+// 回调取消请求的通知函数
 // Cancel an in-flight request, recording the error value.
 func (t *Transport) cancelRequest(req *Request, err error) {
 	t.reqMu.Lock()
@@ -881,7 +886,7 @@ func (t *Transport) tryPutIdleConn(pconn *persistConn) error {
 		}
 	}
 
-	if t.closeIdle {
+	if t.closeIdle { // 用户已请求关闭空闲连接, 不能放入缓存池
 		return errCloseIdle
 	}
 	if t.idleConn == nil {
@@ -1047,6 +1052,7 @@ func (t *Transport) removeIdleConnLocked(pconn *persistConn) bool {
 	return removed
 }
 
+// 设置请求取消的通知函数
 func (t *Transport) setReqCanceler(r *Request, fn func(error)) {
 	t.reqMu.Lock()
 	defer t.reqMu.Unlock()
@@ -1114,7 +1120,7 @@ type wantConn struct {
 	afterDial  func()
 
 	mu  sync.Mutex   // protects pc, err, close(ready)
-	pc  *persistConn // 用来传递持久连接
+	pc  *persistConn // 用来传递, 需要拿到的持久连接
 	err error
 }
 
@@ -1165,7 +1171,7 @@ func (w *wantConn) cancel(t *Transport, err error) {
 
 // A wantConnQueue is a queue of wantConns.
 type wantConnQueue struct {
-	// This is a queue, not a deque.
+	// This is a queue, not a deque(double end queue).
 	// It is split into two stages - head[headPos:] and tail.
 	// popFront is trivial (headPos++) on the first stage, and
 	// pushBack is trivial (append) on the second stage.
@@ -1197,6 +1203,7 @@ func (q *wantConnQueue) popFront() *wantConn {
 			return nil
 		}
 		// Pick up tail as new head, clear tail.
+		// 双缓冲对换
 		q.head, q.headPos, q.tail = q.tail, 0, q.head[:0]
 	}
 	w := q.head[q.headPos]
@@ -1245,6 +1252,7 @@ func (t *Transport) customDialTLS(ctx context.Context, network, addr string) (co
 // specified in the connectMethod. This includes doing a proxy CONNECT
 // and/or setting up TLS.  If this doesn't return an error, the persistConn
 // is ready to write requests to.
+// 拿到连接的入口函数
 func (t *Transport) getConn(treq *transportRequest, cm connectMethod) (pc *persistConn, err error) {
 	req := treq.Request
 	trace := treq.trace
@@ -1286,6 +1294,7 @@ func (t *Transport) getConn(treq *transportRequest, cm connectMethod) (pc *persi
 	t.setReqCanceler(req, func(err error) { cancelc <- err })
 
 	// Queue for permission to dial.
+	// 拨号连接队列
 	t.queueForDial(w)
 
 	// Wait for completion or cancellation.
@@ -1378,6 +1387,7 @@ func (t *Transport) dialConnFor(w *wantConn) {
 
 // decConnsPerHost decrements the per-host connection count for key,
 // which may in turn give a different waiting goroutine permission to dial.
+// 降低 对每个Host所能建立的连接数量
 func (t *Transport) decConnsPerHost(key connectMethodKey) {
 	if t.MaxConnsPerHost <= 0 {
 		return
@@ -1439,6 +1449,7 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 		cfg.NextProtos = nil
 	}
 	plainConn := pconn.conn
+	// 封装tls连接
 	tlsConn := tls.Client(plainConn, cfg)
 	errc := make(chan error, 2)
 	var timer *time.Timer // for canceling TLS handshake
@@ -1451,6 +1462,7 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 		if trace != nil && trace.TLSHandshakeStart != nil {
 			trace.TLSHandshakeStart()
 		}
+		// 开始tls握手
 		err := tlsConn.Handshake()
 		if timer != nil {
 			timer.Stop()
@@ -1473,7 +1485,7 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 	return nil
 }
 
-// 会开启读写循环
+// 打开连接, 并且会开启读写循环
 func (t *Transport) dialConn(ctx context.Context, cm connectMethod) (pconn *persistConn, err error) {
 	pconn = &persistConn{
 		t:             t,
@@ -1484,6 +1496,7 @@ func (t *Transport) dialConn(ctx context.Context, cm connectMethod) (pconn *pers
 		writeErrCh:    make(chan error, 1),
 		writeLoopDone: make(chan struct{}),
 	}
+
 	trace := httptrace.ContextClientTrace(ctx)
 	wrapErr := func(err error) error {
 		if cm.proxyURL != nil {
@@ -1492,6 +1505,7 @@ func (t *Transport) dialConn(ctx context.Context, cm connectMethod) (pconn *pers
 		}
 		return err
 	}
+
 	if cm.scheme() == "https" && t.hasCustomTLSDialer() {
 		var err error
 		pconn.conn, err = t.customDialTLS(ctx, "tcp", cm.addr())
@@ -1632,6 +1646,7 @@ func (t *Transport) dialConn(ctx context.Context, cm connectMethod) (pconn *pers
 	}
 
 	if cm.proxyURL != nil && cm.targetScheme == "https" {
+		// pc.conn = tlsConn 封装一层tls 握手和加密
 		if err := pconn.addTLS(cm.tlsHost(), trace); err != nil {
 			return nil, err
 		}
@@ -1648,7 +1663,9 @@ func (t *Transport) dialConn(ctx context.Context, cm connectMethod) (pconn *pers
 		}
 	}
 
+	// 读缓冲
 	pconn.br = bufio.NewReaderSize(pconn, t.readBufferSize())
+	// 写缓冲
 	pconn.bw = bufio.NewWriterSize(persistConnWriter{pconn}, t.writeBufferSize())
 
 	go pconn.readLoop()
@@ -1702,13 +1719,13 @@ var _ io.ReaderFrom = (*persistConnWriter)(nil)
 //
 type connectMethod struct {
 	_            incomparable
-	proxyURL     *url.URL // nil for no proxy, else full proxy URL
+	proxyURL     *url.URL // nil for no proxy, else full proxy URL 代理地址
 	targetScheme string   // "http" or "https"
 	// If proxyURL specifies an http or https proxy, and targetScheme is http (not https),
 	// then targetAddr is not included in the connect method key, because the socket can
 	// be reused for different targetAddr values.
-	targetAddr string
-	onlyH1     bool // whether to disable HTTP/2 and force HTTP/1
+	targetAddr string //
+	onlyH1     bool   // whether to disable HTTP/2 and force HTTP/1
 }
 
 func (cm *connectMethod) key() connectMethodKey {
@@ -1777,7 +1794,7 @@ type persistConn struct {
 	// alt optionally specifies the TLS NextProto RoundTripper.
 	// This is used for HTTP/2 today and future protocols later.
 	// If it's non-nil, the rest of the fields are unused.
-	alt RoundTripper
+	alt RoundTripper // 替代的请求-响应实现
 
 	t         *Transport
 	cacheKey  connectMethodKey
@@ -1820,7 +1837,7 @@ func (pc *persistConn) maxHeaderResponseSize() int64 {
 	if v := pc.t.MaxResponseHeaderBytes; v != 0 {
 		return v
 	}
-	return 10 << 20 // conservative default; same as http2
+	return 10 << 20 // conservative default; same as http2 10M
 }
 
 // http 读数据
@@ -1949,7 +1966,7 @@ func (pc *persistConn) mapRoundTripError(req *transportRequest, startBytesWritte
 // closing a net.Conn that is now owned by the caller.
 var errCallerOwnsConn = errors.New("read loop ending; caller owns writable underlying conn")
 
-// http 读循环
+// http 读循环, 读取response
 func (pc *persistConn) readLoop() {
 	closeErr := errReadLoopExiting // default value, if not changed below
 	defer func() {
@@ -2000,6 +2017,7 @@ func (pc *persistConn) readLoop() {
 
 		var resp *Response
 		if err == nil {
+			// 读取响应
 			resp, err = pc.readResponse(rc, trace)
 		} else {
 			err = transportReadFromServerError{err}
@@ -2053,7 +2071,7 @@ func (pc *persistConn) readLoop() {
 			}
 
 			select {
-			// 读取response 写到通道, roundTrip 会从通道里拿
+			// 读取response 写到通道, roundTrip 会从通道里拿response
 			case rc.ch <- responseAndError{res: resp}:
 			case <-rc.callerGone:
 				return
@@ -2099,7 +2117,7 @@ func (pc *persistConn) readLoop() {
 		}
 
 		select {
-		// 读取response 写到通道, roundTrip 会从通道里拿
+		// 读取response 写到通道, roundTrip 会从通道里拿response
 		case rc.ch <- responseAndError{res: resp}:
 		case <-rc.callerGone:
 			return
@@ -2170,6 +2188,7 @@ func is408Message(buf []byte) bool {
 // readResponse reads an HTTP response (or two, in the case of "Expect:
 // 100-continue") from the server. It returns the final non-100 one.
 // trace is optional.
+// 读取单个response
 func (pc *persistConn) readResponse(rc requestAndChan, trace *httptrace.ClientTrace) (resp *Response, err error) {
 	if trace != nil && trace.GotFirstResponseByte != nil {
 		if peek, err := pc.br.Peek(1); err == nil && len(peek) == 1 {
@@ -2212,6 +2231,7 @@ func (pc *persistConn) readResponse(rc requestAndChan, trace *httptrace.ClientTr
 					return nil, err
 				}
 			}
+			// 跳过break, 继续下一次循环
 			continue
 		}
 		break
@@ -2363,7 +2383,7 @@ func (pc *persistConn) wroteRequest() bool {
 
 // responseAndError is how the goroutine reading from an HTTP/1 server
 // communicates with the goroutine doing the RoundTrip.
-type responseAndError struct {
+type responseAndError struct { // 包含response以及error
 	_   incomparable
 	res *Response // else use this response (see res method)
 	err error
@@ -2498,10 +2518,13 @@ func (pc *persistConn) roundTrip(req *transportRequest) (resp *Response, err err
 	// request body.
 	startBytesWritten := pc.nwrite
 	writeErrCh := make(chan error, 1)
+	// req发送到写chan, 稍后write
+	// read By WriteLoop
 	pc.writech <- writeRequest{req, writeErrCh, continueCh}
 
 	resc := make(chan responseAndError)
-	pc.reqch <- requestAndChan{
+	// read By ReadLoop
+	pc.reqch <- requestAndChan{ // 发到请求通道
 		req:        req.Request,
 		ch:         resc,
 		addedGzip:  requestedGzip,
@@ -2515,7 +2538,7 @@ func (pc *persistConn) roundTrip(req *transportRequest) (resp *Response, err err
 	for {
 		testHookWaitResLoop()
 		select {
-		case err := <-writeErrCh:
+		case err := <-writeErrCh: // 发送错误
 			if debugRoundTrip {
 				req.logf("writeErrCh resv: %T/%#v", err, err)
 			}
@@ -2531,18 +2554,18 @@ func (pc *persistConn) roundTrip(req *transportRequest) (resp *Response, err err
 				defer timer.Stop() // prevent leaks
 				respHeaderTimer = timer.C
 			}
-		case <-pc.closech:
+		case <-pc.closech: // 已关闭
 			if debugRoundTrip {
 				req.logf("closech recv: %T %#v", pc.closed, pc.closed)
 			}
 			return nil, pc.mapRoundTripError(req, startBytesWritten, pc.closed)
-		case <-respHeaderTimer:
+		case <-respHeaderTimer: // 超时
 			if debugRoundTrip {
 				req.logf("timeout waiting for response headers.")
 			}
 			pc.close(errTimeout)
 			return nil, errTimeout
-		case re := <-resc:
+		case re := <-resc: // 从通道拿到响应
 			// 判断res和err是否满足互斥
 			if (re.res == nil) == (re.err == nil) {
 				panic(fmt.Sprintf("internal error: exactly one of res or err should be set; nil=%v", re.res == nil))
@@ -2554,12 +2577,12 @@ func (pc *persistConn) roundTrip(req *transportRequest) (resp *Response, err err
 				return nil, pc.mapRoundTripError(req, startBytesWritten, re.err)
 			}
 
-			// 直到拿到response
+			// 拿到response
 			return re.res, nil
-		case <-cancelChan:
+		case <-cancelChan: // 已取消
 			pc.t.CancelRequest(req.Request)
 			cancelChan = nil
-		case <-ctxDoneChan:
+		case <-ctxDoneChan: // context 超时
 			pc.t.cancelRequest(req.Request, req.Context().Err())
 			cancelChan = nil
 			ctxDoneChan = nil

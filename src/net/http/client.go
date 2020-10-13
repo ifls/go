@@ -86,7 +86,7 @@ type Client struct {
 	//
 	// If Jar is nil, cookies are only sent if they are explicitly
 	// set on the Request.
-	Jar CookieJar
+	Jar CookieJar // 保存所有url 的cookie 信息
 
 	// Timeout specifies a time limit for requests made by this
 	// Client. The timeout includes connection time, any
@@ -173,10 +173,12 @@ func (c *Client) send(req *Request, deadline time.Time) (resp *Response, didTime
 			req.AddCookie(cookie)
 		}
 	}
+
 	resp, didTimeout, err = send(req, c.transport(), deadline)
 	if err != nil {
 		return nil, didTimeout, err
 	}
+
 	if c.Jar != nil {
 		if rc := resp.Cookies(); len(rc) > 0 {
 			c.Jar.SetCookies(req.URL, rc)
@@ -225,7 +227,7 @@ func send(ireq *Request, rt RoundTripper, deadline time.Time) (resp *Response, d
 	forkReq := func() {
 		if ireq == req {
 			req = new(Request)
-			*req = *ireq // shallow clone, 深拷贝需要递归, 而且要考虑一些特殊情况的处理, 可以参考一些开源库
+			*req = *ireq // shallow clone 浅拷贝, 深拷贝需要递归, 而且要考虑一些特殊情况的处理, 可以参考一些开源库
 		}
 	}
 
@@ -250,6 +252,7 @@ func send(ireq *Request, rt RoundTripper, deadline time.Time) (resp *Response, d
 	}
 	stopTimer, didTimeout := setRequestCancel(req, rt, deadline)
 
+	// 发起请求, net.Transport
 	resp, err = rt.RoundTrip(req)
 	if err != nil {
 		stopTimer()
@@ -590,6 +593,7 @@ func (c *Client) Do(req *Request) (*Response, error) {
 	return c.do(req)
 }
 
+// 外部无法设置, 用不上
 var testHookClientDoResult func(retres *Response, reterr error)
 
 func (c *Client) do(req *Request) (retres *Response, reterr error) {
@@ -597,6 +601,7 @@ func (c *Client) do(req *Request) (retres *Response, reterr error) {
 		// 最后可以对返回结果和返回错误, 请求hook
 		defer func() { testHookClientDoResult(retres, reterr) }()
 	}
+
 	if req.URL == nil {
 		req.closeBody()
 		return nil, &url.Error{
@@ -606,6 +611,7 @@ func (c *Client) do(req *Request) (retres *Response, reterr error) {
 	}
 
 	var (
+		// 截止时间
 		deadline      = c.deadline()
 		reqs          []*Request
 		resp          *Response
@@ -638,7 +644,9 @@ func (c *Client) do(req *Request) (retres *Response, reterr error) {
 	for {
 		// For all but the first request, create the next
 		// request hop and replace req.
+		// 碰到303, 301, 需要重定向
 		if len(reqs) > 0 {
+			// 重定向地址
 			loc := resp.Header.Get("Location")
 			if loc == "" {
 				resp.closeBody()
@@ -660,6 +668,7 @@ func (c *Client) do(req *Request) (retres *Response, reterr error) {
 				}
 			}
 			ireq := reqs[0]
+			// 新的请求
 			req = &Request{
 				Method:   redirectMethod,
 				Response: resp,
@@ -669,6 +678,8 @@ func (c *Client) do(req *Request) (retres *Response, reterr error) {
 				Cancel:   ireq.Cancel,
 				ctx:      ireq.ctx,
 			}
+
+			//
 			if includeBody && ireq.GetBody != nil {
 				req.Body, err = ireq.GetBody()
 				if err != nil {
@@ -736,12 +747,13 @@ func (c *Client) do(req *Request) (retres *Response, reterr error) {
 			return nil, uerr(err)
 		}
 
-		var shouldRedirect bool
+		var shouldRedirect bool // 判断是否要重定向, 发起新的请求
 		redirectMethod, shouldRedirect, includeBody = redirectBehavior(req.Method, resp, reqs[0])
 		if !shouldRedirect {
 			return resp, nil
 		}
 
+		// 重定向的时候才有下一次循环, 下一个请求
 		req.closeBody()
 	}
 }

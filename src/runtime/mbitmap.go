@@ -80,18 +80,18 @@ import (
 )
 
 const (
-	//1
+	// 1
 	bitPointer = 1 << 0
 	// 16
-	bitScan    = 1 << 4
+	bitScan = 1 << 4
 
-	heapBitsShift      = 1     // shift offset between successive bitPointer or bitScan entries
+	heapBitsShift = 1 // shift offset between successive bitPointer or bitScan entries
 	// 4
 	wordsPerBitmapByte = 8 / 2 // heap words described by one bitmap byte
 
 	// all scan/pointer bits in a byte
-	//240 0b1111 0000
-	bitScanAll    = bitScan | bitScan<<heapBitsShift | bitScan<<(2*heapBitsShift) | bitScan<<(3*heapBitsShift)
+	// 240 0b1111 0000
+	bitScanAll = bitScan | bitScan<<heapBitsShift | bitScan<<(2*heapBitsShift) | bitScan<<(3*heapBitsShift)
 	// 15 0b 0000 1111
 	bitPointerAll = bitPointer | bitPointer<<heapBitsShift | bitPointer<<(2*heapBitsShift) | bitPointer<<(3*heapBitsShift)
 )
@@ -150,8 +150,8 @@ type heapBits struct {
 }
 
 // Make the compiler check that heapBits.arena is large enough to hold the maximum arena frame number.
-//检查最大arena index
-//1^22-1 4M-1
+// 检查最大arena index
+// 1^22-1 4M-1
 var _ = heapBits{arena: (1<<heapAddrBits)/heapArenaBytes - 1}
 
 // markBits provides access to the mark bit for an object in the heap.
@@ -178,7 +178,7 @@ func (s *mspan) allocBitsForIndex(allocBitIndex uintptr) markBits {
 // It then places these 8 bytes into the cached 64 bit s.allocCache.
 // 再次填充allocCache 用于快速分配
 func (s *mspan) refillAllocCache(whichByte uintptr) {
-	//指向第whichByte个字节开始的8字节
+	// 指向第whichByte个字节开始的8字节
 	bytes := (*[8]uint8)(unsafe.Pointer(s.allocBits.bytep(whichByte)))
 	aCache := uint64(0)
 	aCache |= uint64(bytes[0])
@@ -189,7 +189,7 @@ func (s *mspan) refillAllocCache(whichByte uintptr) {
 	aCache |= uint64(bytes[5]) << (5 * 8)
 	aCache |= uint64(bytes[6]) << (6 * 8)
 	aCache |= uint64(bytes[7]) << (7 * 8)
-	s.allocCache = ^aCache		//取反
+	s.allocCache = ^aCache // 取反
 }
 
 // nextFreeIndex returns the index of the next free object in s at or after s.freeindex.
@@ -197,11 +197,11 @@ func (s *mspan) refillAllocCache(whichByte uintptr) {
 func (s *mspan) nextFreeIndex() uintptr {
 	sfreeindex := s.freeindex
 	snelems := s.nelems
-	//满了
+	// 满了
 	if sfreeindex == snelems {
 		return sfreeindex
 	}
-	//异常
+	// 异常
 	if sfreeindex > snelems {
 		throw("s.freeindex > s.nelems")
 	}
@@ -212,18 +212,18 @@ func (s *mspan) nextFreeIndex() uintptr {
 	// 此64bit已分配完
 	for bitIndex == 64 {
 		// Move index to start of next cached bits.
-		//右移
+		// 右移
 		sfreeindex = (sfreeindex + 64) &^ (64 - 1)
-		//超了
+		// 超了
 		if sfreeindex >= snelems {
 			s.freeindex = snelems
 			return snelems
 		}
 
-		//计算是第几个字节上
+		// 计算是第几个字节上
 		whichByte := sfreeindex / 8
 		// Refill s.allocCache with the next 64 alloc bits.
-		//重新计算allocCache
+		// 重新计算allocCache
 		s.refillAllocCache(whichByte)
 		aCache = s.allocCache
 		bitIndex = sys.Ctz64(aCache)
@@ -258,11 +258,11 @@ func (s *mspan) nextFreeIndex() uintptr {
 // been no preemption points since ensuring this (which could allow a
 // GC transition, which would allow the state to change).
 func (s *mspan) isFree(index uintptr) bool {
-	//之前的都已经被占用
+	// 之前的都已经被占用
 	if index < s.freeindex {
 		return false
 	}
-	//index >= s.freeindex
+	// index >= s.freeindex
 	bytep, mask := s.allocBits.bitp(index)
 	return *bytep&mask == 0
 }
@@ -893,7 +893,7 @@ func (s *mspan) countAlloc() int {
 		// but that's OK. We only care about how many bits are 1, not
 		// about the order we discover them in.
 		mrkBits := *(*uint64)(unsafe.Pointer(s.gcmarkBits.bytep(i)))
-		//返回1bit的数量
+		// 返回1bit的数量
 		count += sys.OnesCount64(mrkBits)
 	}
 	return count

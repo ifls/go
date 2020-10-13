@@ -73,8 +73,8 @@ func TestCompilerVsRuntimeHash(t *testing.T) {
 		map[complex64]int{},
 		map[complex128]int{},
 		map[string]int{},
-		//map[interface{}]int{},
-		//map[interface{F()}]int{},
+		// map[interface{}]int{},
+		// map[interface{F()}]int{},
 		map[[8]uint64]int{},
 		map[[8]string]int{},
 		map[struct{ a, b, c, d int32 }]int{}, // Note: tests AMEM128
@@ -154,7 +154,7 @@ func (s *HashSet) addS_seed(x string, seed uintptr) {
 func (s *HashSet) check(t *testing.T) {
 	const SLOP = 10.0
 	collisions := s.n - len(s.m)
-	//fmt.Printf("%d/%d\n", len(s.m), s.n)
+	// fmt.Printf("%d/%d\n", len(s.m), s.n)
 	pairs := int64(s.n) * int64(s.n-1) / 2
 	expected := float64(pairs) / math.Pow(2.0, float64(hashSize))
 	stddev := math.Sqrt(expected)

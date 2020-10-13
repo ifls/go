@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-
-//除了符号链接的实现
+// 除了符号链接的实现
 package filepath
 
 import (

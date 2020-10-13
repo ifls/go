@@ -466,7 +466,7 @@ func genPPC64() {
 	l.addSpecial(
 		"MOVW CR, R31\nMOVW R31, %d(R1)",
 		"MOVW %d(R1), R31\nMOVFL R31, $0xff", // this is MOVW R31, CR
-		8)                                    // CR is 4-byte wide, but just keep the alignment
+		8) // CR is 4-byte wide, but just keep the alignment
 	l.addSpecial(
 		"MOVD XER, R31\nMOVD R31, %d(R1)",
 		"MOVD %d(R1), R31\nMOVD R31, XER",

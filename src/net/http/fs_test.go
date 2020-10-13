@@ -1010,7 +1010,7 @@ func TestServeContent(t *testing.T) {
 			content = tt.content
 		}
 		for _, method := range []string{"GET", "HEAD"} {
-			//restore content in case it is consumed by previous method
+			// restore content in case it is consumed by previous method
 			if content, ok := content.(*strings.Reader); ok {
 				content.Seek(0, io.SeekStart)
 			}

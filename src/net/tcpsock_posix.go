@@ -140,7 +140,7 @@ func (ln *TCPListener) accept() (*TCPConn, error) {
 	if err != nil {
 		return nil, err
 	}
-	//包装fd
+	// 包装fd
 	tc := newTCPConn(fd)
 	if ln.lc.KeepAlive >= 0 {
 		setKeepAlive(fd, true)

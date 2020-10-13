@@ -35,10 +35,10 @@ var sweep sweepdata
 type sweepdata struct {
 	lock    mutex
 	g       *g
-	parked  bool	//sweep工作被暂停
+	parked  bool // sweep工作被暂停
 	started bool
 
-	nbgsweep    uint32	//扫描到空闲页的次数
+	nbgsweep    uint32 // 扫描到空闲页的次数
 	npausesweep uint32
 
 	// centralIndex is the current unswept span class.
@@ -159,12 +159,12 @@ func bgsweep(c chan int) {
 	lockInit(&sweep.lock, lockRankSweep)
 	lock(&sweep.lock)
 	sweep.parked = true
-	//初始化一下，然后解除阻塞
+	// 初始化一下，然后解除阻塞
 	c <- 1
 	goparkunlock(&sweep.lock, waitReasonGCSweepWait, traceEvGoBlock, 1)
 
 	for {
-		//清扫了一些页，就让其他g运行
+		// 清扫了一些页，就让其他g运行
 		for sweepone() != ^uintptr(0) {
 			sweep.nbgsweep++
 			Gosched()
@@ -326,7 +326,7 @@ func (s *mspan) ensureSwept() {
 // caller takes care of it.
 func (s *mspan) sweep(preserve bool) bool {
 	if !go115NewMCentralImpl {
-		//使用老的方式
+		// 使用老的方式
 		return s.oldSweep(preserve)
 	}
 	// It's critical that we enter this function with preemption disabled,
@@ -460,12 +460,12 @@ func (s *mspan) sweep(preserve bool) bool {
 
 	// gcmarkBits becomes the allocBits.
 	// get a fresh cleared gcmarkBits in preparation for next GC
-	//放回到已分配
+	// 放回到已分配
 	s.allocBits = s.gcmarkBits
-	//重新分配
+	// 重新分配
 	s.gcmarkBits = newMarkBits(s.nelems)
 	// Initialize alloc bits cache.
-	//重新天上分配缓存
+	// 重新天上分配缓存
 	s.refillAllocCache(0)
 
 	// The span must be in our exclusive ownership until we update sweepgen,
@@ -507,14 +507,14 @@ func (s *mspan) sweep(preserve bool) bool {
 			// sweeping by updating sweepgen. If this span still is in
 			// an unswept set, then the mcentral will pop it off the
 			// set, check its sweepgen, and ignore it.
-			//完全空
+			// 完全空
 			if nalloc == 0 {
 				// Free totally free span directly back to the heap.
-				//放到堆里
+				// 放到堆里
 				mheap_.freeSpan(s)
 				return true
 			}
-			//否则放回中心缓存
+			// 否则放回中心缓存
 			// Return span back to the right mcentral list.
 			if uintptr(nalloc) == s.nelems {
 				mheap_.central[spc].mcentral.fullSwept(sweepgen).push(s)
@@ -525,7 +525,7 @@ func (s *mspan) sweep(preserve bool) bool {
 	} else if !preserve {
 		// 放回到上一级，大对象只能放回堆里
 		// Handle spans for large objects.
-		//是否了一些，有空
+		// 是否了一些，有空
 		if nfreed != 0 {
 			// Free large object span to heap.
 
@@ -547,7 +547,7 @@ func (s *mspan) sweep(preserve bool) bool {
 				s.limit = 0 // prevent mlookup from finding this span
 				sysFault(unsafe.Pointer(s.base()), size)
 			} else {
-				//放回堆里
+				// 放回堆里
 				mheap_.freeSpan(s)
 			}
 			c.local_nlargefree++
@@ -556,7 +556,7 @@ func (s *mspan) sweep(preserve bool) bool {
 		}
 
 		// Add a large span directly onto the full+swept list.
-		//全满
+		// 全满
 		mheap_.central[spc].mcentral.fullSwept(sweepgen).push(s)
 	}
 	return false

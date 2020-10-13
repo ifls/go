@@ -17,7 +17,7 @@ import (
 )
 
 // ResponseRecorder is an implementation of http.ResponseWriter that
-// records its mutations for later inspection in tests.
+// records its mutations变化 for later inspection in tests.
 type ResponseRecorder struct {
 	// Code is the HTTP response code set by WriteHeader.
 	//

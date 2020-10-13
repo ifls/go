@@ -18,8 +18,8 @@ import (
 // It does not allocate a buffer to hold the output until that output diverges分歧 from s.
 type lazybuf struct {
 	s   string
-	buf []byte	//和s有一个字节以上的分歧, 才分配空间
-	w   int		//write position
+	buf []byte // 和s有一个字节以上的分歧, 才分配空间
+	w   int    // write position
 }
 
 func (b *lazybuf) index(i int) byte {
@@ -63,7 +63,6 @@ func (b *lazybuf) string() string {
 //
 // See also Rob Pike, ``Lexical File Names in Plan 9 or Getting Dot-Dot Right,'' TODO https://9p.io/sys/doc/lexnames.html
 
-
 //
 func Clean(path string) string {
 	if path == "" {
@@ -85,7 +84,7 @@ func Clean(path string) string {
 		r, dotdot = 1, 1
 	}
 
-	//TODO
+	// TODO
 	for r < n {
 		switch {
 		case path[r] == '/':
@@ -139,7 +138,7 @@ func Clean(path string) string {
 // Split splits path immediately直接地 following the final slash, separating分离 it into a directory and file name component部分.
 // If there is no slash in path, Split returns an empty dir and file set to path. 没有/返回-1, 就是目录名为空, 全部是文件名
 // The returned values have the property that path = dir+file.
-//切分路径和文件名 路径带下划线
+// 切分路径和文件名 路径带下划线
 func Split(path string) (dir, file string) {
 	i := strings.LastIndex(path, "/")
 	return path[:i+1], path[i+1:]
@@ -152,9 +151,9 @@ func Split(path string) (dir, file string) {
 // an empty string.
 func Join(elem ...string) string {
 	for i, e := range elem {
-		//忽略前面的空字符串
+		// 忽略前面的空字符串
 		if e != "" {
-			//返回之后的字符串, 中间用/连接, 再清理成最短路径
+			// 返回之后的字符串, 中间用/连接, 再清理成最短路径
 			return Clean(strings.Join(elem[i:], "/"))
 		}
 	}
@@ -165,7 +164,7 @@ func Join(elem ...string) string {
 // The extension is the suffix beginning at the final dot
 // in the final slash-separated element of path;
 // it is empty if there is no dot.
-//取出后缀名， 包含"."
+// 取出后缀名， 包含"."
 func Ext(path string) string {
 	for i := len(path) - 1; i >= 0 && path[i] != '/'; i-- {
 		if path[i] == '.' {
@@ -213,7 +212,7 @@ func IsAbs(path string) bool {
 // If the path consists entirely of slashes followed by non-slash bytes, Dir
 // returns a single slash. In any other case, the returned path does not end in a
 // slash.
-//获取目录部分
+// 获取目录部分
 func Dir(path string) string {
 	dir, _ := Split(path)
 	return Clean(dir)

@@ -97,7 +97,7 @@ func IsExist(err error) bool {
 	return underlyingErrorIs(err, ErrExist)
 }
 
-//不存在
+// 不存在
 // IsNotExist returns a boolean indicating whether the error is known to
 // report that a file or directory does not exist. It is satisfied by
 // ErrNotExist as well as some syscall errors.
@@ -113,7 +113,7 @@ func IsPermission(err error) bool {
 	return underlyingErrorIs(err, ErrPermission)
 }
 
-//是否是超时错误
+// 是否是超时错误
 // IsTimeout returns a boolean indicating whether the error is known
 // to report that a timeout occurred.
 func IsTimeout(err error) bool {

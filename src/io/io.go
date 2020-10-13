@@ -78,7 +78,7 @@ var ErrNoProgress = errors.New("multiple Read calls return no data or error")
 //
 // Implementations must not retain p. 不能持有p
 type Reader interface {
-	//输出作为参数，允许外部分配空间，并顺带指定长度
+	// 输出作为参数，允许外部分配空间，并顺带指定长度
 	Read(p []byte) (n int, err error)
 }
 
@@ -174,7 +174,7 @@ type ReadWriteSeeker interface {
 //
 // The Copy function uses ReaderFrom if available. 如果可用 copy函数会使用 ReaderFrom实现
 type ReaderFrom interface {
-	//read from a reader
+	// read from a reader
 	ReadFrom(r Reader) (n int64, err error)
 }
 
@@ -185,7 +185,7 @@ type ReaderFrom interface {
 //
 // The Copy function uses WriterTo if available. 如果可用 copy函数会使用 WriterTo实现
 type WriterTo interface {
-	//write to a writer
+	// write to a writer
 	WriteTo(w Writer) (n int64, err error)
 }
 
@@ -342,7 +342,7 @@ func ReadAtLeast(r Reader, buf []byte, min int) (n int, err error) {
 // On return, n == len(buf) if and only if err == nil.
 // If r returns an error having read at least len(buf) bytes, the error is dropped.
 func ReadFull(r Reader, buf []byte) (n int, err error) {
-	//读满
+	// 读满
 	return ReadAtLeast(r, buf, len(buf))
 }
 
@@ -403,7 +403,6 @@ func copyBuffer(dst Writer, src Reader, buf []byte) (written int64, err error) {
 		return rt.ReadFrom(src)
 	}
 
-
 	if buf == nil {
 		size := 32 * 1024
 		if l, ok := src.(*LimitedReader); ok && int64(size) > l.N {
@@ -413,13 +412,13 @@ func copyBuffer(dst Writer, src Reader, buf []byte) (written int64, err error) {
 				size = int(l.N)
 			}
 		}
-		//分配缓冲区
+		// 分配缓冲区
 		buf = make([]byte, size)
 	}
 
 	for {
 		nr, er := src.Read(buf)
-		//先处理读出的数据
+		// 先处理读出的数据
 		if nr > 0 {
 			nw, ew := dst.Write(buf[0:nr])
 			if nw > 0 {
@@ -437,7 +436,7 @@ func copyBuffer(dst Writer, src Reader, buf []byte) (written int64, err error) {
 			}
 		}
 
-		//再处理错误
+		// 再处理错误
 		if er != nil {
 			if er != EOF {
 				err = er
@@ -464,11 +463,11 @@ type LimitedReader struct {
 }
 
 func (l *LimitedReader) Read(p []byte) (n int, err error) {
-	//一开始就判断
+	// 一开始就判断
 	if l.N <= 0 {
 		return 0, EOF
 	}
-	//限制缓冲区长度，避免读出过多
+	// 限制缓冲区长度，避免读出过多
 	if int64(len(p)) > l.N {
 		p = p[0:l.N]
 	}
@@ -484,14 +483,14 @@ func NewSectionReader(r ReaderAt, off int64, n int64) *SectionReader {
 	return &SectionReader{r, off, off, off + n}
 }
 
-//基于ReadAt 实现读取数据的一块区域
+// 基于ReadAt 实现读取数据的一块区域
 // SectionReader implements Read, Seek, and ReadAt on a section
 // of an underlying ReaderAt.
 type SectionReader struct {
 	r     ReaderAt
-	base  int64		//start
-	off   int64		//read/write offset
-	limit int64		//end
+	base  int64 // start
+	off   int64 // read/write offset
+	limit int64 // end
 }
 
 func (s *SectionReader) Read(p []byte) (n int, err error) {
@@ -537,7 +536,7 @@ func (s *SectionReader) ReadAt(p []byte, off int64) (n int, err error) {
 
 	off += s.base
 	if max := s.limit - off; int64(len(p)) > max {
-		//限制读取超出范围
+		// 限制读取超出范围
 		p = p[0:max]
 		n, err = s.r.ReadAt(p, off)
 		if err == nil {
