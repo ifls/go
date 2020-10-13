@@ -4,16 +4,17 @@
 
 /*
 Compile, typically invoked as ``go tool compile,'' compiles a single Go package
-comprising the files named on the command line. It then writes a single
-object file named for the basename of the first source file with a .o suffix.
-The object file can then be combined with other objects into a package archive
-or passed directly to the linker (``go tool link''). If invoked with -pack, the compiler
-writes an archive directly, bypassing the intermediate object file.
+comprising包含 the files named on the command line.
+It then writes a single object file named for the basename of the first source file 第一个源文件的名字 with a .o suffix.
+The object file can then be combined with other objects into a package archive 归档 or passed directly to the linker (
+``go tool link'').
+If invoked with -pack, the compiler writes an archive directly, bypassing绕过 the intermediate中间 object file.
 
 The generated files contain type information about the symbols exported by
-the package and about types used by symbols imported by the package from
-other packages. It is therefore not necessary when compiling client C of
-package P to read the files of P's dependencies, only the compiled output of P.
+the package and about types used by symbols imported by the package from other packages.
+
+It is therefore not necessary必要 when compiling client C of package P to read the files of P's dependencies,
+only the compiled output of P.
 
 Command Line
 
@@ -23,19 +24,19 @@ Usage:
 
 The specified files must be Go source files and all part of the same package.
 The same compiler is used for all target operating systems and architectures.
-The GOOS and GOARCH environment variables set the desired target.
+The GOOS and GOARCH environment variables set the desired target. 设置目标环境
 
 Flags:
 
 	-D path
 		Set relative path for local imports.
 	-I dir1 -I dir2
-		Search for imported packages in dir1, dir2, etc,
+		Search for imported packages in dir1, dir2, etc, 增加导入包所在目录
 		after consulting $GOROOT/pkg/$GOOS_$GOARCH.
 	-L
 		Show complete file path in error messages.
 	-N
-		Disable optimizations.
+		Disable optimizations. 禁止优化
 	-S
 		Print assembly listing to standard output (code only).
 	-S -S
@@ -43,26 +44,26 @@ Flags:
 	-V
 		Print compiler version and exit.
 	-asmhdr file
-		Write assembly header to file.
+		Write assembly header to file. 汇编头写到文件
 	-buildid id
 		Record id as the build id in the export metadata.
 	-blockprofile file
 		Write block profile for the compilation to file.
 	-c int
-		Concurrency during compilation. Set 1 for no concurrency (default is 1).
+		Concurrency during compilation. Set 1 for no concurrency (default is 1).  并发编译, 默认不并发
 	-complete
 		Assume package has no non-Go components.
 	-cpuprofile file
-		Write a CPU profile for the compilation to file.
+		Write a CPU profile for the compilation to file. 剖析编译性能
 	-dynlink
-		Allow references to Go symbols in shared libraries (experimental).
+		Allow references to Go symbols in shared libraries (experimental). 动态链接
 	-e
-		Remove the limit on the number of errors reported (default limit is 10).
+		Remove the limit on the number of errors reported (default limit is 10). 无限编译报错数量
 	-goversion string
 		Specify required go tool version of the runtime.
 		Exits when the runtime go version does not match goversion.
 	-h
-		Halt with a stack trace at the first error detected.
+		Halt with a stack trace at the first error detected. 第一次出错就停止
 	-importcfg file
 		Read import configuration from file.
 		In the file, set importmap, packagefile to specify import resolution.
@@ -73,7 +74,7 @@ Flags:
 		Look for packages in $GOROOT/pkg/$GOOS_$GOARCH_suffix
 		instead of $GOROOT/pkg/$GOOS_$GOARCH.
 	-l
-		Disable inlining.
+		Disable inlining. 禁止内联
 	-lang version
 		Set language version to compile, as in -lang=go1.12.
 		Default is current version.
@@ -83,29 +84,29 @@ Flags:
 		Without this flag, the -o output is a combination of both
 		linker and compiler input.
 	-m
-		Print optimization decisions.
+		Print optimization decisions. 打印优化决策
 	-memprofile file
-		Write memory profile for the compilation to file.
+		Write memory profile for the compilation to file. 编译内存剖析
 	-memprofilerate rate
 		Set runtime.MemProfileRate for the compilation to rate.
 	-msan
-		Insert calls to C/C++ memory sanitizer.
+		Insert calls to C/C++ memory sanitizer消毒剂.
 	-mutexprofile file
 		Write mutex profile for the compilation to file.
 	-nolocalimports
 		Disallow local (relative) imports.
-	-o file
+	-o file 输出文件名
 		Write object to file (default file.o or, with -pack, file.a).
 	-p path
 		Set expected package import path for the code being compiled,
 		and diagnose imports that would cause a circular dependency.
-	-pack
+	-pack 输出归档
 		Write a package (archive) file rather than an object file
-	-race
+	-race 开启竞争检测
 		Compile with race detector enabled.
 	-s
-		Warn about composite literals that can be simplified.
-	-shared
+		Warn about composite复合 literals that can be simplified.
+	-shared 用于动态链接
 		Generate code that can be linked into a shared library.
 	-traceprofile file
 		Write an execution trace to file.

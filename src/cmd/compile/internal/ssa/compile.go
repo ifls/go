@@ -414,7 +414,7 @@ commas. For example:
 	return fmt.Sprintf("Did not find a phase matching %s in -d=ssa/... debug option", phase)
 }
 
-// list of passes for the compiler
+// list of passes for the compiler 对IR 做优化, 有50多个pass
 var passes = [...]pass{
 	// TODO: combine phielim and copyelim into a single pass?
 	{name: "number lines", fn: numberLines, required: true},
@@ -446,6 +446,7 @@ var passes = [...]pass{
 	{name: "writebarrier", fn: writebarrier, required: true}, // expand write barrier ops
 	{name: "insert resched checks", fn: insertLoopReschedChecks,
 		disabled: objabi.Preemptibleloops_enabled == 0}, // insert resched checks in loops.
+	// lower 以后的pass 都属于 SSA降级, 转换为抽象汇编代码
 	{name: "lower", fn: lower, required: true},
 	{name: "addressing modes", fn: addressingModes, required: false},
 	{name: "lowered deadcode for cse", fn: deadcode}, // deadcode immediately before CSE avoids CSE making dead values live again

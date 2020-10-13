@@ -23,6 +23,7 @@ func atExit(f func()) {
 }
 
 func Exit(code int) {
+	// 倒过来执行, 就像defer 函数的执行顺序
 	for i := len(atExitFuncs) - 1; i >= 0; i-- {
 		f := atExitFuncs[i]
 		atExitFuncs = atExitFuncs[:i]

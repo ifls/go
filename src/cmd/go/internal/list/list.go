@@ -8,13 +8,6 @@ package list
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
-	"io"
-	"os"
-	"sort"
-	"strings"
-	"text/template"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/cache"
 	"cmd/go/internal/cfg"
@@ -22,6 +15,12 @@ import (
 	"cmd/go/internal/modload"
 	"cmd/go/internal/str"
 	"cmd/go/internal/work"
+	"encoding/json"
+	"io"
+	"os"
+	"sort"
+	"strings"
+	"text/template"
 )
 
 var CmdList = &base.Command{

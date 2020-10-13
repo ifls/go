@@ -8,6 +8,7 @@ package cfg
 
 import (
 	"bytes"
+	"cmd/internal/objabi"
 	"fmt"
 	"go/build"
 	"internal/cfg"
@@ -17,8 +18,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-
-	"cmd/internal/objabi"
 )
 
 // These are general "build flags" used by build and other commands.

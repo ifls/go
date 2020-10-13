@@ -322,7 +322,7 @@ func (s *stackAllocState) computeLive(spillLive [][]ID) {
 						t.add(a.ID)
 					}
 					if spill := s.values[a.ID].spill; spill != nil {
-						//TODO: remove?  Subsumed by SpillUse?
+						// TODO: remove?  Subsumed by SpillUse?
 						t.add(spill.ID)
 					}
 				}

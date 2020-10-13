@@ -2,9 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// This file implements scanner, a lexical tokenizer for
-// Go source. After initialization, consecutive calls of
-// next advance the scanner one token at a time.
+// This file implements scanner, a lexical tokenizer for Go source. go源码 词汇 分词器
+// After initialization, consecutive连续 calls of next advance the scanner one token at a time.
 //
 // This file, source.go, tokens.go, and token_string.go are self-contained
 // (`go tool compile scanner.go source.go tokens.go token_string.go` compiles)
@@ -24,7 +23,7 @@ import (
 // are ignored.
 const (
 	comments   uint = 1 << iota // call handler for all comments
-	directives                  // call handler for directives only
+	directives                  // call handler for directives 指令 only
 )
 
 type scanner struct {
@@ -360,6 +359,7 @@ assignop:
 	s.tok = _Operator
 }
 
+// 识别, 鉴别
 func (s *scanner) ident() {
 	// accelerate common case (7bit ASCII)
 	for isLetter(s.ch) || isDecimal(s.ch) {

@@ -157,9 +157,9 @@ func init() {
 		gpcas    = regInfo{inputs: []regMask{gpspsbg, gpg, gpg}, outputs: []regMask{gp}}
 		fp01     = regInfo{inputs: nil, outputs: []regMask{fp}}
 		fp11     = regInfo{inputs: []regMask{fp}, outputs: []regMask{fp}}
-		//fp1flags  = regInfo{inputs: []regMask{fp}}
-		//fpgp      = regInfo{inputs: []regMask{fp}, outputs: []regMask{gp}}
-		//gpfp      = regInfo{inputs: []regMask{gp}, outputs: []regMask{fp}}
+		// fp1flags  = regInfo{inputs: []regMask{fp}}
+		// fpgp      = regInfo{inputs: []regMask{fp}, outputs: []regMask{gp}}
+		// gpfp      = regInfo{inputs: []regMask{gp}, outputs: []regMask{fp}}
 		fp21      = regInfo{inputs: []regMask{fp, fp}, outputs: []regMask{fp}}
 		fp2flags  = regInfo{inputs: []regMask{fp, fp}}
 		fpload    = regInfo{inputs: []regMask{gpspsbg}, outputs: []regMask{fp}}

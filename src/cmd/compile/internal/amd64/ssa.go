@@ -5,15 +5,14 @@
 package amd64
 
 import (
-	"fmt"
-	"math"
-
 	"cmd/compile/internal/gc"
 	"cmd/compile/internal/logopt"
 	"cmd/compile/internal/ssa"
 	"cmd/compile/internal/types"
 	"cmd/internal/obj"
 	"cmd/internal/obj/x86"
+	"fmt"
+	"math"
 )
 
 // markMoves marks any MOVXconst ops that need to avoid clobbering flags.

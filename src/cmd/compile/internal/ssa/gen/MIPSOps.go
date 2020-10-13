@@ -53,7 +53,7 @@ var regNamesMIPS = []string{
 	"R20",
 	"R21",
 	"R22",
-	//REGTMP
+	// REGTMP
 	"R24",
 	"R25",
 	// R26 reserved by kernel

@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"cmd/internal/diff"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -18,8 +19,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"cmd/internal/diff"
 )
 
 var (

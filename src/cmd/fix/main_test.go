@@ -5,12 +5,11 @@
 package main
 
 import (
+	"cmd/internal/diff"
 	"go/ast"
 	"go/parser"
 	"strings"
 	"testing"
-
-	"cmd/internal/diff"
 )
 
 type testCase struct {

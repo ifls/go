@@ -6,18 +6,17 @@
 package fmtcmd
 
 import (
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/load"
+	"cmd/go/internal/modload"
+	"cmd/go/internal/str"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/load"
-	"cmd/go/internal/modload"
-	"cmd/go/internal/str"
 )
 
 func init() {

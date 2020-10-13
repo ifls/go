@@ -8,6 +8,8 @@ package help
 import (
 	"bufio"
 	"bytes"
+	"cmd/go/internal/base"
+	"cmd/go/internal/modload"
 	"fmt"
 	"io"
 	"os"
@@ -15,9 +17,6 @@ import (
 	"text/template"
 	"unicode"
 	"unicode/utf8"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/modload"
 )
 
 // Help implements the 'help' command.

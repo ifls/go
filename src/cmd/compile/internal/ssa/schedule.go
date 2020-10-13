@@ -258,7 +258,7 @@ func schedule(f *Func) {
 
 			// Add it to the schedule.
 			// Do not emit tuple-reading ops until we're ready to emit the tuple-generating op.
-			//TODO: maybe remove ReadTuple score above, if it does not help on performance
+			// TODO: maybe remove ReadTuple score above, if it does not help on performance
 			switch {
 			case v.Op == OpSelect0:
 				if tuples[v.Args[0].ID] == nil {

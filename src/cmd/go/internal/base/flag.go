@@ -5,10 +5,9 @@
 package base
 
 import (
-	"flag"
-
 	"cmd/go/internal/cfg"
 	"cmd/go/internal/str"
+	"flag"
 )
 
 // A StringsFlag is a command-line flag that interprets its argument

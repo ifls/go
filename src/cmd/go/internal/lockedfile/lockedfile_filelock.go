@@ -7,9 +7,8 @@
 package lockedfile
 
 import (
-	"os"
-
 	"cmd/go/internal/lockedfile/internal/filelock"
+	"os"
 )
 
 func openFile(name string, flag int, perm os.FileMode) (*os.File, error) {

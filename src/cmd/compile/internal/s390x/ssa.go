@@ -5,14 +5,13 @@
 package s390x
 
 import (
-	"math"
-
 	"cmd/compile/internal/gc"
 	"cmd/compile/internal/logopt"
 	"cmd/compile/internal/ssa"
 	"cmd/compile/internal/types"
 	"cmd/internal/obj"
 	"cmd/internal/obj/s390x"
+	"math"
 )
 
 // markMoves marks any MOVXconst ops that need to avoid clobbering flags.

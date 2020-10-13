@@ -595,7 +595,7 @@ func onebitwalktype1(t *types.Type, off int64, bv bvec) {
 		if off&int64(Widthptr-1) != 0 {
 			Fatalf("onebitwalktype1: invalid alignment, %v", t)
 		}
-		bv.Set(int32(off / int64(Widthptr))) //pointer in first slot
+		bv.Set(int32(off / int64(Widthptr))) // pointer in first slot
 
 	case TINTER:
 		// struct { Itab *tab;	void *data; }
@@ -922,7 +922,7 @@ func (lv *Liveness) prologue() {
 		for _, b := range lv.f.Blocks {
 			if !reachesRet[b.ID] {
 				lv.nonReturnBlocks[b] = true
-				//fmt.Println("No reach ret", lv.f.Name, b.ID, b.Kind)
+				// fmt.Println("No reach ret", lv.f.Name, b.ID, b.Kind)
 			}
 		}
 	}

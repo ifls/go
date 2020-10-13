@@ -425,13 +425,13 @@ func TestDomTricky(t *testing.T) {
 			Bloc("4",
 				If("p", if4[a], if4[1-a])), // 2, 5
 			Bloc("5",
-				If("p", if5[b], if5[1-b])), //15, 11
+				If("p", if5[b], if5[1-b])), // 15, 11
 			Bloc("10",
 				Exit("mem")),
 			Bloc("11",
 				Goto("15")),
 			Bloc("15",
-				If("p", if15[c], if15[1-c])), //19, 10
+				If("p", if15[c], if15[1-c])), // 19, 10
 			Bloc("19",
 				Goto("10")))
 		CheckFunc(fun.f)

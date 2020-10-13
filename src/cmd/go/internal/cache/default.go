@@ -5,14 +5,13 @@
 package cache
 
 import (
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
 )
 
 // Default returns the default cache to use, or nil if no cache should be used.

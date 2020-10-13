@@ -5,12 +5,11 @@
 package base
 
 import (
+	"cmd/go/internal/cfg"
 	"flag"
 	"fmt"
 	"runtime"
 	"strings"
-
-	"cmd/go/internal/cfg"
 )
 
 var (

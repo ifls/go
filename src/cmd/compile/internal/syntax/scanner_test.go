@@ -333,7 +333,7 @@ func TestComments(t *testing.T) {
 		{" /", comment{0, 0, ""}},
 		{"\n /*/", comment{0, 0, ""}},
 
-		//-style comments
+		// -style comments
 		{"// line comment\n", comment{0, 0, "// line comment"}},
 		{"package p // line comment\n", comment{0, 10, "// line comment"}},
 		{"//\n//\n\t// want this one\r\n", comment{2, 1, "// want this one\r"}},

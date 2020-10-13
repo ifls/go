@@ -768,7 +768,7 @@ const (
 	OPRINT       // print(List)
 	OPRINTN      // println(List)
 	OPAREN       // (Left)
-	OSEND        // Left <- Right
+	OSEND        // Left <- Right chansend1
 	OSLICE       // Left[List[0] : List[1]] (Left is untypechecked or slice)
 	OSLICEARR    // Left[List[0] : List[1]] (Left is array)
 	OSLICESTR    // Left[List[0] : List[1]] (Left is string)

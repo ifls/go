@@ -7,6 +7,12 @@ package load
 
 import (
 	"bytes"
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/modinfo"
+	"cmd/go/internal/par"
+	"cmd/go/internal/search"
+	"cmd/go/internal/str"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,13 +29,6 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/modinfo"
-	"cmd/go/internal/par"
-	"cmd/go/internal/search"
-	"cmd/go/internal/str"
 )
 
 var (

@@ -5,6 +5,11 @@
 package gc
 
 import (
+	"cmd/compile/internal/syntax"
+	"cmd/compile/internal/types"
+	"cmd/internal/obj"
+	"cmd/internal/objabi"
+	"cmd/internal/src"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,12 +17,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
-
-	"cmd/compile/internal/syntax"
-	"cmd/compile/internal/types"
-	"cmd/internal/obj"
-	"cmd/internal/objabi"
-	"cmd/internal/src"
 )
 
 // parseFiles concurrently parses files into *syntax.File structures.
@@ -48,7 +47,7 @@ func parseFiles(filenames []string) uint {
 				return
 			}
 			defer f.Close()
-
+			// 词法和语法分析
 			p.file, _ = syntax.Parse(base, f, p.error, p.pragma, syntax.CheckBranches) // errors are tracked via p.error
 		}(filename)
 	}

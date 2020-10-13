@@ -25,9 +25,9 @@ func test() {
 	fmt.Println(x)
 	for i := x; i < 3; i++ {
 		x := i * i
-		y += id(x) //gdb-dbg=(x,y)//gdb-opt=(x,y)
+		y += id(x) // gdb-dbg=(x,y)//gdb-opt=(x,y)
 	}
-	y = x + y //gdb-dbg=(x,y)//gdb-opt=(x,y)
+	y = x + y // gdb-dbg=(x,y)//gdb-opt=(x,y)
 	fmt.Println(x, y)
 
 	for x := 0; x <= 1; x++ { // From delve scopetest.go

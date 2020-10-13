@@ -5,10 +5,6 @@
 package arm
 
 import (
-	"fmt"
-	"math"
-	"math/bits"
-
 	"cmd/compile/internal/gc"
 	"cmd/compile/internal/logopt"
 	"cmd/compile/internal/ssa"
@@ -16,6 +12,9 @@ import (
 	"cmd/internal/obj"
 	"cmd/internal/obj/arm"
 	"cmd/internal/objabi"
+	"fmt"
+	"math"
+	"math/bits"
 )
 
 // loadByType returns the load instruction of the given type.

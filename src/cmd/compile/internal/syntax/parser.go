@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// 语法分析器
 package syntax
 
 import (
@@ -15,11 +16,11 @@ const debug = false
 const trace = false
 
 type parser struct {
-	file  *PosBase
-	errh  ErrorHandler
-	mode  Mode
-	pragh PragmaHandler
-	scanner
+	file    *PosBase
+	errh    ErrorHandler
+	mode    Mode
+	pragh   PragmaHandler
+	scanner // 内嵌词法解析器
 
 	base   *PosBase // current position base
 	first  error    // first error encountered

@@ -27,7 +27,7 @@ import "strings"
 // L (long word) = 32 bit
 // W (word)      = 16 bit
 // B (byte)      = 8 bit
-
+// 寄存器名字
 // copied from ../../amd64/reg.go
 var regNamesAMD64 = []string{
 	"AX",
@@ -164,7 +164,7 @@ func init() {
 		fpstore    = regInfo{inputs: []regMask{gpspsb, fp, 0}}
 		fpstoreidx = regInfo{inputs: []regMask{gpspsb, gpsp, fp, 0}}
 	)
-
+	// cpu架构相关的操作码 amd64
 	var AMD64ops = []opData{
 		// fp ops
 		{name: "ADDSS", argLength: 2, reg: fp21, asm: "ADDSS", commutative: true, resultInArg0: true}, // fp32 add
@@ -806,7 +806,7 @@ func init() {
 		{name: "LoweredGetCallerPC", reg: gp01, rematerializeable: true},
 		// LoweredGetCallerSP returns the SP of the caller of the current function.
 		{name: "LoweredGetCallerSP", reg: gp01, rematerializeable: true},
-		//arg0=ptr,arg1=mem, returns void.  Faults if ptr is nil.
+		// arg0=ptr,arg1=mem, returns void.  Faults if ptr is nil.
 		{name: "LoweredNilCheck", argLength: 2, reg: regInfo{inputs: []regMask{gpsp}}, clobberFlags: true, nilCheck: true, faultOnNilArg0: true},
 		// LoweredWB invokes runtime.gcWriteBarrier. arg0=destptr, arg1=srcptr, arg2=mem, aux=runtime.gcWriteBarrier
 		// It saves all GP registers if necessary, but may clobber others.

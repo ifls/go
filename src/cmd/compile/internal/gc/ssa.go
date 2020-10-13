@@ -5,12 +5,6 @@
 package gc
 
 import (
-	"encoding/binary"
-	"fmt"
-	"html"
-	"os"
-	"sort"
-
 	"bufio"
 	"bytes"
 	"cmd/compile/internal/ssa"
@@ -20,6 +14,11 @@ import (
 	"cmd/internal/objabi"
 	"cmd/internal/src"
 	"cmd/internal/sys"
+	"encoding/binary"
+	"fmt"
+	"html"
+	"os"
+	"sort"
 )
 
 var ssaConfig *ssa.Config
@@ -37,6 +36,7 @@ const maxOpenDefers = 8
 // ssaDumpInlined holds all inlined functions when ssaDump contains a function name.
 var ssaDumpInlined []*Node
 
+// SSA 配置的初始化过程其实就是做中间代码生成之前的准备工作
 func initssaconfig() {
 	types_ := ssa.NewTypes()
 
@@ -46,6 +46,7 @@ func initssaconfig() {
 
 	// Generate a few pointer types that are uncommon in the frontend but common in the backend.
 	// Caching is disabled in the backend, so generating these here avoids allocations.
+	// 缓存一些类型的指针
 	_ = types.NewPtr(types.Types[TINTER])                             // *interface{}
 	_ = types.NewPtr(types.NewPtr(types.Types[TSTRING]))              // **string
 	_ = types.NewPtr(types.NewPtr(types.Idealstring))                 // **string
@@ -59,6 +60,7 @@ func initssaconfig() {
 	_ = types.NewPtr(types.Types[TINT64])                             // *int64
 	_ = types.NewPtr(types.Errortype)                                 // *error
 	types.NewPtrCacheEnabled = false
+	// 根据当前的 CPU 架构初始化 SSA 配置 ssaConfig
 	ssaConfig = ssa.NewConfig(thearch.LinkArch.Name, *types_, Ctxt, Debug['N'] == 0)
 	if thearch.LinkArch.Name == "386" {
 		ssaConfig.Set387(thearch.Use387)
@@ -67,23 +69,23 @@ func initssaconfig() {
 	ssaConfig.Race = flag_race
 	ssaCaches = make([]ssa.Cache, nBackendWorkers)
 
-	// Set up some runtime functions we'll need to call.
+	// Set up some runtime functions we'll need to call. 安装运行时函数
 	assertE2I = sysfunc("assertE2I")
 	assertE2I2 = sysfunc("assertE2I2")
 	assertI2I = sysfunc("assertI2I")
 	assertI2I2 = sysfunc("assertI2I2")
-	deferproc = sysfunc("deferproc")
+	deferproc = sysfunc("deferproc") // defer 函数
 	deferprocStack = sysfunc("deferprocStack")
 	Deferreturn = sysfunc("deferreturn")
 	Duffcopy = sysvar("duffcopy")             // asm func with special ABI
 	Duffzero = sysvar("duffzero")             // asm func with special ABI
 	gcWriteBarrier = sysvar("gcWriteBarrier") // asm func with special ABI
 	goschedguarded = sysfunc("goschedguarded")
-	growslice = sysfunc("growslice")
+	growslice = sysfunc("growslice") // append
 	msanread = sysfunc("msanread")
 	msanwrite = sysfunc("msanwrite")
 	newobject = sysfunc("newobject")
-	newproc = sysfunc("newproc")
+	newproc = sysfunc("newproc") // go func()
 	panicdivide = sysfunc("panicdivide")
 	panicdottypeE = sysfunc("panicdottypeE")
 	panicdottypeI = sysfunc("panicdottypeI")
@@ -1269,12 +1271,12 @@ func (s *state) stmt(n *Node) {
 			// Currently doesn't really work because (*p)[:len(*p)] appears here as:
 			//    tmp = len(*p)
 			//    (*p)[:tmp]
-			//if j != nil && (j.Op == OLEN && samesafeexpr(j.Left, n.Left)) {
+			// if j != nil && (j.Op == OLEN && samesafeexpr(j.Left, n.Left)) {
 			//      j = nil
-			//}
-			//if k != nil && (k.Op == OCAP && samesafeexpr(k.Left, n.Left)) {
+			// }
+			// if k != nil && (k.Op == OCAP && samesafeexpr(k.Left, n.Left)) {
 			//      k = nil
-			//}
+			// }
 			if i == nil {
 				skip |= skipPtr
 				if j == nil {
@@ -1827,68 +1829,68 @@ type twoOpsAndType struct {
 
 var fpConvOpToSSA = map[twoTypes]twoOpsAndType{
 
-	twoTypes{TINT8, TFLOAT32}:  twoOpsAndType{ssa.OpSignExt8to32, ssa.OpCvt32to32F, TINT32},
-	twoTypes{TINT16, TFLOAT32}: twoOpsAndType{ssa.OpSignExt16to32, ssa.OpCvt32to32F, TINT32},
-	twoTypes{TINT32, TFLOAT32}: twoOpsAndType{ssa.OpCopy, ssa.OpCvt32to32F, TINT32},
-	twoTypes{TINT64, TFLOAT32}: twoOpsAndType{ssa.OpCopy, ssa.OpCvt64to32F, TINT64},
+	twoTypes{TINT8, TFLOAT32}:  {ssa.OpSignExt8to32, ssa.OpCvt32to32F, TINT32},
+	twoTypes{TINT16, TFLOAT32}: {ssa.OpSignExt16to32, ssa.OpCvt32to32F, TINT32},
+	twoTypes{TINT32, TFLOAT32}: {ssa.OpCopy, ssa.OpCvt32to32F, TINT32},
+	twoTypes{TINT64, TFLOAT32}: {ssa.OpCopy, ssa.OpCvt64to32F, TINT64},
 
-	twoTypes{TINT8, TFLOAT64}:  twoOpsAndType{ssa.OpSignExt8to32, ssa.OpCvt32to64F, TINT32},
-	twoTypes{TINT16, TFLOAT64}: twoOpsAndType{ssa.OpSignExt16to32, ssa.OpCvt32to64F, TINT32},
-	twoTypes{TINT32, TFLOAT64}: twoOpsAndType{ssa.OpCopy, ssa.OpCvt32to64F, TINT32},
-	twoTypes{TINT64, TFLOAT64}: twoOpsAndType{ssa.OpCopy, ssa.OpCvt64to64F, TINT64},
+	twoTypes{TINT8, TFLOAT64}:  {ssa.OpSignExt8to32, ssa.OpCvt32to64F, TINT32},
+	twoTypes{TINT16, TFLOAT64}: {ssa.OpSignExt16to32, ssa.OpCvt32to64F, TINT32},
+	twoTypes{TINT32, TFLOAT64}: {ssa.OpCopy, ssa.OpCvt32to64F, TINT32},
+	twoTypes{TINT64, TFLOAT64}: {ssa.OpCopy, ssa.OpCvt64to64F, TINT64},
 
-	twoTypes{TFLOAT32, TINT8}:  twoOpsAndType{ssa.OpCvt32Fto32, ssa.OpTrunc32to8, TINT32},
-	twoTypes{TFLOAT32, TINT16}: twoOpsAndType{ssa.OpCvt32Fto32, ssa.OpTrunc32to16, TINT32},
-	twoTypes{TFLOAT32, TINT32}: twoOpsAndType{ssa.OpCvt32Fto32, ssa.OpCopy, TINT32},
-	twoTypes{TFLOAT32, TINT64}: twoOpsAndType{ssa.OpCvt32Fto64, ssa.OpCopy, TINT64},
+	twoTypes{TFLOAT32, TINT8}:  {ssa.OpCvt32Fto32, ssa.OpTrunc32to8, TINT32},
+	twoTypes{TFLOAT32, TINT16}: {ssa.OpCvt32Fto32, ssa.OpTrunc32to16, TINT32},
+	twoTypes{TFLOAT32, TINT32}: {ssa.OpCvt32Fto32, ssa.OpCopy, TINT32},
+	twoTypes{TFLOAT32, TINT64}: {ssa.OpCvt32Fto64, ssa.OpCopy, TINT64},
 
-	twoTypes{TFLOAT64, TINT8}:  twoOpsAndType{ssa.OpCvt64Fto32, ssa.OpTrunc32to8, TINT32},
-	twoTypes{TFLOAT64, TINT16}: twoOpsAndType{ssa.OpCvt64Fto32, ssa.OpTrunc32to16, TINT32},
-	twoTypes{TFLOAT64, TINT32}: twoOpsAndType{ssa.OpCvt64Fto32, ssa.OpCopy, TINT32},
-	twoTypes{TFLOAT64, TINT64}: twoOpsAndType{ssa.OpCvt64Fto64, ssa.OpCopy, TINT64},
+	twoTypes{TFLOAT64, TINT8}:  {ssa.OpCvt64Fto32, ssa.OpTrunc32to8, TINT32},
+	twoTypes{TFLOAT64, TINT16}: {ssa.OpCvt64Fto32, ssa.OpTrunc32to16, TINT32},
+	twoTypes{TFLOAT64, TINT32}: {ssa.OpCvt64Fto32, ssa.OpCopy, TINT32},
+	twoTypes{TFLOAT64, TINT64}: {ssa.OpCvt64Fto64, ssa.OpCopy, TINT64},
 	// unsigned
-	twoTypes{TUINT8, TFLOAT32}:  twoOpsAndType{ssa.OpZeroExt8to32, ssa.OpCvt32to32F, TINT32},
-	twoTypes{TUINT16, TFLOAT32}: twoOpsAndType{ssa.OpZeroExt16to32, ssa.OpCvt32to32F, TINT32},
-	twoTypes{TUINT32, TFLOAT32}: twoOpsAndType{ssa.OpZeroExt32to64, ssa.OpCvt64to32F, TINT64}, // go wide to dodge unsigned
-	twoTypes{TUINT64, TFLOAT32}: twoOpsAndType{ssa.OpCopy, ssa.OpInvalid, TUINT64},            // Cvt64Uto32F, branchy code expansion instead
+	twoTypes{TUINT8, TFLOAT32}:  {ssa.OpZeroExt8to32, ssa.OpCvt32to32F, TINT32},
+	twoTypes{TUINT16, TFLOAT32}: {ssa.OpZeroExt16to32, ssa.OpCvt32to32F, TINT32},
+	twoTypes{TUINT32, TFLOAT32}: {ssa.OpZeroExt32to64, ssa.OpCvt64to32F, TINT64}, // go wide to dodge unsigned
+	twoTypes{TUINT64, TFLOAT32}: {ssa.OpCopy, ssa.OpInvalid, TUINT64},            // Cvt64Uto32F, branchy code expansion instead
 
-	twoTypes{TUINT8, TFLOAT64}:  twoOpsAndType{ssa.OpZeroExt8to32, ssa.OpCvt32to64F, TINT32},
-	twoTypes{TUINT16, TFLOAT64}: twoOpsAndType{ssa.OpZeroExt16to32, ssa.OpCvt32to64F, TINT32},
-	twoTypes{TUINT32, TFLOAT64}: twoOpsAndType{ssa.OpZeroExt32to64, ssa.OpCvt64to64F, TINT64}, // go wide to dodge unsigned
-	twoTypes{TUINT64, TFLOAT64}: twoOpsAndType{ssa.OpCopy, ssa.OpInvalid, TUINT64},            // Cvt64Uto64F, branchy code expansion instead
+	twoTypes{TUINT8, TFLOAT64}:  {ssa.OpZeroExt8to32, ssa.OpCvt32to64F, TINT32},
+	twoTypes{TUINT16, TFLOAT64}: {ssa.OpZeroExt16to32, ssa.OpCvt32to64F, TINT32},
+	twoTypes{TUINT32, TFLOAT64}: {ssa.OpZeroExt32to64, ssa.OpCvt64to64F, TINT64}, // go wide to dodge unsigned
+	twoTypes{TUINT64, TFLOAT64}: {ssa.OpCopy, ssa.OpInvalid, TUINT64},            // Cvt64Uto64F, branchy code expansion instead
 
-	twoTypes{TFLOAT32, TUINT8}:  twoOpsAndType{ssa.OpCvt32Fto32, ssa.OpTrunc32to8, TINT32},
-	twoTypes{TFLOAT32, TUINT16}: twoOpsAndType{ssa.OpCvt32Fto32, ssa.OpTrunc32to16, TINT32},
-	twoTypes{TFLOAT32, TUINT32}: twoOpsAndType{ssa.OpCvt32Fto64, ssa.OpTrunc64to32, TINT64}, // go wide to dodge unsigned
-	twoTypes{TFLOAT32, TUINT64}: twoOpsAndType{ssa.OpInvalid, ssa.OpCopy, TUINT64},          // Cvt32Fto64U, branchy code expansion instead
+	twoTypes{TFLOAT32, TUINT8}:  {ssa.OpCvt32Fto32, ssa.OpTrunc32to8, TINT32},
+	twoTypes{TFLOAT32, TUINT16}: {ssa.OpCvt32Fto32, ssa.OpTrunc32to16, TINT32},
+	twoTypes{TFLOAT32, TUINT32}: {ssa.OpCvt32Fto64, ssa.OpTrunc64to32, TINT64}, // go wide to dodge unsigned
+	twoTypes{TFLOAT32, TUINT64}: {ssa.OpInvalid, ssa.OpCopy, TUINT64},          // Cvt32Fto64U, branchy code expansion instead
 
-	twoTypes{TFLOAT64, TUINT8}:  twoOpsAndType{ssa.OpCvt64Fto32, ssa.OpTrunc32to8, TINT32},
-	twoTypes{TFLOAT64, TUINT16}: twoOpsAndType{ssa.OpCvt64Fto32, ssa.OpTrunc32to16, TINT32},
-	twoTypes{TFLOAT64, TUINT32}: twoOpsAndType{ssa.OpCvt64Fto64, ssa.OpTrunc64to32, TINT64}, // go wide to dodge unsigned
-	twoTypes{TFLOAT64, TUINT64}: twoOpsAndType{ssa.OpInvalid, ssa.OpCopy, TUINT64},          // Cvt64Fto64U, branchy code expansion instead
+	twoTypes{TFLOAT64, TUINT8}:  {ssa.OpCvt64Fto32, ssa.OpTrunc32to8, TINT32},
+	twoTypes{TFLOAT64, TUINT16}: {ssa.OpCvt64Fto32, ssa.OpTrunc32to16, TINT32},
+	twoTypes{TFLOAT64, TUINT32}: {ssa.OpCvt64Fto64, ssa.OpTrunc64to32, TINT64}, // go wide to dodge unsigned
+	twoTypes{TFLOAT64, TUINT64}: {ssa.OpInvalid, ssa.OpCopy, TUINT64},          // Cvt64Fto64U, branchy code expansion instead
 
 	// float
-	twoTypes{TFLOAT64, TFLOAT32}: twoOpsAndType{ssa.OpCvt64Fto32F, ssa.OpCopy, TFLOAT32},
-	twoTypes{TFLOAT64, TFLOAT64}: twoOpsAndType{ssa.OpRound64F, ssa.OpCopy, TFLOAT64},
-	twoTypes{TFLOAT32, TFLOAT32}: twoOpsAndType{ssa.OpRound32F, ssa.OpCopy, TFLOAT32},
-	twoTypes{TFLOAT32, TFLOAT64}: twoOpsAndType{ssa.OpCvt32Fto64F, ssa.OpCopy, TFLOAT64},
+	twoTypes{TFLOAT64, TFLOAT32}: {ssa.OpCvt64Fto32F, ssa.OpCopy, TFLOAT32},
+	twoTypes{TFLOAT64, TFLOAT64}: {ssa.OpRound64F, ssa.OpCopy, TFLOAT64},
+	twoTypes{TFLOAT32, TFLOAT32}: {ssa.OpRound32F, ssa.OpCopy, TFLOAT32},
+	twoTypes{TFLOAT32, TFLOAT64}: {ssa.OpCvt32Fto64F, ssa.OpCopy, TFLOAT64},
 }
 
 // this map is used only for 32-bit arch, and only includes the difference
 // on 32-bit arch, don't use int64<->float conversion for uint32
 var fpConvOpToSSA32 = map[twoTypes]twoOpsAndType{
-	twoTypes{TUINT32, TFLOAT32}: twoOpsAndType{ssa.OpCopy, ssa.OpCvt32Uto32F, TUINT32},
-	twoTypes{TUINT32, TFLOAT64}: twoOpsAndType{ssa.OpCopy, ssa.OpCvt32Uto64F, TUINT32},
-	twoTypes{TFLOAT32, TUINT32}: twoOpsAndType{ssa.OpCvt32Fto32U, ssa.OpCopy, TUINT32},
-	twoTypes{TFLOAT64, TUINT32}: twoOpsAndType{ssa.OpCvt64Fto32U, ssa.OpCopy, TUINT32},
+	twoTypes{TUINT32, TFLOAT32}: {ssa.OpCopy, ssa.OpCvt32Uto32F, TUINT32},
+	twoTypes{TUINT32, TFLOAT64}: {ssa.OpCopy, ssa.OpCvt32Uto64F, TUINT32},
+	twoTypes{TFLOAT32, TUINT32}: {ssa.OpCvt32Fto32U, ssa.OpCopy, TUINT32},
+	twoTypes{TFLOAT64, TUINT32}: {ssa.OpCvt64Fto32U, ssa.OpCopy, TUINT32},
 }
 
 // uint64<->float conversions, only on machines that have instructions for that
 var uint64fpConvOpToSSA = map[twoTypes]twoOpsAndType{
-	twoTypes{TUINT64, TFLOAT32}: twoOpsAndType{ssa.OpCopy, ssa.OpCvt64Uto32F, TUINT64},
-	twoTypes{TUINT64, TFLOAT64}: twoOpsAndType{ssa.OpCopy, ssa.OpCvt64Uto64F, TUINT64},
-	twoTypes{TFLOAT32, TUINT64}: twoOpsAndType{ssa.OpCvt32Fto64U, ssa.OpCopy, TUINT64},
-	twoTypes{TFLOAT64, TUINT64}: twoOpsAndType{ssa.OpCvt64Fto64U, ssa.OpCopy, TUINT64},
+	twoTypes{TUINT64, TFLOAT32}: {ssa.OpCopy, ssa.OpCvt64Uto32F, TUINT64},
+	twoTypes{TUINT64, TFLOAT64}: {ssa.OpCopy, ssa.OpCvt64Uto64F, TUINT64},
+	twoTypes{TFLOAT32, TUINT64}: {ssa.OpCvt32Fto64U, ssa.OpCopy, TUINT64},
+	twoTypes{TFLOAT64, TUINT64}: {ssa.OpCvt64Fto64U, ssa.OpCopy, TUINT64},
 }
 
 var shiftOpToSSA = map[opAndTwoTypes]ssa.Op{
@@ -3145,38 +3147,38 @@ var softFloatOps map[ssa.Op]sfRtCallDef
 func softfloatInit() {
 	// Some of these operations get transformed by sfcall.
 	softFloatOps = map[ssa.Op]sfRtCallDef{
-		ssa.OpAdd32F: sfRtCallDef{sysfunc("fadd32"), TFLOAT32},
-		ssa.OpAdd64F: sfRtCallDef{sysfunc("fadd64"), TFLOAT64},
-		ssa.OpSub32F: sfRtCallDef{sysfunc("fadd32"), TFLOAT32},
-		ssa.OpSub64F: sfRtCallDef{sysfunc("fadd64"), TFLOAT64},
-		ssa.OpMul32F: sfRtCallDef{sysfunc("fmul32"), TFLOAT32},
-		ssa.OpMul64F: sfRtCallDef{sysfunc("fmul64"), TFLOAT64},
-		ssa.OpDiv32F: sfRtCallDef{sysfunc("fdiv32"), TFLOAT32},
-		ssa.OpDiv64F: sfRtCallDef{sysfunc("fdiv64"), TFLOAT64},
+		ssa.OpAdd32F: {sysfunc("fadd32"), TFLOAT32},
+		ssa.OpAdd64F: {sysfunc("fadd64"), TFLOAT64},
+		ssa.OpSub32F: {sysfunc("fadd32"), TFLOAT32},
+		ssa.OpSub64F: {sysfunc("fadd64"), TFLOAT64},
+		ssa.OpMul32F: {sysfunc("fmul32"), TFLOAT32},
+		ssa.OpMul64F: {sysfunc("fmul64"), TFLOAT64},
+		ssa.OpDiv32F: {sysfunc("fdiv32"), TFLOAT32},
+		ssa.OpDiv64F: {sysfunc("fdiv64"), TFLOAT64},
 
-		ssa.OpEq64F:   sfRtCallDef{sysfunc("feq64"), TBOOL},
-		ssa.OpEq32F:   sfRtCallDef{sysfunc("feq32"), TBOOL},
-		ssa.OpNeq64F:  sfRtCallDef{sysfunc("feq64"), TBOOL},
-		ssa.OpNeq32F:  sfRtCallDef{sysfunc("feq32"), TBOOL},
-		ssa.OpLess64F: sfRtCallDef{sysfunc("fgt64"), TBOOL},
-		ssa.OpLess32F: sfRtCallDef{sysfunc("fgt32"), TBOOL},
-		ssa.OpLeq64F:  sfRtCallDef{sysfunc("fge64"), TBOOL},
-		ssa.OpLeq32F:  sfRtCallDef{sysfunc("fge32"), TBOOL},
+		ssa.OpEq64F:   {sysfunc("feq64"), TBOOL},
+		ssa.OpEq32F:   {sysfunc("feq32"), TBOOL},
+		ssa.OpNeq64F:  {sysfunc("feq64"), TBOOL},
+		ssa.OpNeq32F:  {sysfunc("feq32"), TBOOL},
+		ssa.OpLess64F: {sysfunc("fgt64"), TBOOL},
+		ssa.OpLess32F: {sysfunc("fgt32"), TBOOL},
+		ssa.OpLeq64F:  {sysfunc("fge64"), TBOOL},
+		ssa.OpLeq32F:  {sysfunc("fge32"), TBOOL},
 
-		ssa.OpCvt32to32F:  sfRtCallDef{sysfunc("fint32to32"), TFLOAT32},
-		ssa.OpCvt32Fto32:  sfRtCallDef{sysfunc("f32toint32"), TINT32},
-		ssa.OpCvt64to32F:  sfRtCallDef{sysfunc("fint64to32"), TFLOAT32},
-		ssa.OpCvt32Fto64:  sfRtCallDef{sysfunc("f32toint64"), TINT64},
-		ssa.OpCvt64Uto32F: sfRtCallDef{sysfunc("fuint64to32"), TFLOAT32},
-		ssa.OpCvt32Fto64U: sfRtCallDef{sysfunc("f32touint64"), TUINT64},
-		ssa.OpCvt32to64F:  sfRtCallDef{sysfunc("fint32to64"), TFLOAT64},
-		ssa.OpCvt64Fto32:  sfRtCallDef{sysfunc("f64toint32"), TINT32},
-		ssa.OpCvt64to64F:  sfRtCallDef{sysfunc("fint64to64"), TFLOAT64},
-		ssa.OpCvt64Fto64:  sfRtCallDef{sysfunc("f64toint64"), TINT64},
-		ssa.OpCvt64Uto64F: sfRtCallDef{sysfunc("fuint64to64"), TFLOAT64},
-		ssa.OpCvt64Fto64U: sfRtCallDef{sysfunc("f64touint64"), TUINT64},
-		ssa.OpCvt32Fto64F: sfRtCallDef{sysfunc("f32to64"), TFLOAT64},
-		ssa.OpCvt64Fto32F: sfRtCallDef{sysfunc("f64to32"), TFLOAT32},
+		ssa.OpCvt32to32F:  {sysfunc("fint32to32"), TFLOAT32},
+		ssa.OpCvt32Fto32:  {sysfunc("f32toint32"), TINT32},
+		ssa.OpCvt64to32F:  {sysfunc("fint64to32"), TFLOAT32},
+		ssa.OpCvt32Fto64:  {sysfunc("f32toint64"), TINT64},
+		ssa.OpCvt64Uto32F: {sysfunc("fuint64to32"), TFLOAT32},
+		ssa.OpCvt32Fto64U: {sysfunc("f32touint64"), TUINT64},
+		ssa.OpCvt32to64F:  {sysfunc("fint32to64"), TFLOAT64},
+		ssa.OpCvt64Fto32:  {sysfunc("f64toint32"), TINT32},
+		ssa.OpCvt64to64F:  {sysfunc("fint64to64"), TFLOAT64},
+		ssa.OpCvt64Fto64:  {sysfunc("f64toint64"), TINT64},
+		ssa.OpCvt64Uto64F: {sysfunc("fuint64to64"), TFLOAT64},
+		ssa.OpCvt64Fto64U: {sysfunc("f64touint64"), TUINT64},
+		ssa.OpCvt32Fto64F: {sysfunc("f32to64"), TFLOAT64},
+		ssa.OpCvt64Fto32F: {sysfunc("f64to32"), TFLOAT32},
 	}
 }
 
@@ -5931,6 +5933,7 @@ func emitStackObjects(e *ssafn, pp *Progs) {
 }
 
 // genssa appends entries to pp for each instruction in f.
+// 生成抽象的汇编代码 IR intermediate representation （中间表示）
 func genssa(f *ssa.Func, pp *Progs) {
 	var s SSAGenState
 

@@ -5,6 +5,10 @@
 package get
 
 import (
+	"cmd/go/internal/base"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/load"
+	"cmd/go/internal/web"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,11 +22,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/load"
-	"cmd/go/internal/web"
 )
 
 // A vcsCmd describes how to use a version control system

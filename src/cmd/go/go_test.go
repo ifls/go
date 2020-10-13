@@ -6,6 +6,10 @@ package main_test
 
 import (
 	"bytes"
+	"cmd/go/internal/cache"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/robustio"
+	"cmd/internal/sys"
 	"debug/elf"
 	"debug/macho"
 	"debug/pe"
@@ -26,11 +30,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"cmd/go/internal/cache"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/robustio"
-	"cmd/internal/sys"
 )
 
 var (

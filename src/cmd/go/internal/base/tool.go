@@ -5,13 +5,12 @@
 package base
 
 import (
+	"cmd/go/internal/cfg"
 	"fmt"
 	"go/build"
 	"os"
 	"path/filepath"
 	"runtime"
-
-	"cmd/go/internal/cfg"
 )
 
 // Configuration for finding tool binaries.

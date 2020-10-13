@@ -7,6 +7,7 @@
 package filelock_test
 
 import (
+	"cmd/go/internal/lockedfile/internal/filelock"
 	"fmt"
 	"internal/testenv"
 	"io/ioutil"
@@ -16,8 +17,6 @@ import (
 	"runtime"
 	"testing"
 	"time"
-
-	"cmd/go/internal/lockedfile/internal/filelock"
 )
 
 func lock(t *testing.T, f *os.File) {

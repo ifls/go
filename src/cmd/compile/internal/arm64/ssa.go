@@ -5,14 +5,13 @@
 package arm64
 
 import (
-	"math"
-
 	"cmd/compile/internal/gc"
 	"cmd/compile/internal/logopt"
 	"cmd/compile/internal/ssa"
 	"cmd/compile/internal/types"
 	"cmd/internal/obj"
 	"cmd/internal/obj/arm64"
+	"math"
 )
 
 // loadByType returns the load instruction of the given type.

@@ -979,7 +979,7 @@ func typesymprefix(prefix string, t *types.Type) *types.Sym {
 	addsignat(t)
 	signatmu.Unlock()
 
-	//print("algsym: %s -> %+S\n", p, s);
+	// print("algsym: %s -> %+S\n", p, s);
 
 	return s
 }

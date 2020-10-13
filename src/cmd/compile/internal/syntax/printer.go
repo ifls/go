@@ -60,7 +60,7 @@ const (
 type whitespace struct {
 	last token
 	kind ctrlSymbol
-	//text string // comment text (possibly ""); valid if kind == comment
+	// text string // comment text (possibly ""); valid if kind == comment
 }
 
 type printer struct {

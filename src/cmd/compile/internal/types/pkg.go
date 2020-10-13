@@ -19,11 +19,11 @@ var pkgMap = make(map[string]*Pkg)
 const MaxPkgHeight = 1e9
 
 type Pkg struct {
-	Path    string // string literal used in import statement, e.g. "runtime/internal/sys"
-	Name    string // package name, e.g. "sys"
-	Prefix  string // escaped path for use in symbol table
-	Syms    map[string]*Sym
-	Pathsym *obj.LSym
+	Path    string          // string literal used in import statement, e.g. "runtime/internal/sys"
+	Name    string          // package name, e.g. "sys"
+	Prefix  string          // escaped path for use in symbol table 符号表
+	Syms    map[string]*Sym // 符号表
+	Pathsym *obj.LSym       // 软符号
 
 	// Height is the package's height in the import graph. Leaf
 	// packages (i.e., packages with no imports) have height 0,

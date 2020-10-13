@@ -200,7 +200,7 @@ func (s *InitSchedule) staticassign(l *Node, r *Node) bool {
 			}
 			return true
 		}
-		//dump("not static ptrlit", r);
+		// dump("not static ptrlit", r);
 
 	case OSTR2BYTES:
 		if l.Class() == PEXTERN && r.Left.Op == OLITERAL {
@@ -317,7 +317,7 @@ func (s *InitSchedule) staticassign(l *Node, r *Node) bool {
 		return true
 	}
 
-	//dump("not static", r);
+	// dump("not static", r);
 	return false
 }
 

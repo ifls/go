@@ -6,6 +6,12 @@
 package envcmd
 
 import (
+	"cmd/go/internal/base"
+	"cmd/go/internal/cache"
+	"cmd/go/internal/cfg"
+	"cmd/go/internal/load"
+	"cmd/go/internal/modload"
+	"cmd/go/internal/work"
 	"encoding/json"
 	"fmt"
 	"go/build"
@@ -16,13 +22,6 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
-
-	"cmd/go/internal/base"
-	"cmd/go/internal/cache"
-	"cmd/go/internal/cfg"
-	"cmd/go/internal/load"
-	"cmd/go/internal/modload"
-	"cmd/go/internal/work"
 )
 
 var CmdEnv = &base.Command{

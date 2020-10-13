@@ -594,6 +594,7 @@ func Main(archInit func(*Arch)) {
 	for i := 0; i < len(xtop); i++ {
 		n := xtop[i]
 		if op := n.Op; op != ODCL && op != OAS && op != OAS2 && (op != ODCLTYPE || !n.Left.Name.Param.Alias) {
+			// 类型检查和语义分析
 			xtop[i] = typecheck(n, ctxStmt)
 		}
 	}
@@ -729,6 +730,7 @@ func Main(archInit func(*Arch)) {
 	// Prepare for SSA compilation.
 	// This must be before peekitabs, because peekitabs
 	// can trigger function compilation.
+	// SSA 配置的初始化过程其实就是做中间代码生成之前的准备工作
 	initssaconfig()
 
 	// Just before compilation, compile itabs found on

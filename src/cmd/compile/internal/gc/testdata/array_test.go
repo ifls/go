@@ -102,7 +102,7 @@ func testSliceSetElement(t *testing.T) {
 func testSlicePanic1(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			//println("panicked as expected")
+			// println("panicked as expected")
 		}
 	}()
 
@@ -114,7 +114,7 @@ func testSlicePanic1(t *testing.T) {
 func testSlicePanic2(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			//println("panicked as expected")
+			// println("panicked as expected")
 		}
 	}()
 

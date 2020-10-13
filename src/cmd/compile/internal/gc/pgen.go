@@ -292,6 +292,7 @@ const maxStackSize = 1 << 30
 // uses it to generate a plist,
 // and flushes that plist to machine code.
 // worker indicates which of the backend workers is doing the processing.
+// 将抽象语法树, 转换为中间代码SSA IR 也就是SSA特性的IR static single-assignment (SSA) form intermediate representation (IR)
 func compileSSA(fn *Node, worker int) {
 	f := buildssa(fn, worker)
 	// Note: check arg size to fix issue 25507.
@@ -411,7 +412,7 @@ func debuginfo(fnsym *obj.LSym, infosym *obj.LSym, curfn interface{}) ([]dwarf.S
 	// dummy relocation to the function symbol to insure that the type
 	// included in DWARF processing during linking.
 	typesyms := []*obj.LSym{}
-	for t, _ := range fnsym.Func.Autot {
+	for t := range fnsym.Func.Autot {
 		typesyms = append(typesyms, t)
 	}
 	sort.Sort(obj.BySymName(typesyms))
@@ -602,7 +603,7 @@ func createDwarfVars(fnsym *obj.LSym, fn *Func, apDecls []*Node) ([]*Node, []*dw
 		typename := dwarf.InfoPrefix + typesymname(n.Type)
 		decls = append(decls, n)
 		abbrev := dwarf.DW_ABRV_AUTO_LOCLIST
-		isReturnValue := (n.Class() == PPARAMOUT)
+		isReturnValue := n.Class() == PPARAMOUT
 		if n.Class() == PPARAM || n.Class() == PPARAMOUT {
 			abbrev = dwarf.DW_ABRV_PARAM_LOCLIST
 		} else if n.Class() == PAUTOHEAP {
@@ -616,7 +617,7 @@ func createDwarfVars(fnsym *obj.LSym, fn *Func, apDecls []*Node) ([]*Node, []*dw
 			stackcopy := n.Name.Param.Stackcopy
 			if stackcopy != nil && (stackcopy.Class() == PPARAM || stackcopy.Class() == PPARAMOUT) {
 				abbrev = dwarf.DW_ABRV_PARAM_LOCLIST
-				isReturnValue = (stackcopy.Class() == PPARAMOUT)
+				isReturnValue = stackcopy.Class() == PPARAMOUT
 			}
 		}
 		inlIndex := 0

@@ -21,7 +21,7 @@ func zerorange(pp *gc.Progs, p *obj.Prog, off, cnt int64, _ *uint32) *obj.Prog {
 			p = pp.Appendpp(p, mips.AMOVW, obj.TYPE_REG, mips.REGZERO, 0, obj.TYPE_MEM, mips.REGSP, gc.Ctxt.FixedFrameSize()+off+i)
 		}
 	} else {
-		//fmt.Printf("zerorange frame:%v, lo: %v, hi:%v \n", frame ,lo, hi)
+		// fmt.Printf("zerorange frame:%v, lo: %v, hi:%v \n", frame ,lo, hi)
 		//	ADD 	$(FIXED_FRAME+frame+lo-4), SP, r1
 		//	ADD 	$cnt, r1, r2
 		// loop:

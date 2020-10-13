@@ -16,7 +16,7 @@ package main
 // (e.g. the second argument to shifts is unsigned). If not mentioned,
 // all args take signed inputs, or don't care whether their inputs
 // are signed or unsigned.
-
+// 机器无关操作码
 var genericOps = []opData{
 	// 2-input arithmetic
 	// Types must be consistent with Go typing. Add, for example, must take two values

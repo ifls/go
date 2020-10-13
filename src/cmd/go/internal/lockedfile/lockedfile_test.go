@@ -8,6 +8,7 @@
 package lockedfile_test
 
 import (
+	"cmd/go/internal/lockedfile"
 	"fmt"
 	"internal/testenv"
 	"io/ioutil"
@@ -16,8 +17,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"cmd/go/internal/lockedfile"
 )
 
 func mustTempDir(t *testing.T) (dir string, remove func()) {

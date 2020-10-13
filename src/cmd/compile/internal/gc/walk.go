@@ -17,6 +17,7 @@ import (
 const tmpstringbufsize = 32
 const zeroValSize = 1024 // must match value of runtime/map.go:maxZero
 
+// 递归遍历语法树 经过 walk 系列函数的处理之后，AST 的抽象语法树就不再会改变了
 func walk(fn *Node) {
 	Curfn = fn
 
@@ -1567,6 +1568,7 @@ opswitch:
 		n1 = assignconv(n1, n.Left.Type.Elem(), "chan send")
 		n1 = walkexpr(n1, init)
 		n1 = nod(OADDR, n1, nil)
+		// 语法树节点 ch <- chansend1
 		n = mkcall1(chanfn("chansend1", 2, n.Left.Type), nil, init, n.Left, n1)
 
 	case OCLOSURE:

@@ -1143,7 +1143,7 @@ func mkinlcall(n, fn *Node, maxCost int32, inlMap map[*Node]bool) *Node {
 		}
 	}
 
-	//dumplist("ninit post", ninit);
+	// dumplist("ninit post", ninit);
 
 	call := nod(OINLCALL, nil, nil)
 	call.Ninit.Set(ninit.Slice())

@@ -1121,7 +1121,7 @@ func (debugInfo *FuncDebug) PutLocationList(list []byte, ctxt *obj.Link, listSym
 func encodeValue(ctxt *obj.Link, b, v ID) (uint64, bool) {
 	if ctxt.Arch.PtrSize == 8 {
 		result := uint64(b)<<32 | uint64(uint32(v))
-		//ctxt.Logf("b %#x (%d) v %#x (%d) -> %#x\n", b, b, v, v, result)
+		// ctxt.Logf("b %#x (%d) v %#x (%d) -> %#x\n", b, b, v, v, result)
 		return result, true
 	}
 	if ctxt.Arch.PtrSize != 4 {
@@ -1137,7 +1137,7 @@ func encodeValue(ctxt *obj.Link, b, v ID) (uint64, bool) {
 func decodeValue(ctxt *obj.Link, word uint64) (ID, ID) {
 	if ctxt.Arch.PtrSize == 8 {
 		b, v := ID(word>>32), ID(word)
-		//ctxt.Logf("%#x -> b %#x (%d) v %#x (%d)\n", word, b, b, v, v)
+		// ctxt.Logf("%#x -> b %#x (%d) v %#x (%d)\n", word, b, b, v, v)
 		return b, v
 	}
 	if ctxt.Arch.PtrSize != 4 {

@@ -13,8 +13,8 @@ const (
 	_EOF       // EOF
 
 	// names and literals
-	_Name    // name
-	_Literal // literal
+	_Name    // name 变量名
+	_Literal // literal 字面值
 
 	// operators and operations
 	// _Operator is excluding '*' (_Star)
@@ -22,8 +22,8 @@ const (
 	_AssignOp // op=
 	_IncOp    // opop
 	_Assign   // =
-	_Define   // :=
-	_Arrow    // <-
+	_Define   // := 定义
+	_Arrow    // <- chan
 	_Star     // *
 
 	// delimiters
@@ -39,32 +39,36 @@ const (
 	_Dot       // .
 	_DotDotDot // ...
 
-	// keywords
-	_Break       // break
-	_Case        // case
-	_Chan        // chan
-	_Const       // const
-	_Continue    // continue
+	// keywords 25个关键字
+	_Break    // break
+	_Case     // case
+	_Chan     // chan
+	_Const    // const
+	_Continue // continue
+
 	_Default     // default
 	_Defer       // defer
 	_Else        // else
 	_Fallthrough // fallthrough
 	_For         // for
-	_Func        // func
-	_Go          // go
-	_Goto        // goto
-	_If          // if
-	_Import      // import
-	_Interface   // interface
-	_Map         // map
-	_Package     // package
-	_Range       // range
-	_Return      // return
-	_Select      // select
-	_Struct      // struct
-	_Switch      // switch
-	_Type        // type
-	_Var         // var
+
+	_Func   // func
+	_Go     // go
+	_Goto   // goto
+	_If     // if
+	_Import // import
+
+	_Interface // interface
+	_Map       // map
+	_Package   // package
+	_Range     // range
+	_Return    // return
+
+	_Select // select
+	_Struct // struct
+	_Switch // switch
+	_Type   // type
+	_Var    // var
 
 	// empty line comment to exclude it from .String
 	tokenCount //

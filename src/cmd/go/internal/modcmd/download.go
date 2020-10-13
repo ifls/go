@@ -5,15 +5,14 @@
 package modcmd
 
 import (
-	"encoding/json"
-	"os"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/cfg"
 	"cmd/go/internal/modfetch"
 	"cmd/go/internal/modload"
 	"cmd/go/internal/par"
 	"cmd/go/internal/work"
+	"encoding/json"
+	"os"
 
 	"golang.org/x/mod/module"
 )

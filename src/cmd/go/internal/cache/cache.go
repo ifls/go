@@ -7,6 +7,7 @@ package cache
 
 import (
 	"bytes"
+	"cmd/go/internal/renameio"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -18,8 +19,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"cmd/go/internal/renameio"
 )
 
 // An ActionID is a cache action key, the hash of a complete description of a

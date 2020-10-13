@@ -5,10 +5,9 @@
 package load
 
 import (
+	"cmd/go/internal/search"
 	"path/filepath"
 	"strings"
-
-	"cmd/go/internal/search"
 )
 
 // MatchPackage(pattern, cwd)(p) reports whether package p matches pattern in the working directory cwd.

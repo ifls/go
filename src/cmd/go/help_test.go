@@ -6,11 +6,10 @@ package main_test
 
 import (
 	"bytes"
-	"io/ioutil"
-	"testing"
-
 	"cmd/go/internal/help"
 	"cmd/go/internal/modload"
+	"io/ioutil"
+	"testing"
 )
 
 func TestDocsUpToDate(t *testing.T) {

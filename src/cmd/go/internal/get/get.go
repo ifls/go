@@ -6,12 +6,6 @@
 package get
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
-
 	"cmd/go/internal/base"
 	"cmd/go/internal/cfg"
 	"cmd/go/internal/load"
@@ -19,6 +13,11 @@ import (
 	"cmd/go/internal/str"
 	"cmd/go/internal/web"
 	"cmd/go/internal/work"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 )
 
 var CmdGet = &base.Command{

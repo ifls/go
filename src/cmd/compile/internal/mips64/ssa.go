@@ -5,14 +5,13 @@
 package mips64
 
 import (
-	"math"
-
 	"cmd/compile/internal/gc"
 	"cmd/compile/internal/logopt"
 	"cmd/compile/internal/ssa"
 	"cmd/compile/internal/types"
 	"cmd/internal/obj"
 	"cmd/internal/obj/mips"
+	"math"
 )
 
 // isFPreg reports whether r is an FP register

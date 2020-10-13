@@ -9,13 +9,12 @@ package lockedfile_test
 
 import (
 	"bytes"
+	"cmd/go/internal/lockedfile"
 	"encoding/binary"
 	"math/rand"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"cmd/go/internal/lockedfile"
 )
 
 func isPowerOf2(x int) bool {

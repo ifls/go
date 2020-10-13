@@ -10,9 +10,10 @@
 may be logically split in four phases, which we will briefly describe alongside
 the list of packages that contain their code.
 
-You may sometimes hear the terms "front-end" and "back-end" when referring to
-the compiler. Roughly speaking, these translate to the first two and last two
-phases we are going to list here. A third term, "middle-end", often refers to
+You may sometimes hear the terms "front-end" and "back-end" when referring to 涉及到the compiler. 
+Roughly speaking, these translate to the first two 前端是前两步 and last two 后端是后面两步
+phases we are going to list here. 
+A third term, "middle-end", often refers to
 much of the work that happens in the second phase.
 
 Note that the `go/*` family of packages, such as `go/parser` and `go/types`,
@@ -20,12 +21,12 @@ have no relation to the compiler. Since the compiler was initially written in C,
 the `go/*` packages were developed to enable writing tools working with Go code,
 such as `gofmt` and `vet`.
 
-It should be clarified that the name "gc" stands for "Go compiler", and has
-little to do with uppercase "GC", which stands for garbage collection.
+It should be clarified that the name "gc" stands for代表 "Go compiler", and has
+little to do with uppercase "GC", which stands for garbage collection. 不是指gc
 
 ### 1. Parsing
 
-* `cmd/compile/internal/syntax` (lexer, parser, syntax tree)
+* `cmd/compile/internal/syntax` (lexer, parser, syntax tree)  词法分析 语法分析 语法树
 
 In the first phase of compilation, source code is tokenized (lexical analysis),
 parsed (syntax analysis), and a syntax tree is constructed for each source
@@ -38,7 +39,7 @@ which is used for error reporting and the creation of debugging information.
 
 ### 2. Type-checking and AST transformations
 
-* `cmd/compile/internal/gc` (create compiler AST, type checking, AST transformations)
+* `cmd/compile/internal/gc` (create compiler AST, type checking, AST transformations) 创建AST, 类型检查, AST变换
 
 The gc package includes an AST definition carried over from when it was written
 in C. All of its code is written in terms of it, so the first thing that the gc
@@ -58,8 +59,8 @@ inlining, and escape analysis.
 
 ### 3. Generic SSA
 
-* `cmd/compile/internal/gc` (converting to SSA)
-* `cmd/compile/internal/ssa` (SSA passes and rules)
+* `cmd/compile/internal/gc` (converting to SSA) 生成SSA IR
+* `cmd/compile/internal/ssa` (SSA passes and rules) SSA优化
 
 
 In this phase, the AST is converted into Static Single Assignment (SSA) form, a
@@ -87,7 +88,7 @@ values, and optimizing multiplications and float operations.
 
 ### 4. Generating machine code
 
-* `cmd/compile/internal/ssa` (SSA lowering and arch-specific passes)
+* `cmd/compile/internal/ssa` (SSA lowering SSA下降 and arch-specific passes)
 * `cmd/internal/obj` (machine code generation)
 
 The machine-dependent phase of the compiler begins with the "lower" pass, which
@@ -114,5 +115,5 @@ and debugging information.
 
 ### Further reading
 
-To dig deeper into how the SSA package works, including its passes and rules,
-head to [cmd/compile/internal/ssa/README.md](internal/ssa/README.md).
+To dig deeper深入探究 into how the SSA package works, including its passes and rules,
+head to TODO [cmd/compile/internal/ssa/README.md](internal/ssa/README.md).

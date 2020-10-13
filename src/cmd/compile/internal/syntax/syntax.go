@@ -75,6 +75,7 @@ func Parse(base *PosBase, src io.Reader, errh ErrorHandler, pragh PragmaHandler,
 		}
 	}()
 
+	// 词法语法解析
 	var p parser
 	p.init(base, src, errh, pragh, mode)
 	p.next()

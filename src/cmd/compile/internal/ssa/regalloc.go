@@ -1627,7 +1627,7 @@ func (s *regAllocState) regalloc(f *Func) {
 				// we'll rematerialize during the merge.
 				continue
 			}
-			//fmt.Printf("live-at-end spill for %s at %s\n", s.orig[e.ID], b)
+			// fmt.Printf("live-at-end spill for %s at %s\n", s.orig[e.ID], b)
 			spill := s.makeSpill(s.orig[e.ID], b)
 			s.spillLive[b.ID] = append(s.spillLive[b.ID], spill.ID)
 		}

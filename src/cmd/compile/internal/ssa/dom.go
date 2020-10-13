@@ -98,7 +98,7 @@ func dominators(f *Func) []*Block {
 	preds := func(b *Block) []Edge { return b.Preds }
 	succs := func(b *Block) []Edge { return b.Succs }
 
-	//TODO: benchmark and try to find criteria for swapping between
+	// TODO: benchmark and try to find criteria for swapping between
 	// dominatorsSimple and dominatorsLT
 	return f.dominatorsLTOrig(f.Entry, preds, succs)
 }

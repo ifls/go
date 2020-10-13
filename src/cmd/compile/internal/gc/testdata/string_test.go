@@ -71,7 +71,7 @@ func testStructSlice(t *testing.T) {
 func testStringSlicePanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			//println("panicked as expected")
+			// println("panicked as expected")
 		}
 	}()
 
@@ -141,7 +141,7 @@ func testInt64Index(t *testing.T) {
 func testInt64IndexPanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			//println("panicked as expected")
+			// println("panicked as expected")
 		}
 	}()
 
@@ -152,7 +152,7 @@ func testInt64IndexPanic(t *testing.T) {
 func testInt64SlicePanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
-			//println("panicked as expected")
+			// println("panicked as expected")
 		}
 	}()
 

@@ -70,8 +70,8 @@ func (p stringFuncPrinter) endBlock(b *Block) {
 
 func (p stringFuncPrinter) value(v *Value, live bool) {
 	fmt.Fprint(p.w, "    ")
-	//fmt.Fprint(p.w, v.Block.Func.fe.Pos(v.Pos))
-	//fmt.Fprint(p.w, ": ")
+	// fmt.Fprint(p.w, v.Block.Func.fe.Pos(v.Pos))
+	// fmt.Fprint(p.w, ": ")
 	fmt.Fprint(p.w, v.LongString())
 	if !live {
 		fmt.Fprint(p.w, " DEAD")

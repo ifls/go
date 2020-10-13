@@ -5,6 +5,7 @@
 package get
 
 import (
+	"cmd/go/internal/web"
 	"errors"
 	"internal/testenv"
 	"io/ioutil"
@@ -12,8 +13,6 @@ import (
 	"path"
 	"path/filepath"
 	"testing"
-
-	"cmd/go/internal/web"
 )
 
 // Test that RepoRootForImportPath determines the correct RepoRoot for a given importPath.

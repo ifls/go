@@ -6,6 +6,8 @@ package main
 
 import (
 	"bytes"
+	"cmd/internal/edit"
+	"cmd/internal/objabi"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -16,9 +18,6 @@ import (
 	"log"
 	"os"
 	"sort"
-
-	"cmd/internal/edit"
-	"cmd/internal/objabi"
 )
 
 const usageMessage = "" +
