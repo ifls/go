@@ -79,13 +79,16 @@ const (
 	_ITIMER_VIRTUAL = 0x1
 	_ITIMER_PROF    = 0x2
 
-	_EPOLLIN       = 0x1
-	_EPOLLOUT      = 0x4
-	_EPOLLERR      = 0x8
-	_EPOLLHUP      = 0x10
-	_EPOLLRDHUP    = 0x2000
-	_EPOLLET       = 0x80000000
+	// epoll事件
+	_EPOLLIN    = 0x1        // 可读取普通数据
+	_EPOLLOUT   = 0x4        // 可写
+	_EPOLLERR   = 0x8        // 有错误发生
+	_EPOLLHUP   = 0x10       // 出现挂断
+	_EPOLLRDHUP = 0x2000     // 套接字对端关闭
+	_EPOLLET    = 0x80000000 // 采用边缘触发 事件通知
+	// epoll_create1() 支持的flags
 	_EPOLL_CLOEXEC = 0x80000
+	// epoll_ctl op
 	_EPOLL_CTL_ADD = 0x1
 	_EPOLL_CTL_DEL = 0x2
 	_EPOLL_CTL_MOD = 0x3
@@ -135,9 +138,18 @@ type itimerval struct {
 	it_value    timeval
 }
 
+/*
+typedef union epoll_data {  // 指定传回给调用进程的信息
+	void *ptr;   // 用户自定义数据
+    int  fd;     // 文件描述符
+    uint32_t u32;  // 32位整数
+    uint64_t u64;   // 64位整数
+}
+*/
+
 type epollevent struct {
-	events uint32
-	data   [8]byte // unaligned uintptr
+	events uint32  // 事件类型 位掩码
+	data   [8]byte // unaligned uintptr   // epoll_data_t
 }
 
 // created by cgo -cdefs and then converted to Go

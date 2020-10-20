@@ -55,7 +55,7 @@ func netpollinit() {
 	}
 	*(**uintptr)(unsafe.Pointer(&ev.data)) = &netpollBreakRd
 	// _EPOLL_CTL_ADD defs_linux_amd64.go
-	// 添加add事件监听
+	// add 可读事件监听
 	errno = epollctl(epfd, _EPOLL_CTL_ADD, r, &ev)
 	if errno != 0 {
 		println("runtime: epollctl failed with", -errno)
@@ -74,14 +74,17 @@ func netpollIsPollDescriptor(fd uintptr) bool {
 // 加入对fd的监听，回调到pd
 func netpollopen(fd uintptr, pd *pollDesc) int32 {
 	var ev epollevent
+	// _EPOLLET 边缘触发
+	// _EPOLLRDHUP 套接字对端关闭
 	ev.events = _EPOLLIN | _EPOLLOUT | _EPOLLRDHUP | _EPOLLET
-	*(**pollDesc)(unsafe.Pointer(&ev.data)) = pd
+	*(**pollDesc)(unsafe.Pointer(&ev.data)) = pd // 保存 一个保存fd的数据结构
 	return -epollctl(epfd, _EPOLL_CTL_ADD, int32(fd), &ev)
 }
 
 // 删除监听事件
 func netpollclose(fd uintptr) int32 {
 	var ev epollevent
+	// 删除fd上的事件监听, 第四个参数, 无效, 会被忽略
 	return -epollctl(epfd, _EPOLL_CTL_DEL, int32(fd), &ev)
 }
 
@@ -188,6 +191,7 @@ retry:
 		}
 
 		var mode int32
+		// 套接字对端关闭
 		if ev.events&(_EPOLLIN|_EPOLLRDHUP|_EPOLLHUP|_EPOLLERR) != 0 {
 			mode += 'r'
 		}

@@ -42,25 +42,25 @@ type FileMode uint32
 // changed, although new bits might be added.
 const (
 	// The single letters are the abbreviations
-	// used by the String method's formatting.
+	// used by the String method's formatting. 掩码取出文件类型
 	ModeDir        FileMode = 1 << (32 - 1 - iota) // d: is a directory
 	ModeAppend                                     // a: append-only
 	ModeExclusive                                  // l: exclusive use
 	ModeTemporary                                  // T: temporary file; Plan 9 only
-	ModeSymlink                                    // L: symbolic link
-	ModeDevice                                     // D: device file
-	ModeNamedPipe                                  // p: named pipe (FIFO)
-	ModeSocket                                     // S: Unix domain socket
+	ModeSymlink                                    // L: symbolic link 符号链接
+	ModeDevice                                     // D: device file 设备文件
+	ModeNamedPipe                                  // p: named pipe (FIFO) 命名管道
+	ModeSocket                                     // S: Unix domain socket (unix socket)
 	ModeSetuid                                     // u: setuid
 	ModeSetgid                                     // g: setgid
-	ModeCharDevice                                 // c: Unix character device, when ModeDevice is set
+	ModeCharDevice                                 // c: Unix character device字符设备, when ModeDevice is set
 	ModeSticky                                     // t: sticky
-	ModeIrregular                                  // ?: non-regular file; nothing else is known about this file
+	ModeIrregular                                  // ?: non-regular file; nothing else is known about this file 非已知文件
 
-	// Mask for the type bits. For regular files, none will be set.
+	// 文件类型的掩码, Mask for the type bits. For regular files, none will be set.
 	ModeType = ModeDir | ModeSymlink | ModeNamedPipe | ModeSocket | ModeDevice | ModeCharDevice | ModeIrregular
 
-	ModePerm FileMode = 0777 // Unix permission bits
+	ModePerm FileMode = 0777 // Unix permission bits, 掩码, 只取后面的 权限位
 )
 
 func (m FileMode) String() string {
@@ -89,13 +89,13 @@ func (m FileMode) String() string {
 	return string(buf[:w])
 }
 
-// IsDir reports whether m describes a directory.
+// IsDir reports whether m describes a directory. 目录
 // That is, it tests for the ModeDir bit being set in m.
 func (m FileMode) IsDir() bool {
 	return m&ModeDir != 0
 }
 
-// IsRegular reports whether m describes a regular file.
+// IsRegular reports whether m describes a regular file. 普通文件
 // That is, it tests that no mode type bits are set.
 func (m FileMode) IsRegular() bool {
 	return m&ModeType == 0

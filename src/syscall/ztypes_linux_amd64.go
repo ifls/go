@@ -101,35 +101,35 @@ type Rlimit struct {
 type _Gid_t uint32
 
 type Stat_t struct {
-	Dev       uint64
-	Ino       uint64
-	Nlink     uint64
-	Mode      uint32
-	Uid       uint32
-	Gid       uint32
-	X__pad0   int32
-	Rdev      uint64
-	Size      int64
-	Blksize   int64
-	Blocks    int64
-	Atim      Timespec
-	Mtim      Timespec
-	Ctim      Timespec
+	Dev       uint64   // 文件所在设备的id
+	Ino       uint64   // 文件 i-node 号
+	Nlink     uint64   // 到此文件的硬链接数量
+	Mode      uint32   // 文件类型和权限
+	Uid       uint32   // 文件所有者的uid
+	Gid       uint32   // 文件所有者的组id
+	X__pad0   int32    //
+	Rdev      uint64   // 设备特殊文件id
+	Size      int64    // 总文件大小 字节为单位
+	Blksize   int64    // 最佳IO块大小
+	Blocks    int64    // 分配的物理块(512B)的数量
+	Atim      Timespec // 最后文件访问时间
+	Mtim      Timespec // 最后的文件修改时间
+	Ctim      Timespec // 最后的文件状态修改时间
 	X__unused [3]int64
 }
 
 type Statfs_t struct {
-	Type    int64
-	Bsize   int64
-	Blocks  uint64
-	Bfree   uint64
-	Bavail  uint64
-	Files   uint64
-	Ffree   uint64
-	Fsid    Fsid
-	Namelen int64
-	Frsize  int64
-	Flags   int64
+	Type    int64  // 包含文件系统类型 代码
+	Bsize   int64  // 文件系统 块大小 字节
+	Blocks  uint64 // 文件系统总块数(以frsize为单元)
+	Bfree   uint64 // 空闲块总数量
+	Bavail  uint64 // 可用块总数量
+	Files   uint64 // i-node 总数
+	Ffree   uint64 // 空闲 i-node 总数
+	Fsid    Fsid   // 文件系统id
+	Namelen int64  // 文件名, 最大长度
+	Frsize  int64  // 基本文件系统 块大小 字节
+	Flags   int64  // mount 标志
 	Spare   [4]int64
 }
 

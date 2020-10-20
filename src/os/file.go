@@ -70,16 +70,16 @@ var (
 // flags may be implemented on a given system.
 const (
 	// Exactly one of O_RDONLY, O_WRONLY, or O_RDWR must be specified.必选一个
-	O_RDONLY int = syscall.O_RDONLY // open the file read-only.
-	O_WRONLY int = syscall.O_WRONLY // open the file write-only.
-	O_RDWR   int = syscall.O_RDWR   // open the file read-write.
+	O_RDONLY int = syscall.O_RDONLY // open the file read-only.  只读打开文件
+	O_WRONLY int = syscall.O_WRONLY // open the file write-only. 只写打开文件
+	O_RDWR   int = syscall.O_RDWR   // open the file read-write. 读写打开
 
 	// The remaining values may be or'ed in to control behavior.
 	O_APPEND int = syscall.O_APPEND // append data to the file when writing. 总是写到结尾
 	O_CREATE int = syscall.O_CREAT  // create a new file if none exists. 不存在则创建
-	O_EXCL   int = syscall.O_EXCL   // used with O_CREATE, file must not exist. 和 CREATE选项一起使用，指定文件必须是未存在
-	O_SYNC   int = syscall.O_SYNC   // open for synchronous I/O.	同步IO
-	O_TRUNC  int = syscall.O_TRUNC  // truncate regular writable file when opened.  截断文件长度为0，就是删除文件内容
+	O_EXCL   int = syscall.O_EXCL   // used with O_CREATE, file must not exist. 和 CREATE选项一起使用，指定文件必须是未存在, 存在则报错
+	O_SYNC   int = syscall.O_SYNC   // open for synchronous I/O.	同步IO的方式打开
+	O_TRUNC  int = syscall.O_TRUNC  // truncate regular writable file when opened.  截断文件长度为指定长度, 多出的删掉, 就是删除文件内容
 )
 
 // Seek whence values.
@@ -316,6 +316,7 @@ func Open(name string) (*File, error) {
 // be used for I/O; the associated file descriptor has mode O_RDWR.
 // If there is an error, it will be of type *PathError.
 func Create(name string) (*File, error) {
+	// 没有则创建, 可读可写模式, 存在则截断, 保证文件内容为空, 覆盖式创建
 	return OpenFile(name, O_RDWR|O_CREATE|O_TRUNC, 0666)
 }
 
