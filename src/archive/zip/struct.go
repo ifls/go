@@ -263,17 +263,17 @@ func (h *FileHeader) SetModTime(t time.Time) {
 const (
 	// Unix constants. The specification doesn't mention them,
 	// but these seem to be the values agreed on by tools.
-	s_IFMT   = 0xf000
-	s_IFSOCK = 0xc000
-	s_IFLNK  = 0xa000
-	s_IFREG  = 0x8000
-	s_IFBLK  = 0x6000
-	s_IFDIR  = 0x4000
-	s_IFCHR  = 0x2000
-	s_IFIFO  = 0x1000
-	s_ISUID  = 0x800
-	s_ISGID  = 0x400
-	s_ISVTX  = 0x200
+	s_IFMT   = 0xf000 // 与 文件权限 &, 提取 文件类型, 后与 以下常量判等
+	s_IFSOCK = 0xc000 // 套接字文件
+	s_IFLNK  = 0xa000 // 链接文件   0x
+	s_IFREG  = 0x8000 // 常规文件   0x1000
+	s_IFBLK  = 0x6000 // 块设备    0x0110
+	s_IFDIR  = 0x4000 // 目录
+	s_IFCHR  = 0x2000 // 字符设备
+	s_IFIFO  = 0x1000 // 命名管道
+	s_ISUID  = 0x800  // set-user-id U 0x 0000 1000
+	s_ISGID  = 0x400  // set-group-id G 0x 0000 0100
+	s_ISVTX  = 0x200  // sticky T 0x 0000 0010
 
 	msdosDir      = 0x10
 	msdosReadOnly = 0x01

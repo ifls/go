@@ -30,7 +30,7 @@ type Timespec struct {
 
 type Timeval struct {
 	Sec  int64
-	Usec int64
+	Usec int64 // 微秒
 }
 
 type Timex struct {
@@ -101,20 +101,20 @@ type Rlimit struct {
 type _Gid_t uint32
 
 type Stat_t struct {
-	Dev       uint64   // 文件所在设备的id
-	Ino       uint64   // 文件 i-node 号
+	Dev       uint64   // 文件所在(驻留)的设备的id, 记录了设备的主\辅id, 通过宏定义 提取不同位段上的信息, 获取主辅id
+	Ino       uint64   // 文件 i-node 号  dev和ino 可在所有文件系统中唯一标识一个文件
 	Nlink     uint64   // 到此文件的硬链接数量
-	Mode      uint32   // 文件类型和权限
+	Mode      uint32   // 文件类型和权限双重作用   xxxx UGT RWX RWX RWX  & s_IFMT 提取文件类型
 	Uid       uint32   // 文件所有者的uid
 	Gid       uint32   // 文件所有者的组id
 	X__pad0   int32    //
 	Rdev      uint64   // 设备特殊文件id
-	Size      int64    // 总文件大小 字节为单位
-	Blksize   int64    // 最佳IO块大小
-	Blocks    int64    // 分配的物理块(512B)的数量
-	Atim      Timespec // 最后文件访问时间
+	Size      int64    // 文件总文件大小 字节为单位, 对于链接, 则是所指路径名的长度, 对于共享对象, 表示对象的大小
+	Blksize   int64    // 最佳IO块大小, 一般返回 4096
+	Blocks    int64    // 实际分配给文件的物理块(512B)的数量, 包括了指针块的空间, 空洞不分配物理块
+	Atim      Timespec // 最后文件访问时间, unix时间格式 Epoch（1970年1月1日00:00:00 UTC）开始所经过的秒数，不考虑闰秒。
 	Mtim      Timespec // 最后的文件修改时间
-	Ctim      Timespec // 最后的文件状态修改时间
+	Ctim      Timespec // 最后的文件状态(即i-node内信息)修改时间
 	X__unused [3]int64
 }
 

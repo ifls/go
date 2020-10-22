@@ -1074,7 +1074,7 @@ const (
 	S_IREAD                          = 0x100
 	S_IRGRP                          = 0x20
 	S_IROTH                          = 0x4
-	S_IRUSR                          = 0x100
+	S_IRUSR                          = 0x100  // 0400
 	S_IRWXG                          = 0x38
 	S_IRWXO                          = 0x7
 	S_IRWXU                          = 0x1c0
@@ -1084,7 +1084,7 @@ const (
 	S_IWGRP                          = 0x10
 	S_IWOTH                          = 0x2
 	S_IWRITE                         = 0x80
-	S_IWUSR                          = 0x80
+	S_IWUSR                          = 0x80 // yo
 	S_IXGRP                          = 0x8
 	S_IXOTH                          = 0x1
 	S_IXUSR                          = 0x40
