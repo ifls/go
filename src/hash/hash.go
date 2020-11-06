@@ -40,7 +40,7 @@ type Hash interface {
 	// BlockSize returns the hash's underlying block size.
 	// The Write method must be able to accept any amount
 	// of data, but it may operate more efficiently if all writes
-	// are a multiple of the block size.
+	// are a multiple of the block size. 块大小的倍数的输入参数, 会更有效, 不是 摘要的大小
 	BlockSize() int
 }
 

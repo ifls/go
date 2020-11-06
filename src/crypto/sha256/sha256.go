@@ -49,8 +49,8 @@ const (
 
 // digest represents the partial evaluation of a checksum.
 type digest struct {
-	h     [8]uint32
-	x     [chunk]byte
+	h     [8]uint32   // 8 * 4 = 32B
+	x     [chunk]byte // 通常有一个长度为64的十六进制字符串来表示
 	nx    int
 	len   uint64
 	is224 bool // mark if this digest is SHA-224
