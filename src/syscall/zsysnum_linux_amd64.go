@@ -171,7 +171,7 @@ const (
 	SYS_ADJTIMEX               = 159 // 调整内核时间
 	SYS_SETRLIMIT              = 160 // 设置资源限制
 	SYS_CHROOT                 = 161 // 改变进程根目录, 也就是解释绝对路径时的起点
-	SYS_SYNC                   = 162 // 提交文件系统修改 和 fsync fdatasync有什么区别?
+	SYS_SYNC                   = 162 // 提交文件系统修改 和 fsync fdatasync有什么区别? sync只是将缓冲区的修改提交到写入队列
 	SYS_ACCT                   = 163 // 进程记账, 干什么的??
 	SYS_SETTIMEOFDAY           = 164 // 时间
 	SYS_MOUNT                  = 165 // 挂载文件系统
