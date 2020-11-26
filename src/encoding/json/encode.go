@@ -835,6 +835,7 @@ func newMapEncoder(t reflect.Type) encoderFunc {
 	return me.encode
 }
 
+// base64 编码 []byte
 func encodeByteSlice(e *encodeState, v reflect.Value, _ encOpts) {
 	if v.IsNil() {
 		e.WriteString("null")
@@ -882,6 +883,7 @@ func newSliceEncoder(t reflect.Type) encoderFunc {
 	// Byte slices get special treatment; arrays don't.
 	if t.Elem().Kind() == reflect.Uint8 {
 		p := reflect.PtrTo(t.Elem())
+		// base64 编码 []byte
 		if !p.Implements(marshalerType) && !p.Implements(textMarshalerType) {
 			return encodeByteSlice
 		}

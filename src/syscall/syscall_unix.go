@@ -62,13 +62,13 @@ func (m *mmapper) Mmap(fd int, offset int64, length int, prot int, flags int) (d
 		return nil, EINVAL
 	}
 
-	// Map the requested memory.
+	// Map the requested memory. 起始地址
 	addr, errno := m.mmap(0, uintptr(length), prot, flags, fd, offset)
 	if errno != nil {
 		return nil, errno
 	}
 
-	// Use unsafe to turn addr into a []byte.
+	// Use unsafe to turn addr into a []byte. 将地址封装成切片返回
 	var b []byte
 	hdr := (*unsafeheader.Slice)(unsafe.Pointer(&b))
 	hdr.Data = unsafe.Pointer(addr)

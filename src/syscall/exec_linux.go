@@ -4,6 +4,8 @@
 
 // +build linux
 
+// https://filippo.io/linux-syscall-table/
+
 package syscall
 
 import (
@@ -415,7 +417,7 @@ func forkAndExecInChild1(argv0 *byte, argv, envv []*byte, chroot, dir *byte, att
 		}
 	}
 
-	// Chdir
+	// Chdir 改变工作目录
 	if dir != nil {
 		_, _, err1 = RawSyscall(SYS_CHDIR, uintptr(unsafe.Pointer(dir)), 0, 0)
 		if err1 != 0 {
@@ -536,7 +538,7 @@ func forkAndExecInChild1(argv0 *byte, argv, envv []*byte, chroot, dir *byte, att
 		}
 	}
 
-	// Time to exec.
+	// 正式执行程序 Time to exec.
 	_, _, err1 = RawSyscall(SYS_EXECVE,
 		uintptr(unsafe.Pointer(argv0)),
 		uintptr(unsafe.Pointer(&argv[0])),

@@ -101,9 +101,11 @@ func SlicePtrFromStrings(ss []string) ([]*byte, error) {
 	return bb, nil
 }
 
+// 对fd 设置 close on exec 标志
 func CloseOnExec(fd int) { fcntl(fd, F_SETFD, FD_CLOEXEC) }
 
 func SetNonblock(fd int, nonblocking bool) (err error) {
+	// 获取
 	flag, err := fcntl(fd, F_GETFL, 0)
 	if err != nil {
 		return err
@@ -113,6 +115,7 @@ func SetNonblock(fd int, nonblocking bool) (err error) {
 	} else {
 		flag &^= O_NONBLOCK
 	}
+	// 在设置
 	_, err = fcntl(fd, F_SETFL, flag)
 	return err
 }
@@ -277,14 +280,19 @@ var execveDarwin func(path *byte, argv **byte, envp **byte) error
 // execve - execute program
 // https://man7.org/linux/man-pages/man2/execve.2.html
 func Exec(argv0 string, argv []string, envv []string) (err error) {
+	// 可执行文件路径
 	argv0p, err := BytePtrFromString(argv0)
 	if err != nil {
 		return err
 	}
+
+	// 命令行参数
 	argvp, err := SlicePtrFromStrings(argv)
 	if err != nil {
 		return err
 	}
+
+	// 环境变量
 	envvp, err := SlicePtrFromStrings(envv)
 	if err != nil {
 		return err
