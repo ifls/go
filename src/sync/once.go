@@ -51,7 +51,7 @@ func (o *Once) Do(f func()) {
 	// waiting for the first's call to f to complete.
 	// This is why the slow path falls back to a mutex, and why
 	// the atomic.StoreUint32 must be delayed until after f returns.
-
+	// fast path
 	if atomic.LoadUint32(&o.done) == 0 {
 		// Outlined slow-path to allow inlining of the fast-path.
 		o.doSlow(f)
@@ -59,9 +59,11 @@ func (o *Once) Do(f func()) {
 }
 
 func (o *Once) doSlow(f func()) {
+	// 上锁
 	o.m.Lock()
 	defer o.m.Unlock()
 	if o.done == 0 {
+		//保证即使f() panic，也会执行
 		defer atomic.StoreUint32(&o.done, 1)
 		f()
 	}
