@@ -54,8 +54,8 @@ func (v *Value) Store(x interface{}) {
 			// Attempt to start first store.
 			// Disable preemption so that other goroutines can use
 			// active spin wait to wait for completion; and so that
-			// GC does not see the fake type accidentally.
-			runtime_procPin()
+			// GC does not see the fake type accidentally偶然地.
+			runtime_procPin() // 禁止抢占, 其他协程自旋直到完成
 			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(^uintptr(0))) {
 				runtime_procUnpin()
 				continue

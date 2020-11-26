@@ -6,6 +6,9 @@
 
 #include "textflag.h"
 
+// 底层是用 LOCK 和 原子指令实现
+// And8
+
 TEXT ·SwapInt32(SB),NOSPLIT,$0
 	JMP	runtime∕internal∕atomic·Xchg(SB)
 
