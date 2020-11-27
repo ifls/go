@@ -2,23 +2,23 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package atomic provides low-level atomic memory primitives
-// useful for implementing synchronization algorithms.
+// Package atomic provides low-level atomic memory 原子内存 primitives
+// useful for implementing synchronization algorithms. 用于实现同步算法
 //
 // These functions require great care to be used correctly.
-// Except for special, low-level applications, synchronization is better
+// Except for special, low-level applications除非特别的底层的程序, synchronization is better
 // done with channels or the facilities of the sync package.
 // Share memory by communicating;
 // don't communicate by sharing memory.
 //
-// The swap operation, implemented by the SwapT functions, is the atomic
+// The `swap` operation, implemented by the SwapT functions, is the atomic
 // equivalent of:
 //
 //	old = *addr
 //	*addr = new
 //	return old
 //
-// The compare-and-swap operation, implemented by the CompareAndSwapT
+// The `compare-and-swap` operation, implemented by the CompareAndSwapT
 // functions, is the atomic equivalent of:
 //
 //	if *addr == old {
@@ -27,13 +27,13 @@
 //	}
 //	return false
 //
-// The add operation, implemented by the AddT functions, is the atomic
+// The `add` operation, implemented by the AddT functions, is the atomic
 // equivalent of:
 //
 //	*addr += delta
 //	return *addr
 //
-// The load and store operations, implemented by the LoadT and StoreT
+// The `load` and `store` operations, implemented by the LoadT and StoreT
 // functions, are the atomic equivalents of "return *addr" and
 // "*addr = val".
 //
@@ -47,11 +47,8 @@ import (
 //
 // On non-Linux ARM, the 64-bit functions use instructions unavailable before the ARMv6k core.
 //
-// On ARM, x86-32, and 32-bit MIPS,
-// it is the caller's responsibility to arrange for 64-bit
-// alignment of 64-bit words accessed atomically. The first word in a
-// variable or in an allocated struct, array, or slice can be relied upon to be
-// 64-bit aligned.
+// On ARM, x86-32, and 32-bit MIPS, it is the caller's responsibility to arrange for 64-bit alignment of 64-bit words accessed atomically.
+// The first word in a variable or in an allocated struct, array, or slice can be relied upon to be 64-bit aligned.
 
 // SwapInt32 atomically stores new into *addr and returns the previous *addr value.
 func SwapInt32(addr *int32, new int32) (old int32)

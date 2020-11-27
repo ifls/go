@@ -8,7 +8,7 @@ import (
 	"unsafe"
 )
 
-// A Value provides an atomic load and store of a consistently typed value.
+// A Value provides an atomic load and store of a consistently一致类型 typed value.
 // The zero value for a Value returns nil from Load.
 // Once Store has been called, a Value must not be copied.
 //
@@ -17,7 +17,7 @@ type Value struct {
 	v interface{}
 }
 
-// ifaceWords is interface{} internal representation.
+// ifaceWords is interface{} internal representation. interface内部表示
 type ifaceWords struct {
 	typ  unsafe.Pointer
 	data unsafe.Pointer
@@ -55,7 +55,7 @@ func (v *Value) Store(x interface{}) {
 			// Disable preemption so that other goroutines can use
 			// active spin wait to wait for completion; and so that
 			// GC does not see the fake type accidentally偶然地.
-			runtime_procPin() // 禁止抢占, 其他协程自旋直到完成
+			runtime_procPin() // 禁止抢占, 其他g自旋直到此g完成
 			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(^uintptr(0))) {
 				runtime_procUnpin()
 				continue
@@ -73,7 +73,7 @@ func (v *Value) Store(x interface{}) {
 			continue
 		}
 		// First store completed. Check type and overwrite data.
-		if typ != xp.typ {
+		if typ != xp.typ { // 类型不一致
 			panic("sync/atomic: store of inconsistently typed value into Value")
 		}
 		StorePointer(&vp.data, xp.data)
@@ -82,5 +82,5 @@ func (v *Value) Store(x interface{}) {
 }
 
 // Disable/enable preemption, implemented in runtime.
-func runtime_procPin()
+func runtime_procPin() // g绑定p, 禁止抢占
 func runtime_procUnpin()
