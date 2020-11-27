@@ -50,6 +50,7 @@ var semtable [semTabSize]struct {
 
 //go:linkname sync_runtime_Semacquire sync.runtime_Semacquire
 func sync_runtime_Semacquire(addr *uint32) {
+	// 获取信号
 	semacquire1(addr, false, semaBlockProfile, 0)
 }
 
@@ -138,9 +139,11 @@ func semacquire1(addr *uint32, lifo bool, profile semaProfileFlags, skipframes i
 		}
 		// Any semrelease after the cansemacquire knows we're waiting
 		// (we set nwait above), so go to sleep.
+		// g 入队到当前sem的root的队列
 		root.queue(addr, s, lifo) // s.g = getg()
 		// 暂停当前g，进入等待状态
 		goparkunlock(&root.lock, waitReasonSemacquire, traceEvGoBlockSync, 4+skipframes)
+		// 被唤醒
 		if s.ticket != 0 || cansemacquire(addr) {
 			break
 		}
@@ -155,6 +158,7 @@ func semrelease(addr *uint32) {
 	semrelease1(addr, false, 0)
 }
 
+// 释放信号量
 func semrelease1(addr *uint32, handoff bool, skipframes int) {
 	root := semroot(addr)
 	atomic.Xadd(addr, 1)
@@ -178,6 +182,7 @@ func semrelease1(addr *uint32, handoff bool, skipframes int) {
 		return
 	}
 
+	// 从队列里拿到第一个g
 	s, t0 := root.dequeue(addr)
 	if s != nil {
 		atomic.Xadd(&root.nwait, -1)
@@ -195,6 +200,7 @@ func semrelease1(addr *uint32, handoff bool, skipframes int) {
 		if handoff && cansemacquire(addr) {
 			s.ticket = 1
 		}
+		// 唤醒g
 		readyWithTime(s, 5+skipframes)
 
 		if s.ticket == 1 && getg().m.locks == 0 {
@@ -450,7 +456,7 @@ func (root *semaRoot) rotateRight(y *sudog) {
 }
 
 // notifyList is a ticket-based notification list used to implement sync.Cond. 条件变量
-// 
+//
 // It must be kept in sync with the sync package.
 type notifyList struct {
 	// wait is the ticket number of the next waiter. It is atomically
