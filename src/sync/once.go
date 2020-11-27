@@ -9,6 +9,8 @@ import (
 )
 
 // Once is an object that will perform exactly one action.
+// 不能用于递归
+// 初始化如果失败一次, 就无法重试, 再也无法成功, 可以再自己实现一个Once
 type Once struct {
 	// done indicates whether the action has been performed.
 	// It is first in the struct because it is used in the hot path.
@@ -59,11 +61,12 @@ func (o *Once) Do(f func()) {
 }
 
 func (o *Once) doSlow(f func()) {
-	// 上锁
+	// 上锁, 保证只有一个g 能初始化, 且预防并发和多个同时
 	o.m.Lock()
 	defer o.m.Unlock()
-	if o.done == 0 {
-		//保证即使f() panic，也会执行
+	if o.done == 0 { // double check, 这里可能有多个g 排队进入slow path
+		// 保证即使f() panic，也会执行
+		// 同时保证 在 f() 完全执行完之后才 done == 1
 		defer atomic.StoreUint32(&o.done, 1)
 		f()
 	}
