@@ -11,7 +11,7 @@ import (
 	"unsafe"
 )
 
-// go版本 1.14.2
+// go版本 1.14.2, 什么时候合并到1.15的?
 var buildVersion = sys.TheVersion
 
 // set using cmd/go/internal/modload.ModInfoProg

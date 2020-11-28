@@ -67,6 +67,7 @@ func (o *Once) doSlow(f func()) {
 	if o.done == 0 { // double check, 这里可能有多个g 排队进入slow path
 		// 保证即使f() panic，也会执行
 		// 同时保证 在 f() 完全执行完之后才 done == 1
+		// 不加锁, 多个g 都可能执行到这一行, 重复初始化多次
 		defer atomic.StoreUint32(&o.done, 1)
 		f()
 	}
