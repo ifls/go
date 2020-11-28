@@ -19,7 +19,7 @@ import (
 //
 // A RWMutex must not be copied after first use.
 //
-// If a goroutine holds a RWMutex for reading and another goroutine might
+// todo 没理解 If a goroutine holds a RWMutex for reading and another goroutine might
 // call Lock, no goroutine should expect to be able to acquire a read lock
 // until the initial read lock is released.
 // In particular, this prohibits recursive read locking.
@@ -135,7 +135,7 @@ func (rw *RWMutex) Unlock() {
 	}
 	// Unblock blocked readers, if any. 释放所有读者
 	for i := 0; i < int(r); i++ {
-		// 释放的机制 具体是什么样的?
+		// 释放的机制 具体是什么样的??
 		runtime_Semrelease(&rw.readerSem, false, 0)
 	}
 	// Allow other writers to proceed.
