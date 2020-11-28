@@ -28,7 +28,7 @@ type ifaceWords struct {
 func (v *Value) Load() (x interface{}) {
 	vp := (*ifaceWords)(unsafe.Pointer(v))
 	typ := LoadPointer(&vp.typ)
-	if typ == nil || uintptr(typ) == ^uintptr(0) {
+	if typ == nil || uintptr(typ) == ^uintptr(0) { // data 还未赋值
 		// First store not yet completed.
 		return nil
 	}
@@ -55,8 +55,8 @@ func (v *Value) Store(x interface{}) {
 			// Disable preemption so that other goroutines can use
 			// active spin wait to wait for completion; and so that
 			// GC does not see the fake type accidentally偶然地.
-			runtime_procPin() // 禁止抢占, 其他g自旋直到此g完成
-			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(^uintptr(0))) {
+			runtime_procPin()                                                      // 禁止抢占, 其他g自旋直到此g完成
+			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(^uintptr(0))) { // 设置抢占成功的标志, 其他进不来
 				runtime_procUnpin()
 				continue
 			}
@@ -66,12 +66,16 @@ func (v *Value) Store(x interface{}) {
 			runtime_procUnpin()
 			return
 		}
-		if uintptr(typ) == ^uintptr(0) {
+
+		// 到这里, type已经被赋值了 正确的值, 或者标记值
+		if uintptr(typ) == ^uintptr(0) { // 其他g抢占了, 等待
 			// First store in progress. Wait.
 			// Since we disable preemption around the first store,
 			// we can wait with active spinning.
 			continue
 		}
+
+		// 到这里typ 已经是正确的值了
 		// First store completed. Check type and overwrite data.
 		if typ != xp.typ { // 类型不一致
 			panic("sync/atomic: store of inconsistently typed value into Value")
@@ -82,5 +86,5 @@ func (v *Value) Store(x interface{}) {
 }
 
 // Disable/enable preemption, implemented in runtime.
-func runtime_procPin() // g绑定p, 禁止抢占
-func runtime_procUnpin()
+func runtime_procPin()   // g绑定p, 禁止抢占
+func runtime_procUnpin() // 解绑, 允许抢占
