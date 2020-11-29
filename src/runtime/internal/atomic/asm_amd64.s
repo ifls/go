@@ -19,7 +19,7 @@ TEXT runtime∕internal∕atomic·Cas(SB),NOSPLIT,$0-17
 	MOVL	old+8(FP), AX
 	MOVL	new+12(FP), CX
 	LOCK		//对cache line进行上锁
-	CMPXCHGL	CX, 0(BX)
+	CMPXCHGL	CX, 0(BX) // 原子比较并交换指令32  https://juejin.im/post/6844904147129466893
 	SETEQ	ret+16(FP)
 	RET
 

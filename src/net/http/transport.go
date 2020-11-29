@@ -93,7 +93,7 @@ const DefaultMaxIdleConnsPerHost = 2
 // request is treated as idempotent but the header is not sent on the
 // wire.
 
-// RoundTripper的实现,
+// RoundTripper的实现, tcp连接池的实现
 type Transport struct {
 	idleMu    sync.Mutex
 	closeIdle bool // 标记用户请求关闭空闲连接,

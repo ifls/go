@@ -41,12 +41,21 @@ import (
 // free list.
 //
 // A Pool must not be copied after first use.
+// 这里实现的Pool 里的对象还是可能会被回收
+// 只能 保存一组可独立访问的临时对象
+// 不可复制
+// 本身是线程安全
+
 type Pool struct {
 	noCopy noCopy
+
+	// local 和 victim 相关于 两级缓存
+	// local 优先
 
 	local     unsafe.Pointer // local fixed-size per-P pool, actual type is [P]poolLocal
 	localSize uintptr        // size of the local array
 
+	// 这里会被回收, 然后local 的数据 会放到victim, local会被清空
 	victim     unsafe.Pointer // local from previous cycle
 	victimSize uintptr        // size of victims array
 
@@ -58,8 +67,8 @@ type Pool struct {
 
 // Local per-P Pool appendix.
 type poolLocalInternal struct {
-	private interface{} // Can be used only by the respective P.
-	shared  poolChain   // Local P can pushHead/popHead; any P can popTail.
+	private interface{} // Can be used only by the respective P. 每个p一个私有缓存对象
+	shared  poolChain   // Local P can pushHead/popHead; any P can popTail. 一个生产者, 多个消费者
 }
 
 type poolLocal struct {
@@ -67,7 +76,7 @@ type poolLocal struct {
 
 	// Prevents false sharing on widespread platforms with
 	// 128 mod (cache line size) = 0 .
-	pad [128 - unsafe.Sizeof(poolLocalInternal{})%128]byte
+	pad [128 - unsafe.Sizeof(poolLocalInternal{})%128]byte // cpu cache 对齐., 防止伪共享
 }
 
 // from runtime
@@ -99,13 +108,14 @@ func (p *Pool) Put(x interface{}) {
 		race.ReleaseMerge(poolRaceAddr(x))
 		race.Disable()
 	}
+	// 将 g 绑定到当前p 避免查找元素期间被其它的 P 执行
 	l, _ := p.pin()
 	if l.private == nil {
-		l.private = x
+		l.private = x // 放到私有缓存
 		x = nil
 	}
 	if x != nil {
-		l.shared.pushHead(x)
+		l.shared.pushHead(x) // 放到队列头
 	}
 	runtime_procUnpin()
 	if race.Enabled {
@@ -125,16 +135,17 @@ func (p *Pool) Get() interface{} {
 	if race.Enabled {
 		race.Disable()
 	}
+	// 将 g 绑定到当前p 避免查找元素期间被其它的 P 执行, 返回当前p 的 poolLocal
 	l, pid := p.pin()
-	x := l.private
+	x := l.private // 先从单个缓存里面拿
 	l.private = nil
 	if x == nil {
 		// Try to pop the head of the local shard. We prefer
 		// the head over the tail for temporal locality of
 		// reuse.
-		x, _ = l.shared.popHead()
+		x, _ = l.shared.popHead() // lock free 队列, 本地p可以从头部拿
 		if x == nil {
-			x = p.getSlow(pid)
+			x = p.getSlow(pid) // 其他p只能从队列尾部拿
 		}
 	}
 	runtime_procUnpin()
@@ -144,8 +155,10 @@ func (p *Pool) Get() interface{} {
 			race.Acquire(poolRaceAddr(x))
 		}
 	}
+
+	//
 	if x == nil && p.New != nil {
-		x = p.New()
+		x = p.New() // 新生成一个
 	}
 	return x
 }
@@ -155,7 +168,7 @@ func (p *Pool) getSlow(pid int) interface{} {
 	size := atomic.LoadUintptr(&p.localSize) // load-acquire
 	locals := p.local                        // load-consume
 	// Try to steal one element from other procs.
-	for i := 0; i < int(size); i++ {
+	for i := 0; i < int(size); i++ { // 遍历所有 p的队列, 从尾部拿一个
 		l := indexLocal(locals, (pid+i+1)%int(size))
 		if x, _ := l.shared.popTail(); x != nil {
 			return x
@@ -165,17 +178,20 @@ func (p *Pool) getSlow(pid int) interface{} {
 	// Try the victim cache. We do this after attempting to steal
 	// from all primary caches because we want objects in the
 	// victim cache to age out if at all possible.
+	// 从受害者缓存拿
 	size = atomic.LoadUintptr(&p.victimSize)
 	if uintptr(pid) >= size {
 		return nil
 	}
+
+	//
 	locals = p.victim
 	l := indexLocal(locals, pid)
-	if x := l.private; x != nil {
+	if x := l.private; x != nil { // 从单个私有里拿
 		l.private = nil
 		return x
 	}
-	for i := 0; i < int(size); i++ {
+	for i := 0; i < int(size); i++ { // 直接都从尾部拿, 不从头部拿
 		l := indexLocal(locals, (pid+i)%int(size))
 		if x, _ := l.shared.popTail(); x != nil {
 			return x
@@ -184,6 +200,7 @@ func (p *Pool) getSlow(pid int) interface{} {
 
 	// Mark the victim cache as empty for future gets don't bother
 	// with it.
+	// 如果victim中都没有，则把这个victim标记为空，以后的查找可以快速跳过了
 	atomic.StoreUintptr(&p.victimSize, 0)
 
 	return nil
@@ -270,6 +287,7 @@ var (
 )
 
 func init() {
+	// 对于垃圾回收, 补充针对 Pool 有额外的回收逻辑 func poolCleanup
 	runtime_registerPoolCleanup(poolCleanup)
 }
 

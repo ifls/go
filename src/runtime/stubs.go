@@ -180,7 +180,7 @@ func breakpoint()
 // Package reflect accesses this symbol through a linkname.
 func reflectcall(argtype *_type, fn, arg unsafe.Pointer, argsize uint32, retoffset uint32)
 
-// 自旋 PAUSE
+// 自旋 for循环 PAUSE, 然后-1, 检查==0
 func procyield(cycles uint32)
 
 type neverCallThisFunction struct{}

@@ -238,6 +238,7 @@ func TestCondSignalStealing(t *testing.T) {
 		m.Lock()
 		done = true
 		m.Unlock()
+		// 调用Broadcast 可以没加锁
 		cond.Broadcast()
 	}
 }
