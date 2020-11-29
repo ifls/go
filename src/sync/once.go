@@ -9,7 +9,7 @@ import (
 )
 
 // Once is an object that will perform exactly one action.
-type Once struct {
+type Once struct { //用于延迟初始化
 	// done indicates whether the action has been performed.
 	// It is first in the struct because it is used in the hot path.
 	// The hot path is inlined at every call site.
