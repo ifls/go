@@ -641,29 +641,29 @@ const (
 	NLM_F_REPLACE               = 0x100
 	NLM_F_REQUEST               = 0x1
 	NLM_F_ROOT                  = 0x100
-	O_ACCMODE                   = 0x3  // 截取文件的访问模式, 然后再与指定模式判等, 才能拿到访问模式
+	O_ACCMODE                   = 0x3    // 截取文件的访问模式, 然后再与指定模式判等, 才能拿到访问模式
 	O_APPEND                    = 0x400  // 追加模式, 每次写都会定位到文件尾, 是一个原子操作
 	O_ASYNC                     = 0x2000 // 开启信号驱动io, 当此文件描述符的输入或者输出变得可用时, 会产生一个信号. 用于socket但不适用于普通文件,
 	// 普通文件的写是内核buffer的,
-	O_CLOEXEC                        = 0x80000 // 避免将文件泄露给 clone+execve 执行的其他程序
-	O_CREAT                          = 0x40    // 如果不存在, 则创建一个普通文件, (文件的用户id是此文件的有效用户id)
-	O_DIRECT                         = 0x4000  // 无缓冲,最小化内核缓存的效果, 会降低性能, 适用于, 应用层自己处理缓存方案
-	O_DIRECTORY                      = 0x10000 // 如果不是目录, 返回失败
-	O_DSYNC                          = 0x1000  // 保证write返回时, 数据写入到硬件, 保证数据完整性
-	O_EXCL                           = 0x80    // 与 O_CREAT 一起, 如果文件已经存在, 返回一个错误, 而不是当做成功
+	O_CLOEXEC                        = 0x80000  // 避免将文件泄露给 clone+execve 执行的其他程序
+	O_CREAT                          = 0x40     // 如果不存在, 则创建一个普通文件, (文件的用户id是此文件的有效用户id)
+	O_DIRECT                         = 0x4000   // 无缓冲,最小化内核缓存的效果, 会降低性能, 适用于, 应用层自己处理缓存方案
+	O_DIRECTORY                      = 0x10000  // 如果不是目录, 返回失败
+	O_DSYNC                          = 0x1000   // 保证write返回时, 数据写入到硬件, 保证数据完整性
+	O_EXCL                           = 0x80     // 与 O_CREAT 一起, 如果文件已经存在, 返回一个错误, 而不是当做成功
 	O_FSYNC                          = 0x101000 //
-	O_LARGEFILE                      = 0x0 // 32位系统 允许打开 文件大小在 2^32(4G), 2^64 之间的大文件
-	O_NDELAY                         = 0x800 // 同 O_NONBLOCK
-	O_NOATIME                        = 0x40000 // 如果是只读, 不修改文件的访问时间
-	O_NOCTTY                         = 0x100 // 如果文件是终端设备, 并且进程没有控制终端, 也不设置为当前进程的控制终端
-	O_NOFOLLOW                       = 0x20000 // 如果是符号链接, 不解引用, 则返回 ELOOP 失败
-	O_NONBLOCK                       = 0x800 // 如果可以, 以非阻塞模式打开文件, 和 O_NDELAY
-	O_RDONLY                         = 0x0 // 只读
-	O_RDWR                           = 0x2 // 读写
+	O_LARGEFILE                      = 0x0      // 32位系统 允许打开 文件大小在 2^32(4G), 2^64 之间的大文件
+	O_NDELAY                         = 0x800    // 同 O_NONBLOCK
+	O_NOATIME                        = 0x40000  // 如果是只读, 不修改文件的访问时间
+	O_NOCTTY                         = 0x100    // 如果文件是终端设备, 并且进程没有控制终端, 也不设置为当前进程的控制终端
+	O_NOFOLLOW                       = 0x20000  // 如果是符号链接, 不解引用, 则返回 ELOOP 失败
+	O_NONBLOCK                       = 0x800    // 如果可以, 以非阻塞模式打开文件, 和 O_NDELAY
+	O_RDONLY                         = 0x0      // 只读
+	O_RDWR                           = 0x2      // 读写
 	O_RSYNC                          = 0x101000
 	O_SYNC                           = 0x101000 // 保证文件完整性
-	O_TRUNC                          = 0x200 // 对普通文件截断为0, 其他文件无效或者未定义
-	O_WRONLY                         = 0x1 // 只写
+	O_TRUNC                          = 0x200    // 对普通文件截断为0, 其他文件无效或者未定义
+	O_WRONLY                         = 0x1      // 只写
 	PACKET_ADD_MEMBERSHIP            = 0x1
 	PACKET_BROADCAST                 = 0x1
 	PACKET_DROP_MEMBERSHIP           = 0x2
@@ -1074,7 +1074,7 @@ const (
 	S_IREAD                          = 0x100
 	S_IRGRP                          = 0x20
 	S_IROTH                          = 0x4
-	S_IRUSR                          = 0x100  // 0400
+	S_IRUSR                          = 0x100 // 0400
 	S_IRWXG                          = 0x38
 	S_IRWXO                          = 0x7
 	S_IRWXU                          = 0x1c0
@@ -1340,42 +1340,44 @@ const (
 )
 
 // Signals
-const (
-	SIGABRT   = Signal(0x6)
-	SIGALRM   = Signal(0xe)
-	SIGBUS    = Signal(0x7)
-	SIGCHLD   = Signal(0x11)
-	SIGCLD    = Signal(0x11)
-	SIGCONT   = Signal(0x12)
-	SIGFPE    = Signal(0x8)
-	SIGHUP    = Signal(0x1)
-	SIGILL    = Signal(0x4)
-	SIGINT    = Signal(0x2)
-	SIGIO     = Signal(0x1d)
-	SIGIOT    = Signal(0x6)
-	SIGKILL   = Signal(0x9)
-	SIGPIPE   = Signal(0xd)
-	SIGPOLL   = Signal(0x1d)
-	SIGPROF   = Signal(0x1b)
-	SIGPWR    = Signal(0x1e)
-	SIGQUIT   = Signal(0x3)
-	SIGSEGV   = Signal(0xb)
-	SIGSTKFLT = Signal(0x10)
-	SIGSTOP   = Signal(0x13)
-	SIGSYS    = Signal(0x1f)
-	SIGTERM   = Signal(0xf)
-	SIGTRAP   = Signal(0x5)
-	SIGTSTP   = Signal(0x14)
-	SIGTTIN   = Signal(0x15)
-	SIGTTOU   = Signal(0x16)
-	SIGUNUSED = Signal(0x1f)
-	SIGURG    = Signal(0x17)
-	SIGUSR1   = Signal(0xa)
-	SIGUSR2   = Signal(0xc)
-	SIGVTALRM = Signal(0x1a)
-	SIGWINCH  = Signal(0x1c)
-	SIGXCPU   = Signal(0x18)
-	SIGXFSZ   = Signal(0x19)
+// 每个信号都有默认的处理动作, 但大部分都是杀死进程
+const ( // kill 发信号和 内部触发异常还是不同的
+	SIGABRT   = Signal(0x6)  // (go默认动作:终止并打印堆栈) (linux默认动作)(终止进程并core dump)
+	SIGALRM   = Signal(0xe)  // (go默认动作:忽略) (linux默认动作)(终止进程)
+	SIGBUS    = Signal(0x7)  // (go默认动作:终止并打印堆栈) (linux默认动作)(终止进程并core dump) Bus error (bad memory access)
+	SIGCHLD   = Signal(0x11) // (go默认动作:忽略) (linux默认动作)(忽略)
+	SIGCLD    = Signal(0x11) // (go默认动作:忽略) (linux默认动作)(忽略) SIGCHLD的同义词
+	SIGCONT   = Signal(0x12) // (go默认动作:继续执行?) (linux默认动作)(继续执行)(如果停止了, 会继续加入调度队列, 等待调度执行)
+	SIGFPE    = Signal(0x8)  // (go默认动作:终止并打印堆栈) (linux默认动作)(终止进程并core dump) floating-point exception 可以被捕获
+	SIGHUP    = Signal(0x1)  // (go默认动作:终止) (linux默认动作)(终止进程)
+	SIGILL    = Signal(0x4)  // (go默认动作:终止并打印堆栈) (linux默认动作)(终止进程并core dump) illegal instruction 可以被捕获
+	SIGINT    = Signal(0x2)  // (go默认动作:终止) (linux默认动作)(终止进程) 中断from 键盘 ctrl-c
+	SIGIO     = Signal(0x1d) // (go默认动作:忽略) (linux默认动作)(终止进程) io可用
+	SIGIOT    = Signal(0x6)  // (go默认动作:终止并打印堆栈) (linux默认动作)(终止进程并core dump) IOT trap SIGABRT的同义词
+	SIGKILL   = Signal(0x9)  // (go默认动作:runtime监听不到,直接被杀) (linux默认动作)(终止进程) 无法忽略, 捕获, 阻塞, kill信号在go里面无法监听到
+	SIGPIPE   = Signal(0xd)  // (go默认动作:忽略) (linux默认动作)(终止进程) 管道损坏 可以被捕获
+	SIGPOLL   = Signal(0x1d) // (go默认动作:忽略) (linux默认动作)(终止进程) Pollable event SIGIO的别名
+	SIGPROF   = Signal(0x1b) // (go默认动作:忽略) (linux默认动作)(终止进程) Profiling timer expired
+	SIGPWR    = Signal(0x1e) // (go默认动作:忽略) (linux默认动作)(终止进程) 断电
+	SIGQUIT   = Signal(0x3)  // (go默认动作:终止并打印堆栈) (linux默认动作)(终止进程并core dump) Quit from keyboard
+	SIGSEGV   = Signal(0xb)  // (go默认动作:终止并打印堆栈) (linux默认动作)(终止进程并core dump) Invalid memory reference
+	SIGSTKFLT = Signal(0x10) // (go默认动作:终止并打印堆栈) (linux默认动作)(终止进程) Stack fault on coprocessor
+	SIGSTOP   = Signal(0x13) // (go默认动作:无法接收到信号, 终端退出,程序停止, 无法正常kill, 只能kill -9) (linux默认动作)(暂停进程执行) 无法忽略, 捕获, 阻塞
+	SIGSYS    = Signal(0x1f) // (go默认动作:终止并打印堆栈) (linux默认动作)(终止进程并core dump) bad system call
+	SIGTERM   = Signal(0xf)  // (go默认动作:终止) (linux默认动作)(终止进程) 终止信号 kill pid 发送的是这个
+	SIGTRAP   = Signal(0x5)  // (go默认动作:终止并打印堆栈) (linux默认动作)(终止进程并core dump) Trace/breakpoint trap
+	SIGTSTP   = Signal(0x14) // (go默认动作:可以接收到信号, 终端退出,程序停止, 无法正常kill,
+	// 只能kill -9) (linux默认动作)(暂停进程执行) Stop typed at terminal
+	SIGTTIN   = Signal(0x15) // (go默认动作:可以接收到信号, 终端退出,程序停止, 无法正常kill, 只能kill -9) (linux默认动作)(暂停进程执行) 后台进程的终端输入
+	SIGTTOU   = Signal(0x16) // (go默认动作:可以接收到信号, 终端退出,程序停止, 无法正常kill, 只能kill -9) (linux默认动作)(暂停进程执行) 后台进程的终端输出
+	SIGUNUSED = Signal(0x1f) // (go默认动作:终止并打印堆栈) (linux默认动作)(终止进程并core dump)  SIGSYS的同义词
+	SIGURG    = Signal(0x17) // (go默认动作:忽略) (linux默认动作)(忽略) Urgent condition on socket Urgent socket包发送
+	SIGUSR1   = Signal(0xa)  // (go默认动作:忽略) (linux默认动作)(终止进程)
+	SIGUSR2   = Signal(0xc)  // (go默认动作:忽略) (linux默认动作)(终止进程)
+	SIGVTALRM = Signal(0x1a) // (go默认动作:忽略) (linux默认动作)(终止进程)
+	SIGWINCH  = Signal(0x1c) // (go默认动作:忽略) (linux默认动作)(忽略)
+	SIGXCPU   = Signal(0x18) // (go默认动作:忽略) (linux默认动作)(终止进程并core dump)
+	SIGXFSZ   = Signal(0x19) // (go默认动作:忽略) (linux默认动作)(终止进程并core dump)
 )
 
 // Error table

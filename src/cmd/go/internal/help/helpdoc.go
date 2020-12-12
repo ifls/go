@@ -681,44 +681,44 @@ var HelpBuildmode = &base.Command{
 	Long: `
 The 'go build' and 'go install' commands take a -buildmode argument which
 indicates which kind of object file is to be built. Currently supported values
-are:
+are: 指示 二进制 构建产物
 
 	-buildmode=archive
 		Build the listed non-main packages into .a files. Packages named
-		main are ignored.
+		main are ignored.  归档
 
 	-buildmode=c-archive
 		Build the listed main package, plus all packages it imports,
 		into a C archive file. The only callable symbols will be those
 		functions exported using a cgo //export comment. Requires
-		exactly one main package to be listed.
+		exactly one main package to be listed.  用于c语言调用的归档
 
 	-buildmode=c-shared
 		Build the listed main package, plus all packages it imports,
-		into a C shared library. The only callable symbols will
+		into a C shared library共享库. The only callable symbols will
 		be those functions exported using a cgo //export comment.
 		Requires exactly one main package to be listed.
 
 	-buildmode=default
 		Listed main packages are built into executables and listed
 		non-main packages are built into .a files (the default
-		behavior).
+		behavior). 对于main 是可执行, 对于非main是 归档文件
 
-	-buildmode=shared
+	-buildmode=shared 共享库
 		Combine all the listed non-main packages into a single shared
 		library that will be used when building with the -linkshared
 		option. Packages named main are ignored.
 
-	-buildmode=exe
+	-buildmode=exe 可执行
 		Build the listed main packages and everything they import into
 		executables. Packages not named main are ignored.
 
-	-buildmode=pie
+	-buildmode=pie 位置无关可执行文件, 和上面的区别是什么??
 		Build the listed main packages and everything they import into
 		position independent executables (PIE). Packages not named
 		main are ignored.
 
-	-buildmode=plugin
+	-buildmode=plugin 插件模式,和 共享库, 静态库的区别是什么??
 		Build the listed main packages, plus all packages that they
 		import, into a Go plugin. Packages not named main are ignored.
 

@@ -168,14 +168,14 @@ and understanding modules and go.mod files. See 'go help mod'.
 
 The -mod build flag provides additional control over updating and use of go.mod.
 
-If invoked with -mod=readonly, the go command is disallowed from the implicit
+If invoked with -mod=readonly, the go command is disallowed from the implicit 禁止自动升级
 automatic updating of go.mod described above. Instead, it fails when any changes
 to go.mod are needed. This setting is most useful to check that go.mod does
 not need updates, such as in a continuous integration and testing system.
 The "go get" command remains permitted to update go.mod even with -mod=readonly,
 and the "go mod" commands do not take the -mod flag (or any other build flags).
 
-If invoked with -mod=vendor, the go command loads packages from the main
+If invoked with -mod=vendor, the go command loads packages from the main 从vendor目录读取
 module's vendor directory instead of downloading modules to and loading packages
 from the module cache. The go command assumes the vendor directory holds
 correct copies of dependencies, and it does not compute the set of required
@@ -188,7 +188,7 @@ even if there is a vendor directory present.
 
 If the go command is not invoked with a -mod flag and the vendor directory
 is present and the "go" version in go.mod is 1.14 or higher, the go command
-will act as if it were invoked with -mod=vendor.
+will act as if it were invoked with -mod=vendor. vendor目录有的话, vendor优先
 
 Pseudo-versions
 

@@ -24,35 +24,37 @@ var CmdBuild = &base.Command{
 	Short:     "compile packages and dependencies",
 	Long: `
 Build compiles the packages named by the import paths, along with their dependencies, 
-but it does not install the results. 不安装
+but it does not install the results. 只构建, 不安装
 
 If the arguments to build are a list of .go files from a single directory,
 build treats them as a list of source files specifying a single package.
 
-When compiling packages, build ignores忽略 files that end in '_test.go'.
+When compiling packages, build ignores files that end in '_test.go'. 忽略_test.go结尾的文件
 
 When compiling a single main package, build writes
 the resulting executable to an output file named after
-the first source file ('go build ed.go rx.go' writes 'ed' or 'ed.exe')
-or the source code directory ('go build unix/sam' writes 'sam' or 'sam.exe').
+the first source file ('go build ed.go rx.go' writes 'ed' or 'ed.exe')  以第一个go文件的名字
+or the source code directory ('go build unix/sam' writes 'sam' or 'sam.exe').  或者目录名名字命名
 The '.exe' suffix is added when writing a Windows executable.
 
-When compiling multiple packages or a single non-main package,
+When compiling multiple packages or a single non-main package, 多个包, 或者非main包
 build compiles the packages but discards the resulting object,
-serving only as a check that the packages can be built.
+serving only as a check that the packages can be built. 无效, 只能是用作检查
 
+指定输出文件名
 The -o flag forces build to write the resulting executable or object to the named output file or directory,
 instead of the default behavior described in the last two paragraphs. 
 If the named output is a directory that exists, then any resulting executables will be written to that directory.
 
+// 还会安装 构建目标 所依赖的包
 The -i flag installs the packages that are dependencies of the target.
 
 The build flags are shared by the build, clean, get, install, list, run, and test commands:
 
 	-a
-		force rebuilding of packages that are already up-to-date. 强制
+		force rebuilding of packages that are already up-to-date. 强制重新 构建
 	-n
-		print the commands but do not run them. 
+		print the commands but do not run them. 打印构建细节, 但是不执行
 	-p n
 		the number of programs, such as build commands or
 		test binaries, that can be run in parallel. 控制并行
@@ -62,40 +64,41 @@ The build flags are shared by the build, clean, get, install, list, run, and tes
 		Supported only on linux/amd64, freebsd/amd64, darwin/amd64, windows/amd64,
 		linux/ppc64le and linux/arm64 (only for 48-bit VMA).
 	-msan
-		enable interoperation with memory sanitizer消毒.
+		enable interoperation with memory sanitizer 杀菌剂, 杀毒剂.  只支持linux, 
+检测未初始化内存的使用 参考链接 https://github.com/google/sanitizers
 		Supported only on linux/amd64, linux/arm64 and only with Clang/LLVM as the host C compiler.
 		On linux/arm64, pie饼 build mode will be used.
 	-v
-		print the names of packages as they are compiled. 打印编译的包名
-	-work
+		print the names of packages as they are compiled. 打印编译的包名, 配合-a 才能打印所有 包名
+	-work  //保留临时工作目录, 查看中间结果
 		print the name of the temporary work directory and do not delete it when exiting.
 	-x
-		print the commands. 
+		print the commands. 打印 构建过程中 执行的命令
 
 	-asmflags '[pattern=]arg list'
-		arguments to pass on each go tool asm invocation.
+		arguments to pass on each go tool asm invocation. 传给 asm 汇编程序的 标志参数
 	-buildmode mode
 		build mode to use. See 'go help buildmode' for more.
 	-compiler name
-		name of compiler to use, as in runtime.Compiler (gccgo or gc).
+		name of compiler to use, as in runtime.Compiler (gccgo or gc). 指定go 编译器
 	-gccgoflags '[pattern=]arg list'
 		arguments to pass on each gccgo compiler/linker invocation.
 	-gcflags '[pattern=]arg list'
-		arguments to pass on each go tool compile invocation.
+		arguments to pass on each go tool compile invocation. 传递给 gc 编译器
 	-installsuffix suffix
-		a suffix to use in the name of the package installation directory,
+		a suffix to use in the name of the package installation directory, 影响安装位置
 		in order to keep output separate from default builds.
 		If using the -race flag, the install suffix is automatically set to race
 		or, if set explicitly, has _race appended to it. Likewise for the -msan
 		flag. Using a -buildmode option that requires non-default compile flags
 		has a similar effect.
 	-ldflags '[pattern=]arg list'
-		arguments to pass on each go tool link invocation.
-	-linkshared
+		arguments to pass on each go tool link invocation. 链接 参数
+	-linkshared 链接 某个共享库
 		build code that will be linked against shared libraries previously
 		created with -buildmode=shared.
 	-mod mode
-		module download mode to use: readonly, vendor, or mod.
+		module download mode下载模式 to use: readonly, vendor, or mod.
 		See 'go help modules' for more.
 	-modcacherw
 		leave newly-created directories in the module cache read-write
@@ -112,8 +115,8 @@ The build flags are shared by the build, clean, get, install, list, run, and tes
 		For example, when building with a non-standard configuration,
 		use -pkgdir to keep generated packages in a separate location.
 	-tags tag,list
-		a comma-separated list of build tags to consider satisfied during the
-		build. For more information about build tags, see the description of
+		a comma-separated list of build tags to consider satisfied during the build. 
+		For more information about `build tags`, see the description of
 		build constraints in the documentation for the go/build package.
 		(Earlier versions of Go used a space-separated list, and that form
 		is deprecated but still recognized.)
@@ -128,9 +131,9 @@ The build flags are shared by the build, clean, get, install, list, run, and tes
 		For example, instead of running asm, the go command will run
 		'cmd args /path/to/asm <arguments for asm>'.
 
-The -asmflags, -gccgoflags, -gcflags, and -ldflags flags accept a
-space-separated list of arguments to pass to an underlying tool
-during the build. To embed spaces in an element in the list, surround
+The -asmflags, -gccgoflags, -gcflags, 
+and -ldflags flags accept a space-separated list of arguments to pass to an underlying tool during the build.
+To embed spaces in an element in the list, surround
 it with either single or double quotes. The argument list may be
 preceded by a package pattern and an equal sign, which restricts
 the use of that argument list to the building of packages matching

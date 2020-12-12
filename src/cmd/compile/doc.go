@@ -28,12 +28,12 @@ The GOOS and GOARCH environment variables set the desired target. 设置目标�
 
 Flags:
 
-	-D path
+	-D path 设置本地导入的相对目录
 		Set relative path for local imports.
 	-I dir1 -I dir2
-		Search for imported packages in dir1, dir2, etc, 增加导入包所在目录
+		Search for imported packages in dir1, dir2, etc, 增加导入包所在目录, 优先级靠后
 		after consulting $GOROOT/pkg/$GOOS_$GOARCH.
-	-L
+	-L 错误信息输出全量的路径名
 		Show complete file path in error messages.
 	-N
 		Disable optimizations. 禁止优化
@@ -47,19 +47,19 @@ Flags:
 		Write assembly header to file. 汇编头写到文件
 	-buildid id
 		Record id as the build id in the export metadata.
-	-blockprofile file
+	-blockprofile file 输出编译耗时信息到指定文件
 		Write block profile for the compilation to file.
 	-c int
-		Concurrency during compilation. Set 1 for no concurrency (default is 1).  并发编译, 默认不并发
-	-complete
+		Concurrency during compilation. Set 1 for no concurrency (default is 1).  开启并发编译, 默认不并发
+	-complete 保证只有go组件
 		Assume package has no non-Go components.
 	-cpuprofile file
-		Write a CPU profile for the compilation to file. 剖析编译性能
+		Write a CPU profile for the compilation to file. 剖析编译cpu性能
 	-dynlink
 		Allow references to Go symbols in shared libraries (experimental). 动态链接
 	-e
-		Remove the limit on the number of errors reported (default limit is 10). 无限编译报错数量
-	-goversion string
+		Remove the limit on the number of errors reported (default limit is 10). 无限编译报错数量, 没必要移除
+	-goversion string  只能用指定版本去编译
 		Specify required go tool version of the runtime.
 		Exits when the runtime go version does not match goversion.
 	-h
