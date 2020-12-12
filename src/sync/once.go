@@ -11,7 +11,7 @@ import (
 // Once is an object that will perform exactly one action.
 // 不能用于递归
 // 初始化如果失败一次, 就无法重试, 再也无法成功, 可以再自己实现一个Once
-type Once struct {
+type Once struct { //用于延迟初始化
 	// done indicates whether the action has been performed.
 	// It is first in the struct because it is used in the hot path.
 	// The hot path is inlined at every call site.

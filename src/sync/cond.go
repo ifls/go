@@ -43,7 +43,7 @@ func NewCond(l Locker) *Cond {
 // Because c.L is not locked when Wait first resumes, the caller
 // typically cannot assume that the condition is true when
 // Wait returns. Instead, the caller should Wait in a loop:
-//
+// 标准用法，不能假设从wait中返回时，条件是满足的
 //    c.L.Lock()
 //    for !condition() {
 //        c.Wait()
@@ -56,9 +56,9 @@ func NewCond(l Locker) *Cond {
 func (c *Cond) Wait() {
 	c.checker.check()
 	t := runtime_notifyListAdd(&c.notify)
-	c.L.Unlock()
-	runtime_notifyListWait(&c.notify, t)
-	c.L.Lock()
+	c.L.Unlock()                         //调用wait前必须加锁, 这里必须解锁，因为下一行会休眠，不能继续持有锁，以便让其他g获取锁
+	runtime_notifyListWait(&c.notify, t) //暂停当前g执行，也就是阻塞
+	c.L.Lock()                           //唤醒后继续持有锁
 }
 
 // Signal wakes one goroutine waiting on c, if there is any.
@@ -80,11 +80,13 @@ func (c *Cond) Broadcast() {
 }
 
 // copyChecker holds back pointer to itself to detect object copying.
-type copyChecker uintptr
+type copyChecker uintptr //运行时 防拷贝检查
 
 func (c *copyChecker) check() {
 	if uintptr(*c) != uintptr(unsafe.Pointer(c)) &&
+		// 未被交换，也就是 指针值不是0
 		!atomic.CompareAndSwapUintptr((*uintptr)(c), 0, uintptr(unsafe.Pointer(c))) &&
+		// c != 0
 		uintptr(*c) != uintptr(unsafe.Pointer(c)) {
 		panic("sync.Cond is copied")
 	}

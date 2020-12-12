@@ -562,7 +562,7 @@ func moduledataverify1(datap *moduledata) {
 
 // FuncForPC returns a *Func describing the function that contains the
 // given program counter address, or else nil.
-//
+// 返回一个函数对象
 // If pc represents multiple functions because of inlining, it returns
 // the a *Func describing the innermost function, but with an entry
 // of the outermost function.
