@@ -91,7 +91,7 @@ Flags:
 		If not set, default value comes from running the compiler,
 		which may be set by the -extld option.
 		Set to "none" to use no support library.
-	-linkmode mode
+	-linkmode mode 链接模式
 		Set link mode (internal, external, auto).
 		This sets the linking mode as described in cmd/cgo/doc.go.
 	-linkshared
@@ -102,17 +102,17 @@ Flags:
 		Set runtime.MemProfileRate to rate.
 	-msan
 		Link with C/C++ memory sanitizer support.
-	-n
+	-n 打印符号表
 		Dump symbol table.
 	-o file
 		Write output to file (default a.out, or a.out.exe on Windows).
 	-pluginpath path
 		The path name used to prefix exported plugin symbols.
-	-r dir1:dir2:...
+	-r dir1:dir2:...   指定搜索目录
 		Set the ELF dynamic linker search path.
-	-race
+	-race 加入竞争检测
 		Link with race detection libraries.
-	-s
+	-s 省略符号表和调试信息
 		Omit the symbol table and debug information.
 	-shared
 		Generated shared object (implies -linkmode external; experimental).
@@ -123,7 +123,7 @@ Flags:
 		Reject unsafe packages.
 	-v
 		Print trace of linker operations.
-	-w
+	-w 省略符号表 linux elf 中的一种标准调试信息 https://en.wikipedia.org/wiki/DWARF
 		Omit the DWARF symbol table.
 */
 package main

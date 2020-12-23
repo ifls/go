@@ -45,6 +45,7 @@ func (c *sigctxt) siglr() uintptr { return 0 }
 func (c *sigctxt) fault() uintptr { return uintptr(c.sigaddr()) }
 
 // preparePanic sets up the stack to look like a call to sigpanic.
+// 异常信号 转 panic
 func (c *sigctxt) preparePanic(sig uint32, gp *g) {
 	// Work around Leopard bug that doesn't set FPE_INTDIV.
 	// Look at instruction to see if it is a divide.

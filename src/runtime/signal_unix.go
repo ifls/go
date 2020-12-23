@@ -525,6 +525,7 @@ var testSigusr1 func(gp *g) bool
 // are not allowed.
 //
 //go:nowritebarrierrec
+// 设置信号处理器
 func sighandler(sig uint32, info *siginfo, ctxt unsafe.Pointer, gp *g) {
 	_g_ := getg()
 	c := &sigctxt{info, ctxt}
@@ -580,6 +581,7 @@ func sighandler(sig uint32, info *siginfo, ctxt unsafe.Pointer, gp *g) {
 		gp.sigcode1 = uintptr(c.fault())
 		gp.sigpc = c.sigpc()
 
+		// 异常信号 转 panic
 		c.preparePanic(sig, gp)
 		return
 	}
@@ -707,14 +709,14 @@ func sighandler(sig uint32, info *siginfo, ctxt unsafe.Pointer, gp *g) {
 //
 // This is exported via linkname to assembly in runtime/cgo.
 //go:linkname sigpanic
-func sigpanic() {
+func sigpanic() { // 监听信号 触发panic
 	g := getg()
 	if !canpanic(g) {
 		throw("unexpected signal during runtime execution")
 	}
 
 	switch g.sig {
-	case _SIGBUS:
+	case _SIGBUS: // 内存访问出错
 		if g.sigcode0 == _BUS_ADRERR && g.sigcode1 < 0x1000 {
 			panicmem()
 		}
@@ -724,7 +726,7 @@ func sigpanic() {
 		}
 		print("unexpected fault address ", hex(g.sigcode1), "\n")
 		throw("fault")
-	case _SIGSEGV:
+	case _SIGSEGV: // 访问非法内存地址
 		if (g.sigcode0 == 0 || g.sigcode0 == _SEGV_MAPERR || g.sigcode0 == _SEGV_ACCERR) && g.sigcode1 < 0x1000 {
 			panicmem()
 		}
@@ -734,7 +736,7 @@ func sigpanic() {
 		}
 		print("unexpected fault address ", hex(g.sigcode1), "\n")
 		throw("fault")
-	case _SIGFPE:
+	case _SIGFPE: // 浮点异常
 		switch g.sigcode0 {
 		case _FPE_INTDIV:
 			panicdivide()
