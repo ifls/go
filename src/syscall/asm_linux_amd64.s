@@ -5,7 +5,7 @@
 #include "textflag.h"
 #include "funcdata.h"
 
-//
+// linux amd64 上的系统调用规范
 // System calls for AMD64, Linux
 //
 
