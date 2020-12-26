@@ -35,7 +35,7 @@ func ReadGCStats(stats *GCStats) {
 	// to the caller and the other will be used as transfer buffer
 	// for end times history and as a temporary buffer for
 	// computing quantiles.
-	const maxPause = len(((*runtime.MemStats)(nil)).PauseNs)
+	const maxPause = len(((*runtime.MemStats)(nil)).PauseNs) // nil 也能取类型字段??
 	if cap(stats.Pause) < 2*maxPause+3 {
 		stats.Pause = make([]time.Duration, 2*maxPause+3)
 	}
@@ -115,7 +115,7 @@ func SetMaxStack(bytes int) int {
 	return setMaxStack(bytes)
 }
 
-// SetMaxThreads sets the maximum number of operating system threads that the Go program can use.
+// SetMaxThreads sets the maximum number of operating system threads 最大操作系统线程数量 that the Go program can use.
 // If it attempts to use more than this many, the program crashes.
 // SetMaxThreads returns the previous setting.
 // The initial setting is 10,000 threads.
@@ -135,7 +135,7 @@ func SetMaxThreads(threads int) int {
 // SetPanicOnFault controls the runtime's behavior when a program faults at an unexpected (non-nil) address.
 // Such faults are typically caused by bugs such as runtime memory corruption, so the default response is to crash the program.
 // Programs working with memory-mapped files or unsafe manipulation of memory may cause faults at non-nil addresses in less dramatic戏剧性 situations;
-// SetPanicOnFault allows such programs to request that the runtime trigger only a panic, not a crash.
+// SetPanicOnFault allows such programs to request that the runtime trigger only a panic, not a crash. 请求内部抛出panic, 而不是直接退出
 // SetPanicOnFault applies only to the current goroutine. 只对当前g有效
 // It returns the previous setting. 返回之前的设置
 // true 表示只产生panic, 而不是直接奔溃
@@ -144,7 +144,7 @@ func SetPanicOnFault(enabled bool) bool {
 }
 
 // WriteHeapDump writes a description of the heap and the objects in it to the given file descriptor.
-// 输出内存打印
+// 输出堆内存打印
 // WriteHeapDump suspends the execution of all goroutines until the heap
 // dump is completely written.  Thus, the file descriptor must not be
 // connected to a pipe or socket whose other end is in the same Go
@@ -160,7 +160,7 @@ func WriteHeapDump(fd uintptr)
 // environment variable. For example, SetTraceback("all") ensure
 // that the program prints all goroutines when it crashes.
 // See the package runtime documentation for details.
-// If SetTraceback is called with a level lower than that of the
+// If SetTraceback is called with a level lower than that of the 只能提高, 不能降低
 // environment variable, the call is ignored.
 // 设置 打印追踪的详细程度
 func SetTraceback(level string)

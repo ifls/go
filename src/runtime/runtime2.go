@@ -467,7 +467,7 @@ type g struct {
 
 	lockedm muintptr // g锁定在此m上运行
 
-	writebuf []byte
+	writebuf []byte  // 输出缓冲, local, 用于 print, println 内置函数,
 
 	// panic 时保存sp和pc, 收到信号时保存信号码和错误码
 	sigcode0 uintptr // 信号代码

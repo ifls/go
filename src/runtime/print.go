@@ -81,7 +81,7 @@ func printunlock() {
 	}
 }
 
-// write to goroutine-local buffer if diverting output,
+// write to goroutine-local buffer if diverting转移输出 output,
 // or else standard error.
 func gwrite(b []byte) {
 	if len(b) == 0 {
@@ -238,6 +238,7 @@ func printpointer(p unsafe.Pointer) {
 	printhex(uint64(uintptr(p)))
 }
 
+// 内置函数 println的实现
 func printstring(s string) {
 	gwrite(bytes(s))
 }
