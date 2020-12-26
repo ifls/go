@@ -13,46 +13,46 @@
 //
 // The commands are:
 //
-// 	bug         start a bug report
-// 	build       compile packages and dependencies
-// 	clean       remove object files and cached files
-// 	doc         show documentation for package or symbol
-// 	env         print Go environment information
-// 	fix         update packages to use new APIs
-// 	fmt         gofmt (reformat) package sources
-// 	generate    generate Go files by processing source
-// 	get         add dependencies to current module and install them
-// 	install     compile and install packages and dependencies
-// 	list        list packages or modules
-// 	mod         module maintenance
-// 	run         compile and run Go program
-// 	test        test packages
-// 	tool        run specified go tool
-// 	version     print Go version
-// 	vet         report likely mistakes in packages
+// 	bug         start a bug report 不敢奢望
+// 	build       compile packages and dependencies  编译包及其依赖 成二进制文件
+// 	clean       remove object files and cached files 清除生成的二进制文件和缓存的文件
+// 	doc         show documentation for package or symbol 打开源码标准库文档
+// 	env         print Go environment information 打印go环境变量
+// 	fix         update packages to use new APIs 更新代码，自动适配新的api
+// 	fmt         gofmt (reformat) package sources 格式化源码
+// 	generate    generate Go files by processing source 执行 *.go 里的 go:generate
+// 	get         add dependencies to current module and install them 给当前模块添加依赖，并安装他们，之后1.16版本会去掉 安装的功能，只影响当前模块， 不会安装到公共目录
+// 	install     compile and install packages and dependencies 编译并安装
+// 	list        list packages or modules 列出 模块信息
+// 	mod         module maintenance 维护go.mod文件
+// 	run         compile and run Go program 编译并运行
+// 	test        test packages 执行测试代码
+// 	tool        run specified go tool 执行不常用的子命令
+// 	version     print Go version 打印go的版本
+// 	vet         report likely mistakes in packages 检查可能的错误并报告
 //
 // Use "go help <command>" for more information about a command.
 //
-// Additional help topics:
+// Additional help topics: 其他可以使用的help信息
 //
-// 	buildconstraint build constraints
-// 	buildmode       build modes
-// 	c               calling between Go and C
-// 	cache           build and test caching
-// 	environment     environment variables
-// 	filetype        file types
-// 	go.mod          the go.mod file
+// 	buildconstraint build constraints 也就是 build tag
+// 	buildmode       build modes 指示应该构建哪种二进制文件
+// 	c               calling between Go and C 也就是cgo， SWIG也可以
+// 	cache           build and test caching 管理缓存文件
+// 	environment     environment variables 打印环境变量，帮助信息
+// 	filetype        file types 打印各种后缀的文件表示的含义
+// 	go.mod          the go.mod file 模块的使用帮助
 // 	gopath          GOPATH environment variable
 // 	gopath-get      legacy GOPATH go get
 // 	goproxy         module proxy protocol
-// 	importpath      import path syntax
+// 	importpath      import path syntax 导入路径的语法
 // 	modules         modules, module versions, and more
 // 	module-get      module-aware go get
-// 	module-auth     module authentication using go.sum
+// 	module-auth     module authentication认证 using go.sum
 // 	module-private  module configuration for non-public modules
 // 	packages        package lists and patterns
-// 	testflag        testing flags
-// 	testfunc        testing functions
+// 	testflag        testing flags  go test的标志
+// 	testfunc        testing functions Test* Example* Benchmark* 使用指南
 //
 // Use "go help <topic>" for more information about that topic.
 //
