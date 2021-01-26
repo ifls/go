@@ -211,7 +211,7 @@ type iface struct {
 }
 
 // interface{} 内部实现结构
-type eface struct {
+type eface struct { // type和指针代表 一个内存空间的变量,
 	_type *_type
 	data  unsafe.Pointer
 }
@@ -467,7 +467,7 @@ type g struct {
 
 	lockedm muintptr // g锁定在此m上运行
 
-	writebuf []byte  // 输出缓冲, local, 用于 print, println 内置函数,
+	writebuf []byte // 输出缓冲, local, 用于 print, println 内置函数,
 
 	// panic 时保存sp和pc, 收到信号时保存信号码和错误码
 	sigcode0 uintptr // 信号代码
@@ -846,11 +846,11 @@ type funcinl struct {
 // Needs to be in sync with
 // ../cmd/compile/internal/gc/reflect.go:/^func.dumptabs.
 type itab struct {
-	inter *interfacetype
-	_type *_type
-	hash  uint32 // copy of _type.hash. Used for type switches.
+	inter *interfacetype // 描述带方法接口本身的类型
+	_type *_type         // 具体数据的类型
+	hash  uint32         // copy of _type.hash. Used for type switches.
 	_     [4]byte
-	fun   [1]uintptr // variable sized. fun[0]==0 means _type does not implement inter.
+	fun   [1]uintptr // 虚函数表指针, 放具体类型的函数指针 variable sized. 动态数组指针 fun[0]==0 means _type does not implement inter 没有实现inner字段代表的接口类型.
 }
 
 // Lock-free stack node.

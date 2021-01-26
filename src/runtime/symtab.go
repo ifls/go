@@ -446,6 +446,7 @@ func activeModules() []*moduledata {
 // Only one goroutine may call modulesinit at a time.
 func modulesinit() {
 	modules := new([]*moduledata)
+	// 链表
 	for md := &firstmoduledata; md != nil; md = md.next {
 		if md.bad {
 			continue

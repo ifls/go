@@ -29,22 +29,22 @@ const (
 // ../reflect/type.go:/^type.rtype.
 // ../internal/reflectlite/type.go:/^type.rtype.
 type _type struct {
-	size       uintptr
-	ptrdata    uintptr // size of memory prefix holding all pointers
-	hash       uint32
-	tflag      tflag
-	align      uint8
-	fieldAlign uint8
-	kind       uint8
+	size       uintptr // 类型所占字节数  mallocgc(t.size, t, true) 这个函数根据size, 分配指定大小的内存
+	ptrdata    uintptr // size of memory prefix holding all pointers ,, number of bytes in the type that can contain pointers 结构体里的引用类型所占空间, 指针8B, 接口16B map 8B, 如果传入的是 结构体指针, 永远都是8B
+	hash       uint32  // 避免临时计算类型 2061394914
+	tflag      tflag   // uint8 bit flag  tflagUncommon|tflagRegularMemory (9)
+	align      uint8   // 字段对齐, 1,2,4,8 8
+	fieldAlign uint8   // 结构体内的字段对齐数 8
+	kind       uint8   // 基础类型枚举值  54
 	// function for comparing objects of this type
 	// (ptr to object A, ptr to object B) -> ==?
-	equal func(unsafe.Pointer, unsafe.Pointer) bool // 比较函数
+	equal func(unsafe.Pointer, unsafe.Pointer) bool // 比较函数 runtime.memequal64, 值为nil, 表示类型无法比较
 	// gcdata stores the GC type data for the garbage collector.
 	// If the KindGCProg bit is set in kind, gcdata is a GC program.
 	// Otherwise it is a ptrmask bitmap. See mbitmap.go for details.
-	gcdata    *byte
-	str       nameOff
-	ptrToThis typeOff
+	gcdata    *byte   // 垃圾回收专用
+	str       nameOff // 参考 func resolveNameOff
+	ptrToThis typeOff // 参考 func resolveTypeOff
 }
 
 func (t *_type) string() string {
@@ -59,9 +59,10 @@ func (t *_type) uncommon() *uncommontype {
 	if t.tflag&tflagUncommon == 0 {
 		return nil
 	}
+
 	switch t.kind & kindMask {
 	case kindStruct:
-		type u struct {
+		type u struct { // 内嵌的方式, 代替继承
 			structtype
 			u uncommontype
 		}
@@ -345,9 +346,9 @@ type method struct {
 
 type uncommontype struct {
 	pkgpath nameOff
-	mcount  uint16 // number of methods
-	xcount  uint16 // number of exported methods
-	moff    uint32 // offset from this uncommontype to [mcount]method
+	mcount  uint16 // number of methods 方法总数量
+	xcount  uint16 // number of exported methods  导出方法数量
+	moff    uint32 // offset from this uncommontype to [mcount]method  方法表偏移
 	_       uint32 // unused
 }
 
@@ -357,9 +358,9 @@ type imethod struct {
 }
 
 type interfacetype struct {
-	typ     _type
-	pkgpath name
-	mhdr    []imethod
+	typ     _type     //  表示接口自身的类型, 为什么不是指针??
+	pkgpath name      // 包路径
+	mhdr    []imethod // 记录接口定义的函数, 名和函数类型
 }
 
 type maptype struct {
@@ -396,30 +397,30 @@ func (mt *maptype) hashMightPanic() bool { // true if hash function might panic
 type arraytype struct {
 	typ   _type
 	elem  *_type
-	slice *_type
+	slice *_type // ???
 	len   uintptr
 }
 
 type chantype struct {
 	typ  _type
-	elem *_type
+	elem *_type // 元素类型
 	dir  uintptr
 }
 
 type slicetype struct {
 	typ  _type
-	elem *_type
+	elem *_type // 元素类型
 }
 
 type functype struct {
 	typ      _type
-	inCount  uint16
-	outCount uint16
+	inCount  uint16 // 入参数量
+	outCount uint16 // 出参的数量
 }
 
 type ptrtype struct {
 	typ  _type
-	elem *_type
+	elem *_type // 执行的元素, 的类型
 }
 
 type structfield struct {
