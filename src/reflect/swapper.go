@@ -36,16 +36,16 @@ func Swapper(slice interface{}) func(i, j int) {
 
 	// Some common & small cases, without using memmove:
 	if hasPtr {
-		if size == ptrSize {
+		if size == ptrSize {  // 指针数组
 			ps := *(*[]unsafe.Pointer)(v.ptr)
 			return func(i, j int) { ps[i], ps[j] = ps[j], ps[i] }
 		}
-		if typ.Kind() == String {
+		if typ.Kind() == String {  // 字符数组
 			ss := *(*[]string)(v.ptr)
 			return func(i, j int) { ss[i], ss[j] = ss[j], ss[i] }
 		}
 	} else {
-		switch size {
+		switch size { // 基础类型
 		case 8:
 			is := *(*[]int64)(v.ptr)
 			return func(i, j int) { is[i], is[j] = is[j], is[i] }

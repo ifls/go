@@ -10,17 +10,16 @@ import (
 	"unsafe"
 )
 
-// makeFuncImpl is the closure value implementing the function
-// returned by MakeFunc.
+// makeFuncImpl is the closure value implementing the function returned by MakeFunc.
 // The first three words of this type must be kept in sync with
 // methodValue and runtime.reflectMethodValue.
 // Any changes should be reflected in all three.
-type makeFuncImpl struct {
+type makeFuncImpl struct {  // 闭包
 	code   uintptr
 	stack  *bitVector // ptrmap for both args and results
 	argLen uintptr    // just args
 	ftyp   *funcType
-	fn     func([]Value) []Value
+	fn     func([]Value) []Value  // 函数指针
 }
 
 // MakeFunc returns a new function of the given Type that wraps the function fn.
@@ -65,12 +64,12 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 	return Value{t, unsafe.Pointer(impl), flag(Func)}
 }
 
-// makeFuncStub is an assembly function that is the code half of
+// makeFuncStub is an assembly function 汇编实现 that is the code half of
 // the function returned from MakeFunc. It expects a *callReflectFunc
 // as its context register, and its job is to invoke callReflect(ctxt, frame)
 // where ctxt is the context register and frame is a pointer to the first
 // word in the passed-in argument frame.
-func makeFuncStub()
+func makeFuncStub() // 会调用 value.go 里的 callReflect()
 
 // The first 3 words of this type must be kept in sync with
 // makeFuncImpl and runtime.reflectMethodValue.

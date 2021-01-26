@@ -5,10 +5,10 @@
 // Package reflect implements run-time reflection,
 // allowing a program to manipulate objects with arbitrary types. 允许程序操作任意类型的对象
 // The typical use is to take a value with static type interface{}
-// and extract its dynamic type information by calling TypeOf, which returns a Type.
+// and extract its dynamic type information(编译时注入类型信息, 运行时获取) by calling TypeOf, which returns a Type.
 //
-// A call to ValueOf returns a Value representing the run-time data.
-// Zero takes a Type and returns a Value representing a zero value for that type.
+// A call to ValueOf returns a Value representing(也就是拷贝一份, 后使用) the run-time data.
+// Zero takes a Type and returns a Value representing a zero value for that type.  Zero(type) 返回type类型零值
 //
 // See "The Laws of Reflection" for an introduction to reflection in Go:
 // TODO https://golang.org/doc/articles/laws_of_reflection.html
@@ -25,74 +25,71 @@ import (
 
 // Type is the representation of a Go type.
 //
-// Not all methods apply to all kinds of types. Restrictions,
+// Not all methods apply to all kinds of types. 特定类型只能用特定的方法 Restrictions,
 // if any, are noted in the documentation for each method.
-// Use the Kind method to find out the kind of type before
-// calling kind-specific methods. Calling a method
-// inappropriate to the kind of type causes a run-time panic.
+
+// Use the Kind method to find out the kind of type before calling kind-specific methods. 必须先switch case type.King(), 防止panic
+// Calling a method inappropriate to the kind of type causes a run-time panic.
 //
-// Type values are comparable, such as with the == operator,
-// so they can be used as map keys.
-// Two Type values are equal if they represent identical types.
+// Type values are comparable, such as with the == operator, 可比较
+// so they can be used as map keys. 可以作为 map的key
+// Two Type values are equal if they represent identical types. 同样的类型
 type Type interface {
 	// Methods applicable to all types.
 
-	// Align returns the alignment in bytes of a value of this type when allocated in memory. 对齐字节数
+	// Align returns the alignment in bytes of a value of this type when allocated in memory. 内存分配时的对齐字节数
 	Align() int
 
 	// FieldAlign returns the alignment in bytes of a value of
-	// this type when used as a field in a struct. 类型是结构体字段的对齐数，否则和Align()一样
+	// this type when used as a field in a struct. 此类型用于结构体字段时的对齐字节数，否则和Align()一样
 	FieldAlign() int
 
-	// Method returns the i'th method in the type's method set.
+	// Method returns the i'th method in the type's method set. 结构体, 结构体指针, 接口
 	// It panics if i is not in the range [0, NumMethod()).
 	//
-	// For a non-interface type T or *T, the returned Method's Type and Func fields describe a function whose first argument is the receiver.
+	// For a non-interface type T or *T, the returned Method's Type and Func fields describe a function whose first argument is the receiver. 第一个参数是接收者
 	//
-	// For an interface type, the returned Method's Type field gives the
-	// method signature, without a receiver, and the Func field is nil.
+	// For an interface type, the returned Method's Type field gives the method signature, without a receiver, and the Func field is nil. 没有接收者
 	//
 	// Only exported导出 methods are accessible and they are sorted in
 	// lexicographic order字典序. 根据索引获取方法信息
-	Method(int) Method
+	Method(int) Method // 普通类型, 例如 float64 会panic, 可用于自定义的基础类型
 
 	// MethodByName returns the method with that name in the type's
 	// method set and a boolean indicating if the method was found.
 	//
-	// For a non-interface type T or *T, the returned Method's Type and Func
-	// fields describe a function whose first argument is the receiver.
+	// For a non-interface type T or *T, the returned Method's Type and Func fields describe a function whose first argument is the receiver.
 	//
-	// For an interface type, the returned Method's Type field gives the
-	// method signature, without a receiver, and the Func field is nil.
+	// For an interface type, the returned Method's Type field gives the method signature, without a receiver, and the Func field is nil.
 	MethodByName(string) (Method, bool) // 根据方法名获得方法信息
 
 	// NumMethod returns the number of exported methods导出方法数 in the type's method set.
-	NumMethod() int // 方法集里的方法数量，和
+	NumMethod() int // 方法集里的方法数量 float64类型, 会返回0
 
 	// Name returns the type's name within its package for a defined type.
 	// For other (non-defined) types it returns the empty string.
-	Name() string // 类型名，其他未定义的类型返回空
+	Name() string // 类型名, 不带上包名, 其他未定义的类型返回 ""
 
 	// PkgPath returns a defined type's package path, that is, the import path
 	// that uniquely identifies the package, such as "encoding/base64".
 	// If the type was predeclared (string, error) or not defined (*T, struct{},
 	// []int, or A where A is an alias for a non-defined type), the package path
-	// will be the empty string.
-	PkgPath() string // 包名
+	// will be the empty string. 其他匿名的, 返回 ""
+	PkgPath() string // 包名, 不带上类型名
 
 	// Size returns the number of bytes needed to store
-	// a value of the given type; it is analogous to unsafe.Sizeof.
+	// a value of the given type; it is analogous等价于 to unsafe.Sizeof.
 	Size() uintptr // 占用的内存空间大小
 
 	// String returns a string representation of the type.
-	// The string representation may use shortened package names
+	// The string representation may use shortened package names 短包名
 	// (e.g., base64 instead of "encoding/base64") and is not
-	// guaranteed to be unique among types. To test for type identity,
-	// compare the Types directly.
+	// guaranteed to be unique among types. 不保证唯一
+	// To test for type identity, compare the Types directly. 直接比较类型的值, 判断唯一性
 	String() string // 返回类型的字符串表示，包含包名
 
 	// Kind returns the specific kind of this type.
-	Kind() Kind // 类型
+	Kind() Kind // 基础类型
 
 	// Implements reports whether the type implements the interface type u.
 	Implements(u Type) bool // 是否实现了一个 接口类型u
@@ -101,7 +98,7 @@ type Type interface {
 	AssignableTo(u Type) bool // 此类型的值是否可赋值给u类型
 
 	// ConvertibleTo reports whether a value of the type is convertible to type u.
-	ConvertibleTo(u Type) bool // 是否可转换为u类型
+	ConvertibleTo(u Type) bool // 是否可转换为u类型,  可赋值 != 可转换
 
 	// Comparable reports whether values of this type are comparable.
 	Comparable() bool // 值是否可比较
@@ -113,7 +110,7 @@ type Type interface {
 	//	Int*, Uint*, Float*, Complex*: Bits
 	//	Array: Elem, Len
 	//	Chan: ChanDir, Elem
-	//	Func: In, NumIn, Out, NumOut, IsVariadic.
+	//	Func: In, NumIn, Out, NumOut, IsVariadic变长.
 	//	Map: Key, Elem
 	//	Ptr: Elem
 	//	Slice: Elem
@@ -122,7 +119,8 @@ type Type interface {
 	// Bits returns the size of the type in bits.
 	// It panics if the type's Kind is not one of the
 	// sized or unsized Int, Uint, Float, or Complex kinds.
-	Bits() int // 只对数值类型有效， 类型占用的比特位数量
+	// 不支持 bool 类型
+	Bits() int // SizeInBit 只对数值类型有效， 类型占用的比特位数量
 
 	// ChanDir returns a channel type's direction.
 	// It panics if the type's Kind is not Chan.
@@ -144,16 +142,15 @@ type Type interface {
 
 	// Elem returns a type's element type.
 	// It panics if the type's Kind is not Array, Chan, Map, Ptr, or Slice.
-	Elem() Type // Array chan map *type []type
+	Elem() Type // Array chan map *type []type  // 对于 map[string]int 返回 int
 
 	// Field returns a struct type's i'th field.
 	// It panics if the type's Kind is not Struct.
 	// It panics if i is not in the range [0, NumField()).
 	Field(i int) StructField // 只用于结构体
 
-	// FieldByIndex returns the nested field corresponding
-	// to the index sequence. It is equivalent to calling Field
-	// successively for each index i.
+	// FieldByIndex returns the nested field corresponding to the index sequence. 用于结构体 内嵌的字段的访问
+	// It is equivalent to calling Field successively for each index i. 等价于递归
 	// It panics if the type's Kind is not Struct.
 	FieldByIndex(index []int) StructField
 
@@ -161,36 +158,37 @@ type Type interface {
 	// and a boolean indicating if the field was found.
 	FieldByName(name string) (StructField, bool)
 
-	// FieldByNameFunc returns the struct field with a name
+	// FieldByNameFunc returns the一个 struct field with a name
 	// that satisfies the match function and a boolean indicating if
 	// the field was found.
 	//
 	// FieldByNameFunc considers the fields in the struct itself
-	// and then the fields in any embedded structs, in breadth first order,
-	// stopping at the shallowest nesting depth containing one or more
-	// fields satisfying the match function. If multiple fields at that depth
+	// and then the fields in any embedded structs, in breadth广度优先 first order,
+	// stopping at the shallowest最少内嵌 nesting depth containing one or more
+	// fields satisfying the match function.
+	// If multiple fields at that depth
 	// satisfy the match function, they cancel each other
-	// and FieldByNameFunc returns no match.
+	// and FieldByNameFunc returns no match. 同一级找到两个, 会返回找不到
 	// This behavior mirrors Go's handling of name lookup in
 	// structs containing embedded fields.
 	FieldByNameFunc(match func(string) bool) (StructField, bool)
 
-	// In returns the type of a function type's i'th input parameter.
+	// In returns the type of a function type's i'th input parameter. 返回, 第一个参数的类型
 	// It panics if the type's Kind is not Func.
 	// It panics if i is not in the range [0, NumIn()).
 	In(i int) Type
 
 	// Key returns a map type's key type.
 	// It panics if the type's Kind is not Map.
-	Key() Type // 只用于map
+	Key() Type // 只用于map, 返回key的类型 // 对于 map[string]int 返回 string
 
 	// Len returns an array type's length.
 	// It panics if the type's Kind is not Array.
-	Len() int // 只用于数组
+	Len() int // 只用于数组, 不适用于切片
 
 	// NumField returns a struct type's field count.  字段数
 	// It panics if the type's Kind is not Struct. 必须是结构体，结构体指针都不行
-	NumField() int
+	NumField() int // 未导出的也算
 
 	// NumIn returns a function type's input parameter count.
 	// It panics if the type's Kind is not Func.
@@ -205,8 +203,8 @@ type Type interface {
 	// It panics if i is not in the range [0, NumOut()).
 	Out(i int) Type
 
-	common() *rtype
-	uncommon() *uncommonType
+	common() *rtype          // 返回类型的公共信息
+	uncommon() *uncommonType // 非公用的部分
 }
 
 // BUG(rsc): FieldByName and related functions consider struct field names to be equal
@@ -219,7 +217,7 @@ type Type interface {
 
 /*
  * These data structures are known to the compiler (../../cmd/internal/gc/reflect.go).
- * A few are known to ../runtime/type.go to convey to debuggers.
+ * A few are known to ../runtime/type.go to convey传递给调试器 to debuggers.
  * They are also known to ../runtime/type.go.
  */
 
@@ -229,37 +227,37 @@ type Kind uint
 
 const (
 	Invalid Kind = iota
-	Bool
+	Bool         // 1
 	Int
 	Int8
 	Int16
-	Int32
+	Int32 // 5
 	Int64
 	Uint
 	Uint8
 	Uint16
-	Uint32
+	Uint32 // 10
 	Uint64
 	Uintptr
 	Float32
 	Float64
-	Complex64
+	Complex64 // 15
 	Complex128
 
 	Array
 	Chan
 	Func
-	Interface
+	Interface // 20
 	Map
-	Ptr
+	Ptr // 22
 	Slice
 	String
-	Struct
+	Struct // 25
 	UnsafePointer
 )
 
 // tflag is used by an rtype to signal what extra type information is
-// available in the memory directly following the rtype value.
+// available in the memory directly following the rtype value. 表示之后的内存, 还有可用的类型信息
 //
 // tflag values must be kept in sync with copies in:
 //	cmd/compile/internal/gc/reflect.go
@@ -279,48 +277,48 @@ const (
 	//		u uncommonType
 	//	}
 	//	u := &(*tUncommon)(unsafe.Pointer(t)).u
-	tflagUncommon tflag = 1 << 0
+	tflagUncommon tflag = 1 << 0 // 有特殊部分
 
 	// tflagExtraStar means the name in the str field has an
 	// extraneous '*' prefix. This is because for most types T in
 	// a program, the type *T also exists and reusing the str data
-	// saves binary size.
+	// saves binary size.   值接收者和指针接收者, 公用
 	tflagExtraStar tflag = 1 << 1
 
-	// tflagNamed means the type has a name.
+	// tflagNamed means the type has a name. 可以调用Name()方法
 	tflagNamed tflag = 1 << 2
 
 	// tflagRegularMemory means that equal and hash functions can treat
-	// this type as a single region of t.size bytes.
+	// this type as a single region of t.size bytes. 判等和hash函数, 可以把这个类型的值当成单块size大小连续内存
 	tflagRegularMemory tflag = 1 << 3
 )
 
 // rtype is the common implementation of most values.
-// It is embedded in other struct types.
+// It is embedded in other struct types. 内嵌在其他结构体的类型里
 // 实现 Type接口
 // rtype must be kept in sync with ../runtime/type.go:/^type._type.
 type rtype struct {
 	size       uintptr // 占用字节数
-	ptrdata    uintptr // number of bytes in the type that can contain pointers
+	ptrdata    uintptr // number of bytes in the type that can contain pointers 指针类型 8B, 接口 16B, 结构体里不定
 	hash       uint32  // hash of type; avoids computation in hash tables
-	tflag      tflag   // extra type information flags
+	tflag      tflag   // extra type information flags 表示还有额外类型信息
 	align      uint8   // 对齐alignment of variable with this type
 	fieldAlign uint8   // 字段对齐alignment of struct field with this type
 	kind       uint8   // 就是Kind 枚举值 enumeration for C
 	// function for comparing objects of this type
 	// (ptr to object A, ptr to object B) -> ==?
-	equal     func(unsafe.Pointer, unsafe.Pointer) bool
-	gcdata    *byte   // garbage collection data
-	str       nameOff // string form
-	ptrToThis typeOff // type for pointer to this type, may be zero 链表那种就有指向自身类型的指针
+	equal     func(unsafe.Pointer, unsafe.Pointer) bool // 值比较函数  Comparable() ==  equal != nil
+	gcdata    *byte                                     // garbage collection data
+	str       nameOff                                   // string form
+	ptrToThis typeOff                                   // type for pointer to this type, may be zero 链表, 指向自身类型的指针
 }
 
-// Method on non-interface type
+// Method on non-interface type 非接口类型定义的方法
 type method struct {
 	name nameOff // name of method 根据偏移去寻找函数名起始地址, 读取函数名
-	mtyp typeOff // method type (without receiver)
-	ifn  textOff // fn used in interface call (one-word receiver)
-	tfn  textOff // fn used for normal method call
+	mtyp typeOff // method type (without receiver) 类型
+	ifn  textOff // fn used in interface call (one-word receiver) 函数指针, 接口方法调用, 带接收者
+	tfn  textOff // fn used for normal method call 函数指针,
 }
 
 // uncommonType is present only for defined types or types with methods
@@ -328,10 +326,10 @@ type method struct {
 // Using a pointer to this struct reduces the overall size required
 // to describe a non-defined type with no methods.
 type uncommonType struct {
-	pkgPath nameOff // import path; empty for built-in types like int, string
+	pkgPath nameOff // import path; empty for built-in types like int, string  包偏移
 	mcount  uint16  // number of methods
 	xcount  uint16  // number of exported methods
-	moff    uint32  // offset from this uncommontype to [mcount]method
+	moff    uint32  // offset from this uncommontype to [mcount]method 方法地址的相对 偏移
 	_       uint32  // unused
 }
 
@@ -347,16 +345,16 @@ const (
 // arrayType represents a fixed array type.
 type arrayType struct {
 	rtype
-	elem  *rtype // array element type
-	slice *rtype // slice type
-	len   uintptr
+	elem  *rtype  // array element type
+	slice *rtype  // slice type, 用于生成切片
+	len   uintptr // 只有数组类型有长度
 }
 
 // chanType represents a channel type.
 type chanType struct {
 	rtype
 	elem *rtype  // channel element type
-	dir  uintptr // channel direction (ChanDir)
+	dir  uintptr // channel direction (对应ChanDir)
 }
 
 // funcType represents a function type.
@@ -372,18 +370,18 @@ type chanType struct {
 //	}
 type funcType struct {
 	rtype
-	inCount  uint16
-	outCount uint16 // top bit is set if last input parameter is ...
+	inCount  uint16 // 入参数量
+	outCount uint16 // top bit is set if last input parameter is ... 如果是可变参数, 最高位设置为1, 为什么在出参数量上放置?
 }
 
-// imethod represents a method on an interface type
+// imethod represents a method on an interface type 接口类型的方法
 type imethod struct {
 	name nameOff // name of method
 	typ  typeOff // .(*FuncType) underneath
 }
 
 // interfaceType represents an interface type.
-type interfaceType struct {
+type interfaceType struct { // 接口类型
 	rtype
 	pkgPath name      // import path
 	methods []imethod // sorted by hash
@@ -403,7 +401,7 @@ type mapType struct {
 	flags      uint32
 }
 
-// ptrType represents a pointer type.
+// ptrType represents a pointer type. 指针类型
 type ptrType struct {
 	rtype
 	elem *rtype // pointer element (pointed at) type
@@ -416,7 +414,7 @@ type sliceType struct {
 }
 
 // Struct field
-type structField struct {
+type structField struct { // 结构体字段
 	name        name    // name is always non-empty
 	typ         *rtype  // type of field
 	offsetEmbed uintptr // byte offset of field<<1 | isEmbedded
@@ -430,7 +428,7 @@ func (f *structField) embedded() bool {
 	return f.offsetEmbed&1 != 0
 }
 
-// structType represents a struct type.
+// structType represents a struct type. 结构体类型
 type structType struct {
 	rtype
 	pkgPath name
@@ -439,11 +437,11 @@ type structType struct {
 
 // name is an encoded type name with optional extra data.
 //
-// The first byte is a bit field containing:
+// The first byte is a bit field containing: 第一个字节是头部属性
 //
 //	1<<0 the name is exported
-//	1<<1 tag data follows the name
-//	1<<2 pkgPath nameOff follows the name and tag
+//	1<<1 tag data follows the name 有tag
+//	1<<2 pkgPath nameOff follows the name and tag  tag后面是包名
 //
 // The next two bytes are the data length:
 //
@@ -451,15 +449,14 @@ type structType struct {
 //
 // Bytes [3:3+l] are the string data.
 //
-// If tag data follows then bytes 3+l and 3+l+1 are the tag length,
-// with the data following.
+
+// If tag data follows then bytes 3+l and 3+l+1 are the tag length, with the data following.
 //
-// If the import path follows, then 4 bytes at the end of
-// the data form a nameOff. The import path is only set for concrete
-// methods that are defined in a different package than their type.
+// If the import path follows, then 4 bytes at the end of the data form a nameOff.
+// The import path is only set for concrete methods that are defined in a different package than their type.
 //
 // If a name starts with "*", then the exported bit represents
-// whether the pointed to type is exported.
+// whether the pointed to type is exported. *T 表示指针类型
 type name struct {
 	bytes *byte
 }
@@ -559,27 +556,26 @@ func newName(n, tag string, exported bool) name {
 
 /*
  * The compiler knows the exact layout of all the data structures above.
- * The compiler does not know about the data structures and methods below.
+ * The compiler does not know about the data structures and methods below. 下面的, 编译器不是完全知道
  */
 
-// Method represents a single method.
+// Method represents a single method. 单个定义的func
 type Method struct {
 	// Name is the method name.
-	// PkgPath is the package path that qualifies a lower case (unexported)
-	// method name. It is empty for upper case (exported) method names.
-	// The combination of PkgPath and Name uniquely identifies a method
-	// in a method set.
-	// See https://golang.org/ref/spec#Uniqueness_of_identifiers
+	// PkgPath is the package path that qualifies a lower case (unexported) method name.
+	// It is empty for upper case (exported) method names.
+	// The combination of PkgPath and Name uniquely identifies a method in a method set.  PkgPath + Name 唯一标志 一个方法
+	// See TODO https://golang.org/ref/spec#Uniqueness_of_identifiers
 	Name    string
 	PkgPath string
 
 	Type  Type  // method type
-	Func  Value // func with receiver as first argument
-	Index int   // index for Type.Method
+	Func  Value // func with receiver as first argument  接收者作为第一个参数的函数指针
+	Index int   // index for Type.Method  // 表示是第几个方法
 }
 
 const (
-	kindDirectIface = 1 << 5
+	kindDirectIface = 1 << 5 // 带方法接口
 	kindGCProg      = 1 << 6 // Type.gc points to GC program
 	kindMask        = (1 << 5) - 1
 )
@@ -636,39 +632,39 @@ func (t *uncommonType) exportedMethods() []method {
 	return (*[1 << 16]method)(add(unsafe.Pointer(t), uintptr(t.moff), "t.xcount > 0"))[:t.xcount:t.xcount]
 }
 
-// resolveNameOff resolves a name offset from a base pointer.
+// resolveNameOff resolves a name名字 offset from a base pointer.
 // The (*rtype).nameOff method is a convenience wrapper for this function.
 // Implemented in the runtime package.
 func resolveNameOff(ptrInModule unsafe.Pointer, off int32) unsafe.Pointer
 
-// resolveTypeOff resolves an *rtype offset from a base type.
+// resolveTypeOff resolves an *rtype类型 offset from a base type.
 // The (*rtype).typeOff method is a convenience wrapper for this function.
 // Implemented in the runtime package.
 func resolveTypeOff(rtype unsafe.Pointer, off int32) unsafe.Pointer
 
-// resolveTextOff resolves a function pointer offset from a base type.
+// resolveTextOff resolves a function pointer函数指针 offset from a base type.
 // The (*rtype).textOff method is a convenience wrapper for this function.
 // Implemented in the runtime package.
 func resolveTextOff(rtype unsafe.Pointer, off int32) unsafe.Pointer
 
-// addReflectOff adds a pointer to the reflection lookup map in the runtime.
+// addReflectOff adds a pointer指针 to the reflection lookup map 反射查找map in the runtime.
 // It returns a new ID that can be used as a typeOff or textOff, and will
 // be resolved correctly. Implemented in the runtime package.
 func addReflectOff(ptr unsafe.Pointer) int32
 
-// resolveReflectName adds a name to the reflection lookup map in the runtime.
+// resolveReflectName adds a name名字 to the reflection lookup map 反射查找 in the runtime.
 // It returns a new nameOff that can be used to refer to the pointer.
 func resolveReflectName(n name) nameOff {
 	return nameOff(addReflectOff(unsafe.Pointer(n.bytes)))
 }
 
-// resolveReflectType adds a *rtype to the reflection lookup map in the runtime.
+// resolveReflectType adds a *rtype类型 to the reflection lookup反射查找 map in the runtime.
 // It returns a new typeOff that can be used to refer to the pointer.
 func resolveReflectType(t *rtype) typeOff {
 	return typeOff(addReflectOff(unsafe.Pointer(t)))
 }
 
-// resolveReflectText adds a function pointer to the reflection lookup map in
+// resolveReflectText adds a function pointer函数指针 to the reflection lookup反射查找 map in
 // the runtime. It returns a new textOff that can be used to refer to the
 // pointer.
 func resolveReflectText(ptr unsafe.Pointer) textOff {
@@ -692,9 +688,11 @@ func (t *rtype) textOff(off textOff) unsafe.Pointer {
 }
 
 func (t *rtype) uncommon() *uncommonType {
+	// 标志位, 没有此标志位, 不需要进行下面的判断
 	if t.tflag&tflagUncommon == 0 {
 		return nil
 	}
+
 	switch t.Kind() {
 	case Struct:
 		return &(*structTypeUncommon)(unsafe.Pointer(t)).u
@@ -777,8 +775,10 @@ func (t *rtype) Align() int { return int(t.align) }
 
 func (t *rtype) FieldAlign() int { return int(t.fieldAlign) }
 
+// 外部类型, 不带接口信息
 func (t *rtype) Kind() Kind { return Kind(t.kind & kindMask) }
 
+// 是否有指针数据
 func (t *rtype) pointers() bool { return t.ptrdata != 0 }
 
 func (t *rtype) common() *rtype { return t }
@@ -788,14 +788,16 @@ func (t *rtype) exportedMethods() []method {
 	if ut == nil {
 		return nil
 	}
+	// 内存偏移
 	return ut.exportedMethods()
 }
 
 func (t *rtype) NumMethod() int {
-	if t.Kind() == Inte; rface {
+	if t.Kind() == Interface {
 		tt := (*interfaceType)(unsafe.Pointer(t))
-		return tt.NumMethod()
+		return tt.NumMethod() // 接口的方法数
 	}
+	// 实际类型的方法数
 	return len(t.exportedMethods())
 }
 
@@ -1097,20 +1099,20 @@ type StructField struct {
 
 	Type      Type      // field type
 	Tag       StructTag // field tag string
-	Offset    uintptr   // offset within struct, in bytes
-	Index     []int     // index sequence for Type.FieldByIndex
-	Anonymous bool      // is an embedded field
+	Offset    uintptr   // offset within struct, in bytes  FieldAlign
+	Index     []int     // index sequence for Type.FieldByIndex  允许级联查询
+	Anonymous bool      // is an embedded field  内嵌
 }
 
 // A StructTag is the tag string in a struct field.
 //
 // By convention, tag strings are a concatenation of
-// optionally space-separated key:"value" pairs.
+// optionally space-separated key:"value" pairs.   kv kv2 kv3
 // Each key is a non-empty string consisting of non-control
 // characters other than space (U+0020 ' '), quote (U+0022 '"'),
 // and colon (U+003A ':').  Each value is quoted using U+0022 '"'
 // characters and Go string literal syntax.
-type StructTag string
+type StructTag string // 字符串
 
 // Get returns the value associated with key in the tag string.
 // If there is no such key in the tag, Get returns the empty string.
@@ -1375,12 +1377,13 @@ func TypeOf(i interface{}) Type {
 // ptrMap is the cache for PtrTo.
 var ptrMap sync.Map // map[*rtype]*ptrType
 
-// PtrTo returns the pointer type with element t.
+// PtrTo returns the pointer type with element t. 返回t类型的指针类型
 // For example, if t represents type Foo, PtrTo(t) represents *Foo.
 func PtrTo(t Type) Type {
 	return t.(*rtype).ptrTo()
 }
 
+// 返回指向 t 的 指针类型  就是 int 返回 *int
 func (t *rtype) ptrTo() *rtype {
 	if t.ptrToThis != 0 {
 		return t.typeOff(t.ptrToThis)
@@ -1424,7 +1427,7 @@ func (t *rtype) ptrTo() *rtype {
 	return &pi.(*ptrType).rtype
 }
 
-// fnv1 incorporates the list of bytes into the hash x using the FNV-1 hash function.
+// fnv1 incorporates合入 the list of bytes into the hash x using the FNV-1 hash function.
 func fnv1(x uint32, list ...byte) uint32 {
 	for _, b := range list {
 		x = x*16777619 ^ uint32(b)
@@ -1778,6 +1781,7 @@ var funcLookupCache struct {
 //
 // The gc runtime imposes a limit of 64 kB on channel element types.
 // If t's size is equal to or exceeds this limit, ChanOf panics.
+// 返回特定的 chan 类型
 func ChanOf(dir ChanDir, t Type) Type {
 	typ := t.(*rtype)
 
@@ -2080,7 +2084,7 @@ func funcStr(ft *funcType) string {
 	return string(repr)
 }
 
-// isReflexive reports whether the == operation on the type is reflexive.
+// isReflexive reports whether the == operation on the type is reflexive. 自反性, 自相等性
 // That is, x == x for all values x of type t.
 func isReflexive(t *rtype) bool {
 	switch t.Kind() {
@@ -2964,7 +2968,7 @@ func appendVarint(x []byte, v uintptr) []byte {
 // a nil *rtype must be replaced by a nil Type, but in gccgo this
 // function takes care of ensuring that multiple *rtype for the same
 // type are coalesced into a single Type.
-func toType(t *rtype) Type {
+func toType(t *rtype) Type { // 变为类型不为空, 值为空的接口
 	if t == nil {
 		return nil
 	}
@@ -3068,7 +3072,7 @@ func funcLayout(t *funcType, rcvr *rtype) (frametype *rtype, argSize, retOffset 
 }
 
 // ifaceIndir reports whether t is stored indirectly in an interface value.
-func ifaceIndir(t *rtype) bool {
+func ifaceIndir(t *rtype) bool { // 接口内val保存的是不是指针字段
 	return t.kind&kindDirectIface == 0
 }
 
