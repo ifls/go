@@ -166,6 +166,7 @@ func Marshal(v interface{}) ([]byte, error) {
 	// clone的效果
 	buf := append([]byte(nil), e.Bytes()...)
 
+	// 放回池子, 复用
 	encodeStatePool.Put(e)
 
 	return buf, nil

@@ -640,7 +640,7 @@ func (p *pp) printArg(arg interface{}, verb rune) {
 	p.arg = arg
 	p.value = reflect.Value{}
 
-	if arg == nil {
+	if arg == nil { // 预先处理 不正常的 nil
 		switch verb {
 		case 'T', 'v':
 			p.fmt.padString(nilAngleString)
@@ -654,6 +654,7 @@ func (p *pp) printArg(arg interface{}, verb rune) {
 	// %T (the value's type) and %p (its address) are special; we always do them first.
 	switch verb {
 	case 'T':
+		// 打印类型
 		p.fmt.fmtS(reflect.TypeOf(arg).String())
 		return
 	case 'p':
