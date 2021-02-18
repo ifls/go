@@ -6,7 +6,7 @@
 // as defined in ITU-T Rec X.690.
 //
 // See also ``A Layman's Guide to a Subset of ASN.1, BER, and DER,''
-// http://luca.ntop.org/Teaching/Appunti/asn1.html.
+// http://luca.ntop.org/Teaching/Appunti/asn1.html.    BER Basic Encoding Rules  TLV 三元组(支持嵌套) 8位组, 大端编码, Tag, Length, Content
 package asn1
 
 // ASN.1 is a syntax for specifying abstract objects and BER, DER, PER, XER etc

@@ -926,7 +926,7 @@ func (c *mcache) nextFree(spc spanClass) (v gclinkptr, s *mspan, shouldhelpgc bo
 			println("runtime: s.allocCount=", s.allocCount, "s.nelems=", s.nelems)
 			throw("s.allocCount != s.nelems && freeIndex == s.nelems")
 		}
-		// 向mcental 换一个, 必须是可分配的
+		// 向mcentral 换一个, 必须是可分配的
 		c.refill(spc)
 		shouldhelpgc = true
 		s = c.alloc[spc]
