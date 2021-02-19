@@ -74,7 +74,7 @@ func removeSpacesAndTabs(data []byte) []byte {
 	return result[0:n]
 }
 
-var pemStart = []byte("\n-----BEGIN ")
+var pemStart = []byte("\n-----BEGIN ") // 必须是新起的一行
 var pemEnd = []byte("\n-----END ")
 var pemEndOfLine = []byte("-----")
 
@@ -98,6 +98,8 @@ func Decode(data []byte) (p *Block, rest []byte) {
 	if !bytes.HasSuffix(typeLine, pemEndOfLine) {
 		return decodeError(data, rest)
 	}
+
+	// 提取type行
 	typeLine = typeLine[0 : len(typeLine)-len(pemEndOfLine)]
 
 	p = &Block{
@@ -105,7 +107,7 @@ func Decode(data []byte) (p *Block, rest []byte) {
 		Type:    string(typeLine),
 	}
 
-	for {
+	for {  // 读取header
 		// This loop terminates because getLine's second result is
 		// always smaller than its argument.
 		if len(rest) == 0 {
@@ -162,8 +164,11 @@ func Decode(data []byte) (p *Block, rest []byte) {
 		return decodeError(data, rest)
 	}
 
+	// 中间的body
 	base64Data := removeSpacesAndTabs(rest[:endIndex])
+
 	p.Bytes = make([]byte, base64.StdEncoding.DecodedLen(len(base64Data)))
+	// base64 std 解码后的内容
 	n, err := base64.StdEncoding.Decode(p.Bytes, base64Data)
 	if err != nil {
 		return decodeError(data, rest)
