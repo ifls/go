@@ -219,7 +219,7 @@ func (c *Conn) clientHandshake() (err error) {
 		hello:       hello,
 		session:     session,
 	}
-	// 第3次包
+	// 第3次 握手, 并读取第四次返回的包
 	if err := hs.handshake(); err != nil {
 		return err
 	}
@@ -440,7 +440,7 @@ func (hs *clientHandshakeState) handshake() error {
 			return err
 		}
 
-		// 读第四次包
+		// 读 服务器返回的第四次包
 		if err := hs.readFinished(c.serverFinished[:]); err != nil {
 			return err
 		}
@@ -751,6 +751,7 @@ func (hs *clientHandshakeState) readFinished(out []byte) error {
 		return err
 	}
 
+	// 读取服务器返回的 第四次
 	msg, err := c.readHandshake()
 	if err != nil {
 		return err
