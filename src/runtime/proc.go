@@ -1255,6 +1255,8 @@ func mstart() {
 		// so the logic above hasn't set osStack yet.
 		osStack = true
 	}
+
+	// 线程退出
 	mexit(osStack)
 }
 

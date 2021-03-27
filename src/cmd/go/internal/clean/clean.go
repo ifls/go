@@ -27,7 +27,7 @@ var CmdClean = &base.Command{
 	UsageLine: "go clean [clean flags] [build flags] [packages]",
 	Short:     "remove object files and cached files",
 	Long: `
-Clean removes object files from package source directories.
+Clean removes object files移除二进制文件 from package source directories.
 The go command builds most objects in a temporary directory,
 so go clean is mainly concerned with object files left by other
 tools or by manual invocations of go build.

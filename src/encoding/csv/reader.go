@@ -7,14 +7,14 @@
 // described in RFC 4180.
 //
 // A csv file contains zero or more records of one or more fields per record.
-// Each record is separated by the newline character. The final record may
-// optionally be followed by a newline character.
+// Each record is separated by the newline character.
+// The final record may optionally be followed by a newline character. 最后一行, 可以没有换行符
 //
 //	field1,field2,field3
 //
 // White space is considered part of a field.
 //
-// Carriage returns before newline characters are silently removed.
+// Carriage returns CR 回车, 回到行首 before newline characters are silently removed.
 //
 // Blank lines are ignored. A line with only whitespace characters (excluding
 // the ending newline character) is not considered a blank line.

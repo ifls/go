@@ -15,7 +15,7 @@ var faketime int64
 
 //go:nosplit
 func nanotime() int64 {
-	return nanotime1()
+	return nanotime1() // 汇编实现
 }
 
 func walltime() (sec int64, nsec int32) {

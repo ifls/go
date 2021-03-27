@@ -6,7 +6,7 @@
 // in the format expected by the pprof visualization tool.
 //
 // The package is typically only imported for the side effect of
-// registering its HTTP handlers.
+// registering its HTTP handlers. 下划线导入
 // The handled paths all begin with /debug/pprof/.
 //
 // To use pprof, link this package into your program:
@@ -21,7 +21,7 @@
 // 	}()
 //
 // If you are not using DefaultServeMux, you will have to register handlers
-// with the mux you are using.
+// with the mux you are using. 都是公开函数, 可以自行绑定
 //
 // Then use the pprof tool to look at the heap profile:
 //
@@ -352,10 +352,10 @@ var profileDescriptions = map[string]string{
 	"goroutine": "Stack traces of all current goroutines",                          // 所有goroutine的栈
 	"heap": "A sampling of memory allocations of live objects. " +
 		"You can specify the gc GET parameter to run GC before taking the heap sample.", // 堆内存分配采样
-	"mutex": "Stack traces of holders of contended mutexes", // 加锁的堆栈
+	"mutex": "Stack traces of holders of contended mutexes",                             // 加锁的堆栈
 	"profile": "CPU profile. You can specify the duration in the seconds GET parameter. " +
 		"After you get the profile file, use the go tool pprof command to investigate the profile.", // cpu采样
-	"threadcreate": "Stack traces that led to the creation of new OS threads", // 导致创建新线程的堆栈
+	"threadcreate": "Stack traces that led to the creation of new OS threads",                       // 导致创建新线程的堆栈
 	"trace": "A trace of execution of the current program. " +
 		"You can specify the duration in the seconds GET parameter. After you get the trace file, " +
 		"use the go tool trace command to investigate the trace.", // 追踪当前程序运行, 用于 go tool trace

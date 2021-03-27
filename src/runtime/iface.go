@@ -31,7 +31,7 @@ func itabHashFunc(inter *interfacetype, typ *_type) uintptr {
 }
 
 func getitab(inter *interfacetype, typ *_type, canfail bool) *itab {
-	if len(inter.mhdr) == 0 {
+	if len(inter.mhdr) == 0 { // 没有方法的接口不能用itab
 		throw("internal error - misuse of itab")
 	}
 
@@ -50,19 +50,23 @@ func getitab(inter *interfacetype, typ *_type, canfail bool) *itab {
 	// This is by far the most common case, so do it without locks.
 	// Use atomic to ensure we see any previous writes done by the thread
 	// that updates the itabTable field (with atomic.Storep in itabAdd).
+	// 查找itab
 	t := (*itabTableType)(atomic.Loadp(unsafe.Pointer(&itabTable)))
 	if m = t.find(inter, typ); m != nil {
 		goto finish
 	}
 
 	// Not found.  Grab the lock and try again.
+	// 加锁, 第二次查找
 	lock(&itabLock)
 	if m = itabTable.find(inter, typ); m != nil {
 		unlock(&itabLock)
 		goto finish
 	}
 
+	// 新建一个itab
 	// Entry doesn't exist yet. Make a new entry & add it.
+	// itab结构体里已经有了一个函数指针, 剩下需要函数数量减一的函数空间
 	m = (*itab)(persistentalloc(unsafe.Sizeof(itab{})+uintptr(len(inter.mhdr)-1)*sys.PtrSize, 0, &memstats.other_sys))
 	m.inter = inter
 	m._type = typ
@@ -73,10 +77,12 @@ func getitab(inter *interfacetype, typ *_type, canfail bool) *itab {
 	// Note: m.hash is _not_ the hash used for the runtime itabTable hash table.
 	m.hash = 0
 	m.init()
+
+	// 加到表里
 	itabAdd(m)
 	unlock(&itabLock)
 finish:
-	if m.fun[0] != 0 {
+	if m.fun[0] != 0 { // 函数指针不能为空
 		return m
 	}
 	if canfail {
@@ -94,7 +100,7 @@ finish:
 // find finds the given interface/type pair in t.
 // Returns nil if the given interface/type pair isn't present.
 func (t *itabTableType) find(inter *interfacetype, typ *_type) *itab {
-	// Implemented using quadratic probing.
+	// Implemented using quadratic probing. 二次探测
 	// Probe sequence is h(i) = h0 + i*(i+1)/2 mod 2^k.
 	// We're guaranteed to hit all table entries using this probe sequence.
 	mask := t.size - 1
@@ -133,6 +139,7 @@ func itabAdd(m *itab) {
 		// t2 = new(itabTableType) + some additional entries
 		// We lie and tell malloc we want pointer-free memory because
 		// all the pointed-to values are not in the heap.
+		// 2个 结构体字段, 寒暑表的大小都是 不断*2, 2^n 扩容
 		t2 := (*itabTableType)(mallocgc((2+2*t.size)*sys.PtrSize, nil, true))
 		t2.size = t.size * 2
 
@@ -140,7 +147,7 @@ func itabAdd(m *itab) {
 		// Note: while copying, other threads may look for an itab and
 		// fail to find it. That's ok, they will then try to get the itab lock
 		// and as a consequence wait until this copying is complete.
-		iterate_itabs(t2.add)
+		iterate_itabs(t2.add) // 将原来的类型迭代 弄到t2表里
 		if t2.count != t.count {
 			throw("mismatched count during itab table copy")
 		}
@@ -159,7 +166,7 @@ func (t *itabTableType) add(m *itab) {
 	// See comment in find about the probe sequence.
 	// Insert new itab in the first empty spot in the probe sequence.
 	mask := t.size - 1
-	h := itabHashFunc(m.inter, m._type) & mask
+	h := itabHashFunc(m.inter, m._type) & mask // % size
 	for i := uintptr(1); ; i++ {
 		p := (**itab)(add(unsafe.Pointer(&t.entries), h*sys.PtrSize))
 		m2 := *p
@@ -184,7 +191,7 @@ func (t *itabTableType) add(m *itab) {
 	}
 }
 
-// init fills in the m.fun array with all the code pointers for
+// init fills in the m.fun array with all the code pointers for 填上 虚函数表数组
 // the m.inter/m._type pair. If the type does not implement the interface,
 // it sets m.fun[0] to 0 and returns the name of an interface function that is missing.
 // It is ok to call this multiple times on the same m, even concurrently.
@@ -199,12 +206,14 @@ func (m *itab) init() string {
 	// the loop is O(ni+nt) not O(ni*nt).
 	ni := len(inter.mhdr)
 	nt := int(x.mcount)
+	// 此具体类型的实际函数的表
 	xmhdr := (*[1 << 16]method)(add(unsafe.Pointer(x), uintptr(x.moff)))[:nt:nt]
 	j := 0
+	// 基于数组指针切片
 	methods := (*[1 << 16]unsafe.Pointer)(unsafe.Pointer(&m.fun[0]))[:ni:ni]
 	var fun0 unsafe.Pointer
 imethods:
-	for k := 0; k < ni; k++ {
+	for k := 0; k < ni; k++ { // 每个虚函数, 都要找到一个实际的函数
 		i := &inter.mhdr[k]
 		itype := inter.typ.typeOff(i.ityp)
 		name := inter.typ.nameOff(i.name)
@@ -213,6 +222,7 @@ imethods:
 		if ipkg == "" {
 			ipkg = inter.pkgpath.name()
 		}
+
 		for ; j < nt; j++ {
 			t := &xmhdr[j]
 			tname := typ.nameOff(t.name)
@@ -225,19 +235,20 @@ imethods:
 					if m != nil {
 						ifn := typ.textOff(t.ifn)
 						if k == 0 {
-							fun0 = ifn // we'll set m.fun[0] at the end
+							fun0 = ifn // we'll set m.fun[0] at the end  第一个函数, 留着最后一行代码设置,
 						} else {
-							methods[k] = ifn
+							methods[k] = ifn // 第二个函数之后的函数
 						}
 					}
 					continue imethods
 				}
 			}
 		}
-		// didn't find method
+		// didn't find method  如果没有找到全部函数, 整个函数虚函数表都置nil
 		m.fun[0] = 0
 		return iname
 	}
+	// 表示函数表查找成功
 	m.fun[0] = uintptr(fun0)
 	return ""
 }
@@ -312,9 +323,10 @@ var (
 // The convXXX functions are guaranteed by the compiler to succeed.
 // The assertXXX functions may fail (either panicking or returning false,
 // depending on whether they are 1-result or 2-result).
+
 // The convXXX functions succeed on a nil input, whereas the assertXXX
 // functions fail on a nil input.
-
+// 具体类型 转 空接口
 func convT2E(t *_type, elem unsafe.Pointer) (e eface) {
 	if raceenabled {
 		raceReadObjectPC(t, elem, getcallerpc(), funcPC(convT2E))
@@ -325,7 +337,8 @@ func convT2E(t *_type, elem unsafe.Pointer) (e eface) {
 	x := mallocgc(t.size, t, true)
 	// TODO: We allocate a zeroed object only to overwrite it with actual data.
 	// Figure out how to avoid zeroing. Also below in convT2Eslice, convT2I, convT2Islice.
-	typedmemmove(t, x, elem)
+	// 拷贝类型指定大小的内存空间
+	typedmemmove(t, x, elem) // memmove(dst, src, typ.size)
 	e._type = t
 	e.data = x
 	return
@@ -377,14 +390,14 @@ func convTstring(val string) (x unsafe.Pointer) {
 	return
 }
 
-// slice 转 interface{}
+// *x = val  返回切片的指针
 func convTslice(val []byte) (x unsafe.Pointer) {
 	// Note: this must work for any element type, not just byte.
-	if (*slice)(unsafe.Pointer(&val)).array == nil {
+	if (*slice)(unsafe.Pointer(&val)).array == nil { // 处理nil切片
 		x = unsafe.Pointer(&zeroVal[0])
 	} else {
 		x = mallocgc(unsafe.Sizeof(val), sliceType, true)
-		*(*[]byte)(x) = val
+		*(*[]byte)(x) = val // 拷贝
 	}
 	return
 }
@@ -403,6 +416,7 @@ func convT2Enoptr(t *_type, elem unsafe.Pointer) (e eface) {
 	return
 }
 
+// 具体类型 转 带接口方法
 func convT2I(tab *itab, elem unsafe.Pointer) (i iface) {
 	t := tab._type
 	if raceenabled {
@@ -433,12 +447,13 @@ func convT2Inoptr(tab *itab, elem unsafe.Pointer) (i iface) {
 	return
 }
 
+// 带方法接口转为带方法接口, 没有分配内存并拷贝
 func convI2I(inter *interfacetype, i iface) (r iface) {
 	tab := i.tab
 	if tab == nil {
 		return
 	}
-	if tab.inter == inter {
+	if tab.inter == inter { // 接口类型相同, 可以直接赋值
 		r.tab = tab
 		r.data = i.data
 		return
@@ -448,6 +463,7 @@ func convI2I(inter *interfacetype, i iface) (r iface) {
 	return
 }
 
+// 接口断言 会panic
 func assertI2I(inter *interfacetype, i iface) (r iface) {
 	tab := i.tab
 	if tab == nil {
@@ -464,6 +480,7 @@ func assertI2I(inter *interfacetype, i iface) (r iface) {
 	return
 }
 
+// 带ok的接口断言
 func assertI2I2(inter *interfacetype, i iface) (r iface, b bool) {
 	tab := i.tab
 	if tab == nil {
@@ -481,6 +498,8 @@ func assertI2I2(inter *interfacetype, i iface) (r iface, b bool) {
 	return
 }
 
+// 断言interface{} -> 带方法接口
+// 这个函数比较耗时, 7,8ns/op
 func assertE2I(inter *interfacetype, e eface) (r iface) {
 	t := e._type
 	if t == nil {
@@ -529,7 +548,7 @@ func iterate_itabs(fn func(*itab)) {
 	}
 }
 
-// staticuint64s is used to avoid allocating in convTx for small integer values.
+// staticuint64s is used to avoid allocating提前分配, 避免分配 in convTx for small integer values. 空间换时间
 var staticuint64s = [...]uint64{
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
 	0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,

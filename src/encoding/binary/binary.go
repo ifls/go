@@ -158,9 +158,9 @@ func (bigEndian) GoString() string { return "binary.BigEndian" }
 //
 // The error is EOF only if no bytes were read.
 // If an EOF happens after reading some but not all the bytes,
-// Read returns ErrUnexpectedEOF.
+// Read returns ErrUnexpectedEOF. data 只支持地址, 指针
 func Read(r io.Reader, order ByteOrder, data interface{}) error {
-	// Fast path for basic types and slices.
+	// Fast path for basic types and slices. 基于类型的解码
 	if n := intDataSize(data); n != 0 {
 		bs := make([]byte, n)
 		if _, err := io.ReadFull(r, bs); err != nil {
@@ -239,10 +239,10 @@ func Read(r io.Reader, order ByteOrder, data interface{}) error {
 		}
 	}
 
-	// Fallback to reflect-based decoding.
+	// Fallback to reflect-based decoding. 复杂类型 回退到基于反射的解码
 	v := reflect.ValueOf(data)
 	size := -1
-	switch v.Kind() {
+	switch v.Kind() { // 只支持 指针和切片类型
 	case reflect.Ptr:
 		v = v.Elem()
 		size = dataSize(v)
@@ -267,7 +267,7 @@ func Read(r io.Reader, order ByteOrder, data interface{}) error {
 // Bytes written to w are encoded using the specified byte order
 // and read from successive fields of the data.
 // When writing structs, zero values are written for fields
-// with blank (_) field names.
+// with blank (_) field names.  data -> io.Writer
 func Write(w io.Writer, order ByteOrder, data interface{}) error {
 	// Fast path for basic types and slices.
 	if n := intDataSize(data); n != 0 {
@@ -372,7 +372,7 @@ func Write(w io.Writer, order ByteOrder, data interface{}) error {
 				order.PutUint64(bs[8*i:], math.Float64bits(x))
 			}
 		}
-		_, err := w.Write(bs)
+		_, err := w.Write(bs) // 输出到指定目标
 		return err
 	}
 
@@ -392,8 +392,8 @@ func Write(w io.Writer, order ByteOrder, data interface{}) error {
 // Size returns how many bytes Write would generate to encode the value v, which
 // must be a fixed-size value or a slice of fixed-size values, or a pointer to such data.
 // If v is neither of these, Size returns -1.
-func Size(v interface{}) int {
-	return dataSize(reflect.Indirect(reflect.ValueOf(v)))
+func Size(v interface{}) int { // 传入的要是 地址, 不同于unsafe.Sizeof, 对于结构体不计算字节对齐 offset
+	return dataSize(reflect.Indirect(reflect.ValueOf(v))) // 解引用
 }
 
 var structSize sync.Map // map[reflect.Type]int
@@ -412,7 +412,7 @@ func dataSize(v reflect.Value) int {
 
 	case reflect.Struct:
 		t := v.Type()
-		if size, ok := structSize.Load(t); ok {
+		if size, ok := structSize.Load(t); ok { // 缓存尺寸, 空间换时间
 			return size.(int)
 		}
 		size := sizeof(t)

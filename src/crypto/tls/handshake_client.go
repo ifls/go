@@ -63,9 +63,9 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, ecdheParameters, error) {
 	}
 
 	hello := &clientHelloMsg{
-		vers:                         clientHelloVersion,
+		vers:                         clientHelloVersion, // 客户端版本
 		compressionMethods:           []uint8{compressionNone},
-		random:                       make([]byte, 32),
+		random:                       make([]byte, 32), // 一个随机数, 用于生成对称加密秘钥
 		sessionId:                    make([]byte, 32),
 		ocspStapling:                 true,
 		scts:                         true,
@@ -74,7 +74,7 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, ecdheParameters, error) {
 		supportedPoints:              []uint8{pointFormatUncompressed},
 		secureRenegotiationSupported: true,
 		alpnProtocols:                config.NextProtos,
-		supportedVersions:            supportedVersions,
+		supportedVersions:            supportedVersions, // 客户端支持的版本
 	}
 
 	if c.handshakes > 0 {
@@ -94,6 +94,7 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, ecdheParameters, error) {
 			if hello.vers < VersionTLS12 && suite.flags&suiteTLS12 != 0 {
 				break
 			}
+			// 计算支持的加密方法套件
 			hello.cipherSuites = append(hello.cipherSuites, suiteId)
 			break
 		}
@@ -112,6 +113,7 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, ecdheParameters, error) {
 	}
 
 	if hello.vers >= VersionTLS12 {
+		// 支持的签名方法
 		hello.supportedSignatureAlgorithms = supportedSignatureAlgorithms
 	}
 
@@ -175,12 +177,13 @@ func (c *Conn) clientHandshake() (err error) {
 		return err
 	}
 
-	serverHello, ok := msg.(*serverHelloMsg)
+	serverHello, ok := msg.(*serverHelloMsg) // 只能是服务器hello
 	if !ok {
 		c.sendAlert(alertUnexpectedMessage)
 		return unexpectedMessageError(serverHello, msg)
 	}
 
+	// 从服务器返回的版本, 确定要使用的tls协议的版本
 	if err := c.pickTLSVersion(serverHello); err != nil {
 		return err
 	}
@@ -215,11 +218,11 @@ func (c *Conn) clientHandshake() (err error) {
 
 	hs := &clientHandshakeState{
 		c:           c,
-		serverHello: serverHello,
-		hello:       hello,
+		serverHello: serverHello, // 服务器返回的hello
+		hello:       hello,       // 客户端hello
 		session:     session,
 	}
-	// 第3次包
+	// 第3次 握手, 并读取第四次返回的包
 	if err := hs.handshake(); err != nil {
 		return err
 	}
@@ -379,6 +382,7 @@ func (hs *clientHandshakeState) handshake() error {
 		return err
 	}
 
+	// 将之前的两次hello序列化发展服务器端, 去做校验
 	hs.finishedHash = newFinishedHash(c.vers, hs.suite)
 
 	// No signatures of the handshake are needed in a resumption.
@@ -421,7 +425,7 @@ func (hs *clientHandshakeState) handshake() error {
 			return err
 		}
 	} else {
-		// 读握手
+		// 读完 剩下的serverhello 包 握手
 		if err := hs.doFullHandshake(); err != nil {
 			return err
 		}
@@ -436,11 +440,12 @@ func (hs *clientHandshakeState) handshake() error {
 			return err
 		}
 		c.clientFinishedIsFirst = true
+		// 读取 一次服务端发来的握手包
 		if err := hs.readSessionTicket(); err != nil {
 			return err
 		}
 
-		// 读第四次包
+		// 读 服务器返回的第四次包
 		if err := hs.readFinished(c.serverFinished[:]); err != nil {
 			return err
 		}
@@ -470,7 +475,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 	if err != nil {
 		return err
 	}
-	certMsg, ok := msg.(*certificateMsg)
+	certMsg, ok := msg.(*certificateMsg) // 读取服务器证书信息
 	if !ok || len(certMsg.certificates) == 0 {
 		c.sendAlert(alertUnexpectedMessage)
 		return unexpectedMessageError(certMsg, msg)
@@ -508,6 +513,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 	if c.handshakes == 0 {
 		// If this is the first handshake on a connection, process and
 		// (optionally) verify the server's certificates.
+		// 验证服务器端证书
 		if err := c.verifyServerCertificate(certMsg.certificates); err != nil {
 			return err
 		}
@@ -543,7 +549,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 
 	var chainToSend *Certificate
 	var certRequested bool
-	certReq, ok := msg.(*certificateRequestMsg)
+	certReq, ok := msg.(*certificateRequestMsg) // 服务器 要求客户端提供证书
 	if ok {
 		certRequested = true
 		hs.finishedHash.Write(certReq.marshal())
@@ -560,7 +566,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		}
 	}
 
-	shd, ok := msg.(*serverHelloDoneMsg)
+	shd, ok := msg.(*serverHelloDoneMsg) // ServerHelloDone
 	if !ok {
 		c.sendAlert(alertUnexpectedMessage)
 		return unexpectedMessageError(shd, msg)
@@ -571,7 +577,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 	// Certificate message, even if it's empty because we don't have a
 	// certificate to send.
 	if certRequested {
-		certMsg = new(certificateMsg)
+		certMsg = new(certificateMsg) // 发送客户端证书
 		certMsg.certificates = chainToSend.Certificate
 		hs.finishedHash.Write(certMsg.marshal())
 		if _, err := c.writeRecord(recordTypeHandshake, certMsg.marshal()); err != nil {
@@ -579,6 +585,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		}
 	}
 
+	// 发送 Client key 交换包, 计算 pre master key
 	preMasterSecret, ckx, err := keyAgreement.generateClientKeyExchange(c.config, hs.hello, c.peerCertificates[0])
 	if err != nil {
 		c.sendAlert(alertInternalError)
@@ -592,7 +599,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 	}
 
 	if chainToSend != nil && len(chainToSend.Certificate) > 0 {
-		certVerify := &certificateVerifyMsg{}
+		certVerify := &certificateVerifyMsg{} // 发送 Certificate Verify
 
 		key, ok := chainToSend.PrivateKey.(crypto.Signer)
 		if !ok {
@@ -639,6 +646,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		}
 	}
 
+	// 计算 对称加密秘钥, 三个随机数
 	hs.masterSecret = masterFromPreMasterSecret(c.vers, hs.suite, preMasterSecret, hs.hello.random, hs.serverHello.random)
 	if err := c.config.writeKeyLog(keyLogLabelTLS12, hs.hello.random, hs.masterSecret); err != nil {
 		c.sendAlert(alertInternalError)
@@ -747,15 +755,17 @@ func (hs *clientHandshakeState) processServerHello() (bool, error) {
 func (hs *clientHandshakeState) readFinished(out []byte) error {
 	c := hs.c
 
+	// 第四次 服务器发来的 ChangeCipherSpec
 	if err := c.readChangeCipherSpec(); err != nil {
 		return err
 	}
 
+	// 读取服务器返回的 第四次
 	msg, err := c.readHandshake()
 	if err != nil {
 		return err
 	}
-	serverFinished, ok := msg.(*finishedMsg)
+	serverFinished, ok := msg.(*finishedMsg) // Finished
 	if !ok {
 		c.sendAlert(alertUnexpectedMessage)
 		return unexpectedMessageError(serverFinished, msg)

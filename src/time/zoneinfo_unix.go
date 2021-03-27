@@ -31,9 +31,10 @@ func initLocal() {
 	// $TZ="" means use UTC.
 	// $TZ="foo" means use /usr/share/zoneinfo/foo.
 
-	tz, ok := syscall.Getenv("TZ")
+	tz, ok := syscall.Getenv("TZ") // time zone 时区变量
 	switch {
 	case !ok:
+		// 读取本地时间
 		z, err := loadLocation("localtime", []string{"/etc"})
 		if err == nil {
 			localLoc = *z

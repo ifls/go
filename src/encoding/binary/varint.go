@@ -4,12 +4,12 @@
 
 package binary
 
-// This file implements "varint" encoding of 64-bit integers.
+// This file implements "varint" encoding of 64-bit integers. 64位整数的变长小端序编码  1-10字节
 // The encoding is:
 // - unsigned integers are serialized 7 bits at a time, starting with the
-//   least significant bits
-// - the most significant bit (msb) in each output byte indicates if there
-//   is a continuation byte (msb = 1)
+//   least significant bits  每次7bit 用1B
+// - the most significant bit 最高有效位 (msb) in each output byte indicates if there
+//   is a continuation byte (msb = 1) 1表示下面的字节是当前整数的一部分
 // - signed integers are mapped to unsigned integers using "zig-zag"
 //   encoding: Positive values x are written as 2*x + 0, negative values
 //   are written as 2*(^x) + 1; that is, negative numbers are complemented
@@ -41,7 +41,7 @@ const (
 func PutUvarint(buf []byte, x uint64) int {
 	i := 0
 	for x >= 0x80 {
-		buf[i] = byte(x) | 0x80
+		buf[i] = byte(x) | 0x80 // 最高有效位 置1
 		x >>= 7
 		i++
 	}
@@ -67,7 +67,7 @@ func Uvarint(buf []byte) (uint64, int) {
 			}
 			return x | uint64(b)<<s, i + 1
 		}
-		x |= uint64(b&0x7f) << s
+		x |= uint64(b&0x7f) << s // 最高有效位置0, 高位左移, 地位不左移
 		s += 7
 	}
 	return 0, 0

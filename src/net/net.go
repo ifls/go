@@ -106,9 +106,9 @@ type Addr interface {
 	String() string  // string form of address (for example, "192.0.2.1:25", "[2001:db8::1]:80")
 }
 
-// Conn is a generic stream-oriented network connection.
+// Conn is a generic stream-oriented 面向流 network connection.
 //
-// Multiple goroutines may invoke methods on a Conn simultaneously.
+// Multiple goroutines may invoke methods on a Conn simultaneously. 实现应该是g并发安全的
 type Conn interface {
 	// Read reads data from the connection.
 	// Read can be made to time out and return an Error with Timeout() == true
@@ -116,12 +116,12 @@ type Conn interface {
 	Read(b []byte) (n int, err error)
 
 	// Write writes data to the connection.
-	// Write can be made to time out and return an Error with Timeout() == true
+	// Write can be made to time out and return an Error with Timeout() == true   err.Timeout() == true
 	// after a fixed time limit; see SetDeadline and SetWriteDeadline.
 	Write(b []byte) (n int, err error)
 
 	// Close closes the connection.
-	// Any blocked Read or Write operations will be unblocked and return errors.
+	// Any blocked Read or Write operations will be unblocked and return errors. 所有io操作, 会立刻失败并返回错误
 	Close() error
 
 	// LocalAddr returns the local network address.
@@ -132,35 +132,39 @@ type Conn interface {
 
 	// SetDeadline sets the read and write deadlines associated
 	// with the connection. It is equivalent to calling both
-	// SetReadDeadline and SetWriteDeadline.
+	// SetReadDeadline and SetWriteDeadline. 等价于同时调用读写超时
 	//
 	// A deadline is an absolute time after which I/O operations
-	// fail instead of blocking. The deadline applies to all future
+	// fail instead of blocking. 之后直接失败, 而不是继续阻塞
+	// The deadline applies to all future  之后的所有io操作 公用此超时
 	// and pending I/O, not just the immediately following call to
-	// Read or Write. After a deadline has been exceeded, the
+	// Read or Write.
+	// After a deadline has been exceeded, the  一般新的io操作必须重新设置操作
 	// connection can be refreshed by setting a deadline in the future.
 	//
 	// If the deadline is exceeded a call to Read or Write or to other
 	// I/O methods will return an error that wraps os.ErrDeadlineExceeded.
+
 	// This can be tested using errors.Is(err, os.ErrDeadlineExceeded).
-	// The error's Timeout method will return true, but note that there
+
+	// The error's Timeout method will return true, but note that there           此error的Timeout 方法返回true, 并不一定表示超时, 因为不可依赖此操作, 做时间判断, 只是解除阻塞的方式
 	// are other possible errors for which the Timeout method will
 	// return true even if the deadline has not been exceeded.
 	//
-	// An idle timeout can be implemented by repeatedly extending
-	// the deadline after successful Read or Write calls.
+	// An idle timeout can be implemented by repeatedly extending  也可以用于实现, 空闲连接超时
+	// the deadline after successful Read or Write calls. 也就是不在io操作前使用, 而是在io操作后使用
 	//
-	// A zero value for t means I/O operations will not time out.
+	// A zero value for t means I/O operations will not time out. 0 表示 i/o操作没有超时
 	SetDeadline(t time.Time) error
 
 	// SetReadDeadline sets the deadline for future Read calls
-	// and any currently-blocked Read call.
+	// and any currently-blocked(pending) Read call.  可并发调用, 可以实现 动态超时时间
 	// A zero value for t means Read will not time out.
 	SetReadDeadline(t time.Time) error
 
 	// SetWriteDeadline sets the deadline for future Write calls
-	// and any currently-blocked Write call.
-	// Even if write times out, it may return n > 0, indicating that
+	// and any currently-blocked(pending) Write call.
+	// Even if write times out, it may return n > 0, indicating that  即使超时返回错误, 也已经发送了部分数据, 导致 Write() 返回的n, 大于0, 也就是即使报错, 之后如果要继续写, 需要先处理这个n
 	// some of the data was successfully written.
 	// A zero value for t means Write will not time out.
 	SetWriteDeadline(t time.Time) error

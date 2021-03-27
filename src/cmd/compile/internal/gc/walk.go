@@ -370,6 +370,7 @@ func walkexprlistcheap(s []*Node, init *Nodes) {
 // convFuncName builds the runtime function name for interface conversion.
 // It also reports whether the function expects the data by address.
 // Not all names are possible. For example, we never generate convE2E or convE2I.
+// 编译时, 将接口赋值语句, 转换为 一系列 convXXX 函数, 具体转换是运行时发生的
 func convFuncName(from, to *types.Type) (fnname string, needsaddr bool) {
 	tkind := to.Tie()
 	switch from.Tie() {

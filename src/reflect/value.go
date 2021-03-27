@@ -36,25 +36,30 @@ const ptrSize = 4 << (^uintptr(0) >> 63) // unsafe.Sizeof(uintptr(0)) but an ide
 // they represent.
 type Value struct {
 	// typ holds the type of the value represented by a Value.
-	typ *rtype
+	typ *rtype // 类似 eface里的 *type
 
 	// Pointer-valued data or, if flagIndir is set, pointer to data.
 	// Valid when either flagIndir is set or typ.pointers() is true.
+
+	// v.Kind() must be Ptr, Map, Chan, Func, or UnsafePointer 只有这些才能调用 pointer方法
+
+	// 和eface, iface一样, 保存指向内存的指针
 	ptr unsafe.Pointer
 
 	// flag holds metadata about the value.
 	// The lowest bits are flag bits:
-	//	- flagStickyRO: obtained via unexported not embedded field, so read-only
-	//	- flagEmbedRO: obtained via unexported embedded field, so read-only
-	//	- flagIndir: val holds a pointer to the data
-	//	- flagAddr: v.CanAddr is true (implies flagIndir)
-	//	- flagMethod: v is a method value.
+	//	- flagStickyRO: obtained via unexported not embedded field, so read-only 未导出直接的字段
+	//	- flagEmbedRO: obtained via unexported embedded field, so read-only 未导出的内嵌字段
+	//	- flagIndir: val holds a pointer to the data  指针间接
+	//	- flagAddr: v.CanAddr is true (implies flagIndir) 可以获取地址
+	//	- flagMethod: v is a method value. 是一个方法
 	// The next five bits give the Kind of the value.
 	// This repeats typ.Kind() except for method values.
-	// The remaining 23+ bits give a method number for method values.
+	// The remaining 23+ bits give a method number for method values. 方法值的数量
+
 	// If flag.kind() != Func, code can assume that flagMethod is unset.
 	// If ifaceIndir(typ), code can assume that flagIndir is set.
-	flag
+	flag // uintptr
 
 	// A method value represents a curried method invocation
 	// like r.Read for some receiver r. The typ+val+flag bits describe
@@ -74,7 +79,7 @@ const (
 	flagAddr        flag = 1 << 8
 	flagMethod      flag = 1 << 9
 	flagMethodShift      = 10
-	flagRO          flag = flagStickyRO | flagEmbedRO
+	flagRO          flag = flagStickyRO | flagEmbedRO // read only
 )
 
 func (f flag) kind() Kind {
@@ -117,14 +122,14 @@ func packEface(v Value) interface{} {
 			// TODO: pass safe boolean from valueInterface so
 			// we don't need to copy if safe==true?
 			c := unsafe_New(t)
-			typedmemmove(t, c, ptr)
+			typedmemmove(t, c, ptr) // 拷贝一份
 			ptr = c
 		}
 		e.word = ptr
 	case v.flag&flagIndir != 0:
 		// Value is indirect, but interface is direct. We need
 		// to load the data at v.ptr into the interface data word.
-		e.word = *(*unsafe.Pointer)(v.ptr)
+		e.word = *(*unsafe.Pointer)(v.ptr) // 拷贝 v.ptr指向的值
 	default:
 		// Value is direct, and so is the interface.
 		e.word = v.ptr
@@ -199,11 +204,11 @@ type emptyInterface struct {
 type nonEmptyInterface struct {
 	// see ../runtime/iface.go:/Itab
 	itab *struct {
-		ityp *rtype // static interface type
-		typ  *rtype // dynamic concrete type
-		hash uint32 // copy of typ.hash
-		_    [4]byte
-		fun  [100000]unsafe.Pointer // method table
+		ityp *rtype                 // static interface type
+		typ  *rtype                 // dynamic concrete type
+		hash uint32                 // copy of typ.hash
+		_    [4]byte                // 天重置
+		fun  [100000]unsafe.Pointer // method table 指针数组
 	}
 	word unsafe.Pointer
 }
@@ -265,6 +270,8 @@ func (f flag) mustBeAssignableSlow() {
 // Addr is typically used to obtain a pointer to a struct field
 // or slice element in order to call a method that requires a
 // pointer receiver.
+// 返回 当前值的地址 的Value
+// 用于调用指针接收者方法, 时拿到指针
 func (v Value) Addr() Value {
 	if v.flag&flagAddr == 0 {
 		panic("reflect.Value.Addr of unaddressable value")
@@ -285,8 +292,8 @@ func (v Value) Bool() bool {
 // Bytes returns v's underlying value.
 // It panics if v's underlying value is not a slice of bytes.
 func (v Value) Bytes() []byte {
-	v.mustBe(Slice)
-	if v.typ.Elem().Kind() != Uint8 {
+	v.mustBe(Slice)                   // 验证是 切片
+	if v.typ.Elem().Kind() != Uint8 { // 验证是 []byte
 		panic("reflect.Value.Bytes of non-byte slice")
 	}
 	// Slice is always bigger than a word; assume flagIndir.
@@ -318,7 +325,7 @@ func (v Value) CanAddr() bool {
 // obtained by the use of unexported struct fields.
 // If CanSet returns false, calling Set or any type-specific
 // setter (e.g., SetBool, SetInt) will panic.
-func (v Value) CanSet() bool {
+func (v Value) CanSet() bool { // 是指针, 且可读(或者都是导出字段)
 	return v.flag&(flagAddr|flagRO) == flagAddr
 }
 
@@ -330,19 +337,21 @@ func (v Value) CanSet() bool {
 // type of the function's corresponding input parameter.
 // If v is a variadic function, Call creates the variadic slice parameter
 // itself, copying in the corresponding values.
+// 必须是导出的函数
 func (v Value) Call(in []Value) []Value {
 	v.mustBe(Func)
 	v.mustBeExported()
 	return v.call("Call", in)
 }
 
-// CallSlice calls the variadic function v with the input arguments in,
+// CallSlice calls the variadic可变参数 function v with the input arguments in,
 // assigning the slice in[len(in)-1] to v's final variadic argument.
 // For example, if len(in) == 3, v.CallSlice(in) represents the Go call v(in[0], in[1], in[2]...).
 // CallSlice panics if v's Kind is not Func or if v is not variadic.
 // It returns the output results as Values.
 // As in Go, each input argument must be assignable to the
 // type of the function's corresponding input parameter.
+// 调用变长参数函数
 func (v Value) CallSlice(in []Value) []Value {
 	v.mustBe(Func)
 	v.mustBeExported()
@@ -471,7 +480,7 @@ func (v Value) call(op string, in []Value) []Value {
 		off += n
 	}
 
-	// Call.
+	// Call.  runtime.reflectcall
 	call(frametype, fn, args, uint32(frametype.size), uint32(retOffset))
 
 	// For testing; see TestCallMethodJump.
@@ -515,21 +524,21 @@ func (v Value) call(op string, in []Value) []Value {
 	return ret
 }
 
-// callReflect is the call implementation used by a function
-// returned by MakeFunc. In many ways it is the opposite of the
-// method Value.call above. The method above converts a call using Values
+// callReflect is the call implementation used by a function returned by MakeFunc.
+// In many ways it is the opposite of the method Value.call above.
+// The method above converts a call using Values
 // into a call of a function with a concrete argument frame, while
 // callReflect converts a call of a function with a concrete argument
 // frame into a call using Values.
 // It is in this file so that it can be next to the call method above.
-// The remainder of the MakeFunc implementation is in makefunc.go.
+// The remainder剩余物 of the MakeFunc implementation is in makefunc.go.
 //
 // NOTE: This function must be marked as a "wrapper" in the generated code,
 // so that the linker can make it work correctly for panic and recover.
 // The gc compilers know to do that for the name "reflect.callReflect".
 //
 // ctxt is the "closure" generated by MakeFunc.
-// frame is a pointer to the arguments to that closure on the stack.
+// frame is a pointer to the arguments to that closure 闭包 on the stack.
 // retValid points to a boolean which should be set when the results
 // section of frame is set.
 func callReflect(ctxt *makeFuncImpl, frame unsafe.Pointer, retValid *bool) {
@@ -617,10 +626,9 @@ func callReflect(ctxt *makeFuncImpl, frame unsafe.Pointer, retValid *bool) {
 	runtime.KeepAlive(ctxt)
 }
 
-// methodReceiver returns information about the receiver
-// described by v. The Value v may or may not have the
-// flagMethod bit set, so the kind cached in v.flag should
-// not be used.
+// methodReceiver returns information about the receiver described by v. v的方法接收者
+// The Value v may or may not have the flagMethod bit set, so the kind cached in v.flag should not be used.
+
 // The return value rcvrtype gives the method's actual receiver type.
 // The return value t gives the method type signature (without the receiver).
 // The return value fn is a pointer to the method code.
@@ -750,8 +758,8 @@ func callMethod(ctxt *methodValue, frame unsafe.Pointer, retValid *bool) {
 }
 
 // funcName returns the name of f, for use in error messages.
-func funcName(f func([]Value) []Value) string {
-	pc := *(*uintptr)(unsafe.Pointer(&f))
+func funcName(f func([]Value) []Value) string { // func是一个结构体
+	pc := *(*uintptr)(unsafe.Pointer(&f)) // 第一个参数是 函数地址
 	rf := runtime.FuncForPC(pc)
 	if rf != nil {
 		return rf.Name()
@@ -770,6 +778,7 @@ func (v Value) Cap() int {
 		return chancap(v.pointer())
 	case Slice:
 		// Slice is always bigger than a word; assume flagIndir.
+		// *[]byte
 		return (*unsafeheader.Slice)(v.ptr).Cap
 	}
 	panic(&ValueError{"reflect.Value.Cap", v.kind()})
@@ -777,6 +786,7 @@ func (v Value) Cap() int {
 
 // Close closes the channel v.
 // It panics if v's Kind is not Chan.
+// 通道专属
 func (v Value) Close() {
 	v.mustBe(Chan)
 	v.mustBeExported()
@@ -796,8 +806,8 @@ func (v Value) Complex() complex128 {
 	panic(&ValueError{"reflect.Value.Complex", v.kind()})
 }
 
-// Elem returns the value that the interface v contains
-// or that the pointer v points to.
+// Elem returns the value that the interface v contains 接口包含的
+// or that the pointer v points to. 指针指向的
 // It panics if v's Kind is not Interface or Ptr.
 // It returns the zero Value if v is nil.
 func (v Value) Elem() Value {
@@ -807,7 +817,7 @@ func (v Value) Elem() Value {
 		var eface interface{}
 		if v.typ.NumMethod() == 0 {
 			eface = *(*interface{})(v.ptr)
-		} else {
+		} else { // 带方法接口
 			eface = (interface{})(*(*interface {
 				M()
 			})(v.ptr))
@@ -867,7 +877,7 @@ func (v Value) Field(i int) Value {
 	return Value{typ, ptr, fl}
 }
 
-// FieldByIndex returns the nested field corresponding to index.
+// FieldByIndex returns the nested field corresponding to index. 嵌套递归的结构体
 // It panics if v's Kind is not struct.
 func (v Value) FieldByIndex(index []int) Value {
 	if len(index) == 1 {
@@ -893,6 +903,7 @@ func (v Value) FieldByIndex(index []int) Value {
 // It panics if v's Kind is not struct.
 func (v Value) FieldByName(name string) Value {
 	v.mustBe(Struct)
+	// 遍历字段名
 	if f, ok := v.typ.FieldByName(name); ok {
 		return v.FieldByIndex(f.Index)
 	}
@@ -903,6 +914,7 @@ func (v Value) FieldByName(name string) Value {
 // that satisfies the match function.
 // It panics if v's Kind is not struct.
 // It returns the zero Value if no field was found.
+// 根据函数名 过滤函数, 选中指定的字段
 func (v Value) FieldByNameFunc(match func(string) bool) Value {
 	if f, ok := v.typ.FieldByNameFunc(match); ok {
 		return v.FieldByIndex(f.Index)
@@ -927,6 +939,7 @@ var uint8Type = TypeOf(uint8(0)).(*rtype)
 
 // Index returns v's i'th element.
 // It panics if v's Kind is not Array, Slice, or String or i is out of range.
+// 数组返回第i个元素
 func (v Value) Index(i int) Value {
 	switch v.kind() {
 	case Array:
@@ -996,7 +1009,7 @@ func (v Value) CanInterface() bool {
 	if v.flag == 0 {
 		panic(&ValueError{"reflect.Value.CanInterface", Invalid})
 	}
-	return v.flag&flagRO == 0
+	return v.flag&flagRO == 0 // 非只读, 就是可写
 }
 
 // Interface returns v's current value as an interface{}.
@@ -1004,10 +1017,13 @@ func (v Value) CanInterface() bool {
 //	var i interface{} = (v's underlying value)
 // It panics if the Value was obtained by accessing
 // unexported struct fields.
+
+// Value 转 interface{}
 func (v Value) Interface() (i interface{}) {
 	return valueInterface(v, true)
 }
 
+// Public接口调用时, 会传入safe = true
 func valueInterface(v Value, safe bool) interface{} {
 	if v.flag == 0 {
 		panic(&ValueError{"reflect.Value.Interface", Invalid})
@@ -1026,10 +1042,10 @@ func valueInterface(v Value, safe bool) interface{} {
 		// Special case: return the element inside the interface.
 		// Empty interface has one layout, all interfaces with
 		// methods have a second layout.
-		if v.NumMethod() == 0 {
+		if v.NumMethod() == 0 { // 空接口, 指针指针转换返回
 			return *(*interface{})(v.ptr)
 		}
-		return *(*interface {
+		return *(*interface { // 带方法接口??
 			M()
 		})(v.ptr)
 	}
@@ -1038,7 +1054,7 @@ func valueInterface(v Value, safe bool) interface{} {
 	return packEface(v)
 }
 
-// InterfaceData returns the interface v's value as a uintptr pair.
+// InterfaceData returns the interface v's value as a uintptr pair. 返回 *type, *value 双指针对
 // It panics if v's Kind is not Interface.
 func (v Value) InterfaceData() [2]uintptr {
 	// TODO: deprecate this
@@ -1048,7 +1064,7 @@ func (v Value) InterfaceData() [2]uintptr {
 	// has to import "unsafe" to turn it into something
 	// that can be abused.
 	// Interface value is always bigger than a word; assume flagIndir.
-	return *(*[2]uintptr)(v.ptr)
+	return *(*[2]uintptr)(v.ptr) // value 指向的是一个接口类型
 }
 
 // IsNil reports whether its argument v is nil. The argument must be
@@ -1058,6 +1074,9 @@ func (v Value) InterfaceData() [2]uintptr {
 // by calling ValueOf with an uninitialized interface variable i,
 // i==nil will be true but v.IsNil will panic as v will be the zero
 // Value.
+
+// 返回 底层值 是不是 nil
+// 只有这7种类型 是 可以 nil 判断空
 func (v Value) IsNil() bool {
 	k := v.kind()
 	switch k {
@@ -1069,11 +1088,11 @@ func (v Value) IsNil() bool {
 		if v.flag&flagIndir != 0 {
 			ptr = *(*unsafe.Pointer)(ptr)
 		}
-		return ptr == nil
+		return ptr == nil // 指针 == nil的 底层实现又是什么呢?, 只能看编译器生成的汇编代码了
 	case Interface, Slice:
 		// Both interface and slice are nil if first word is 0.
 		// Both are always bigger than a word; assume flagIndir.
-		return *(*unsafe.Pointer)(v.ptr) == nil
+		return *(*unsafe.Pointer)(v.ptr) == nil // 数据指针是nil
 	}
 	panic(&ValueError{"reflect.Value.IsNil", v.kind()})
 }
@@ -1083,11 +1102,14 @@ func (v Value) IsNil() bool {
 // If IsValid returns false, all other methods except String panic.
 // Most functions and methods never return an invalid Value.
 // If one does, its documentation states the conditions explicitly.
+
+// 判断是否是 自行使用的零值初始化的Value, 只能调用String函数
 func (v Value) IsValid() bool {
 	return v.flag != 0
 }
 
 // IsZero reports whether v is the zero value for its type.
+// 是否是对应字段的0值
 // It panics if the argument is invalid.
 func (v Value) IsZero() bool {
 	switch v.kind() {
@@ -1127,7 +1149,7 @@ func (v Value) IsZero() bool {
 	}
 }
 
-// Kind returns v's Kind.
+// Kind returns v's Kind. 返回基础类型枚举值
 // If v is the zero Value (IsValid returns false), Kind returns Invalid.
 func (v Value) Kind() Kind {
 	return v.kind()
@@ -1143,7 +1165,7 @@ func (v Value) Len() int {
 		return int(tt.len)
 	case Chan:
 		return chanlen(v.pointer())
-	case Map:
+	case Map: // map 没有 cap
 		return maplen(v.pointer())
 	case Slice:
 		// Slice is bigger than a word; assume flagIndir.
@@ -1159,6 +1181,8 @@ func (v Value) Len() int {
 // It panics if v's Kind is not Map.
 // It returns the zero Value if key is not found in the map or if v represents a nil map.
 // As in Go, the key's value must be assignable to the map's key type.
+
+// val := map[key]
 func (v Value) MapIndex(key Value) Value {
 	v.mustBe(Map)
 	tt := (*mapType)(unsafe.Pointer(v.typ))
@@ -1190,6 +1214,7 @@ func (v Value) MapIndex(key Value) Value {
 
 // MapKeys returns a slice containing all the keys present in the map,
 // in unspecified order.
+// 返回map里所有的key
 // It panics if v's Kind is not Map.
 // It returns an empty slice if v represents a nil map.
 func (v Value) MapKeys() []Value {
@@ -1286,7 +1311,7 @@ func (it *MapIter) Next() bool {
 //		v := iter.Value()
 //		...
 //	}
-//
+// 返回一个迭代器
 func (v Value) MapRange() *MapIter {
 	v.mustBe(Map)
 	return &MapIter{m: v}
@@ -1305,9 +1330,11 @@ func copyVal(typ *rtype, fl flag, ptr unsafe.Pointer) Value {
 	return Value{typ, *(*unsafe.Pointer)(ptr), fl}
 }
 
-// Method returns a function value corresponding to v's i'th method.
+// Method returns a function value corresponding to v's i'th method. 结构体或者接口
+
 // The arguments to a Call on the returned function should not include
-// a receiver; the returned function will always use v as the receiver.
+// a receiver; the returned function will always use v as the receiver. v作为参数接收者, 参数里不用传
+
 // Method panics if i is out of range or if v is a nil interface value.
 func (v Value) Method(i int) Value {
 	if v.typ == nil {
@@ -1427,7 +1454,7 @@ func (v Value) OverflowUint(x uint64) bool {
 // which ensures cmd/compile can recognize unsafe.Pointer(v.Pointer())
 // and make an exception.
 
-// Pointer returns v's value as a uintptr.
+// Pointer returns v's value as a uintptr. 就是返回 uintptr
 // It returns uintptr instead of unsafe.Pointer so that
 // code using reflect cannot obtain unsafe.Pointers
 // without importing the unsafe package explicitly.
@@ -1441,13 +1468,14 @@ func (v Value) OverflowUint(x uint64) bool {
 // If v's Kind is Slice, the returned pointer is to the first
 // element of the slice. If the slice is nil the returned value
 // is 0.  If the slice is empty but non-nil the return value is non-zero.
+// 用于 %p打印
 func (v Value) Pointer() uintptr {
 	// TODO: deprecate
 	k := v.kind()
 	switch k {
 	case Chan, Map, Ptr, UnsafePointer:
 		return uintptr(v.pointer())
-	case Func:
+	case Func: // 函数结构体
 		if v.flag&flagMethod != 0 {
 			// As the doc comment says, the returned pointer is an
 			// underlying code pointer but not necessarily enough to
@@ -1462,24 +1490,24 @@ func (v Value) Pointer() uintptr {
 		// Non-nil func value points at data block.
 		// First word of data block is actual code.
 		if p != nil {
-			p = *(*unsafe.Pointer)(p)
+			p = *(*unsafe.Pointer)(p) // 函数代码地址
 		}
 		return uintptr(p)
 
-	case Slice:
+	case Slice: // 可以获取切片的实际数据地址
 		return (*SliceHeader)(v.ptr).Data
 	}
 	panic(&ValueError{"reflect.Value.Pointer", v.kind()})
 }
 
-// Recv receives and returns a value from the channel v.
+// Recv receives and returns a value from the channel v. 通道专用,
 // It panics if v's Kind is not Chan.
 // The receive blocks until a value is ready.
 // The boolean value ok is true if the value x corresponds to a send
 // on the channel, false if it is a zero value received because the channel is closed.
 func (v Value) Recv() (x Value, ok bool) {
 	v.mustBe(Chan)
-	v.mustBeExported()
+	v.mustBeExported() // 公开变量
 	return v.recv(false)
 }
 
@@ -1633,6 +1661,7 @@ func (v Value) SetInt(x int64) {
 // SetLen sets v's length to n.
 // It panics if v's Kind is not Slice or if n is negative or
 // greater than the capacity of the slice.
+// 只能被切片使用, 但是不能超过cap
 func (v Value) SetLen(n int) {
 	v.mustBeAssignable()
 	v.mustBe(Slice)
@@ -1646,6 +1675,7 @@ func (v Value) SetLen(n int) {
 // SetCap sets v's capacity to n.
 // It panics if v's Kind is not Slice or if n is smaller than the length or
 // greater than the capacity of the slice.
+// 必须是切片
 func (v Value) SetCap(n int) {
 	v.mustBeAssignable()
 	v.mustBe(Slice)
@@ -1662,6 +1692,7 @@ func (v Value) SetCap(n int) {
 // Otherwise if v holds a nil map, SetMapIndex will panic.
 // As in Go, key's elem must be assignable to the map's key type,
 // and elem's value must be assignable to the map's elem type.
+// map 赋值
 func (v Value) SetMapIndex(key, elem Value) {
 	v.mustBe(Map)
 	v.mustBeExported()
@@ -1864,6 +1895,7 @@ func (v Value) String() string {
 // If the receive delivers a value, x is the transferred value and ok is true.
 // If the receive cannot finish without blocking, x is the zero Value and ok is false.
 // If the channel is closed, x is the zero value for the channel's element type and ok is false.
+// 非阻塞
 func (v Value) TryRecv() (x Value, ok bool) {
 	v.mustBe(Chan)
 	v.mustBeExported()
@@ -1939,10 +1971,10 @@ func (v Value) Uint() uint64 {
 // which ensures cmd/compile can recognize unsafe.Pointer(v.UnsafeAddr())
 // and make an exception.
 
-// UnsafeAddr returns a pointer to v's data.
+// UnsafeAddr returns a pointer to v's data.  返回值的指针, 和Addr一样,  Uintptr()是 uintptr(v)
 // It is for advanced clients that also import the "unsafe" package.
 // It panics if v is not addressable.
-func (v Value) UnsafeAddr() uintptr {
+func (v Value) UnsafeAddr() uintptr { // 类似Pointer() 函数
 	// TODO: deprecate
 	if v.typ == nil {
 		panic(&ValueError{"reflect.Value.UnsafeAddr", Invalid})
@@ -1995,6 +2027,7 @@ func arrayAt(p unsafe.Pointer, i int, eltSize uintptr, whySafe string) unsafe.Po
 
 // grow grows the slice s so that it can hold extra more values, allocating
 // more capacity if needed. It also returns the old and new slice lengths.
+// 反射版 growSlice
 func grow(s Value, extra int) (Value, int, int) {
 	i0 := s.Len()
 	i1 := i0 + extra
@@ -2023,6 +2056,7 @@ func grow(s Value, extra int) (Value, int, int) {
 
 // Append appends the values x to a slice s and returns the resulting slice.
 // As in Go, each x's value must be assignable to the slice's element type.
+// 反射版 内置函数 append
 func Append(s Value, x ...Value) Value {
 	s.mustBe(Slice)
 	s, i0, i1 := grow(s, len(x))
@@ -2044,12 +2078,13 @@ func AppendSlice(s, t Value) Value {
 }
 
 // Copy copies the contents of src into dst until either
-// dst has been filled or src has been exhausted.
+// dst has been filled or src has been exhausted.  知道dst被填满, src已用光
 // It returns the number of elements copied.
 // Dst and src each must have kind Slice or Array, and
 // dst and src must have the same element type.
 //
 // As a special case, src can have kind String if the element type of dst is kind Uint8.
+// 反射版, copy 函数, 只用于 slice或者数组
 func Copy(dst, src Value) int {
 	dk := dst.kind()
 	if dk != Array && dk != Slice {
@@ -2265,6 +2300,7 @@ func unsafe_NewArray(*rtype, int) unsafe.Pointer
 
 // MakeSlice creates a new zero-initialized slice value
 // for the specified slice type, length, and capacity.
+// 反射版 make([]byte, 0)
 func MakeSlice(typ Type, len, cap int) Value {
 	if typ.Kind() != Slice {
 		panic("reflect.MakeSlice of non-slice type")
@@ -2318,6 +2354,7 @@ func MakeMapWithSize(typ Type, n int) Value {
 // Indirect returns the value that v points to.
 // If v is a nil pointer, Indirect returns a zero Value.
 // If v is not a pointer, Indirect returns v.
+// 解引用, *a
 func Indirect(v Value) Value {
 	if v.Kind() != Ptr {
 		return v
@@ -2336,7 +2373,7 @@ func ValueOf(i interface{}) Value {
 	// For now we make the contents always escape to the heap. It
 	// makes life easier in a few places (see chanrecv/mapassign
 	// comment below).
-	escapes(i)
+	escapes(i) // 强制逃逸
 
 	return unpackEface(i)
 }
@@ -2358,7 +2395,7 @@ func Zero(typ Type) Value {
 	return Value{t, nil, fl}
 }
 
-// New returns a Value representing a pointer to a new zero value
+// New returns a Value representing a pointer to a new zero value 返回 *Type
 // for the specified type. That is, the returned Value's Type is PtrTo(typ).
 func New(typ Type) Value {
 	if typ == nil {
@@ -2420,6 +2457,7 @@ func (v Value) assignTo(context string, dst *rtype, target unsafe.Pointer) Value
 // Convert returns the value v converted to type t.
 // If the usual Go conversion rules do not allow conversion
 // of the value v to type t, Convert panics.
+// 类型转换  ret = t(value)
 func (v Value) Convert(t Type) Value {
 	if v.flag&flagMethod != 0 {
 		v = makeMethodValue("Convert", v)
@@ -2433,6 +2471,7 @@ func (v Value) Convert(t Type) Value {
 
 // convertOp returns the function to convert a value of type src
 // to a value of type dst. If the conversion is illegal, convertOp returns nil.
+// 类型强制转换的具体实现
 func convertOp(dst, src *rtype) func(Value, Type) Value {
 	switch src.Kind() {
 	case Int, Int8, Int16, Int32, Int64:
@@ -2690,7 +2729,7 @@ func cvtDirect(v Value, typ Type) Value {
 	return Value{t, ptr, v.flag.ro() | f} // v.flag.ro()|f == f?
 }
 
-// convertOp: concrete -> interface
+// convertOp: concrete -> interface 具体类型转接口类型
 func cvtT2I(v Value, typ Type) Value {
 	target := unsafe_New(typ.common())
 	x := valueInterface(v, false)
@@ -2717,7 +2756,7 @@ func chancap(ch unsafe.Pointer) int
 func chanclose(ch unsafe.Pointer)
 func chanlen(ch unsafe.Pointer) int
 
-// Note: some of the noescape annotations below are technically a lie,
+// Note: some of the noescape annotations below are technically a lie 谎言,
 // but safe in the context of this package. Functions like chansend
 // and mapassign don't escape the referent, but may escape anything
 // the referent points to (they do shallow copies of the referent).
@@ -2807,7 +2846,7 @@ func typehash(t *rtype, p unsafe.Pointer, h uintptr) uintptr
 // the compiler cannot follow.
 func escapes(x interface{}) {
 	if dummy.b {
-		dummy.x = x
+		dummy.x = x // 被全局变量引用, 只能分配到堆上
 	}
 }
 

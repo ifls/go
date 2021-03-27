@@ -591,10 +591,10 @@ func (m *clientHelloMsg) unmarshal(data []byte) bool {
 
 type serverHelloMsg struct {
 	raw                          []byte
-	vers                         uint16
-	random                       []byte
+	vers                         uint16 // 确认使用的协议版本
+	random                       []byte // 服务器端生成的随机数
 	sessionId                    []byte
-	cipherSuite                  uint16
+	cipherSuite                  uint16 // 确认使用的加密方法套件
 	compressionMethod            uint8
 	ocspStapling                 bool
 	ticketSupported              bool

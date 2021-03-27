@@ -56,7 +56,7 @@ var (
 
 // Issue 9370
 func TestCmpIfaceConcreteAlloc(t *testing.T) {
-	if runtime.Compiler != "gc" {
+	if runtime.Compiler != "gc" {  // go compiler
 		t.Skip("skipping on non-gc compiler")
 	}
 

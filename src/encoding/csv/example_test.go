@@ -49,8 +49,8 @@ Ken;Thompson;ken
 "Robert";"Griesemer";"gri"
 `
 	r := csv.NewReader(strings.NewReader(in))
-	r.Comma = ';'
-	r.Comment = '#'
+	r.Comma = ';'   // 修改字段分隔符
+	r.Comment = '#'  // 跳过注释
 
 	records, err := r.ReadAll()
 	if err != nil {

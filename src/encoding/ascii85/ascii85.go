@@ -3,8 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package ascii85 implements the ascii85 data encoding
-// as used in the btoa tool and Adobe's PostScript and PDF document formats. pdf
-// 也叫base85
+// as used in the btoa binary-to-text(ascii string) tool and Adobe's PostScript and PDF document formats. pdf
+// 也叫base85编码, 实现了 5个ascii字符表示4个字节,  从 '!' 开始 到 'u' 的85个可见非空白字符编码, 特殊的范围外的'z' 表示 全0 4B
 package ascii85
 
 import (
@@ -31,7 +31,8 @@ func Encode(dst, src []byte) int {
 	}
 
 	n := 0
-	for len(src) > 0 {
+	for len(src) > 0 { // len(src) == 0 被排除了
+		// 预留五个字节, 表示 4B
 		dst[0] = 0
 		dst[1] = 0
 		dst[2] = 0
@@ -39,10 +40,10 @@ func Encode(dst, src []byte) int {
 		dst[4] = 0
 
 		// Unpack 4 bytes into uint32 to repack into base 85 5-byte.
-		var v uint32
-		switch len(src) {
+		var v uint32      // len(src) == 0 被排除了
+		switch len(src) { // 至少应该有4B
 		default:
-			v |= uint32(src[3])
+			v |= uint32(src[3]) // 小端序
 			fallthrough
 		case 3:
 			v |= uint32(src[2]) << 8
@@ -55,7 +56,7 @@ func Encode(dst, src []byte) int {
 		}
 
 		// Special case: zero (!!!!!) shortens to z.
-		if v == 0 && len(src) >= 4 {
+		if v == 0 && len(src) >= 4 { // 全0的特殊, 节约编码
 			dst[0] = 'z'
 			dst = dst[1:]
 			src = src[4:]
@@ -63,17 +64,17 @@ func Encode(dst, src []byte) int {
 			continue
 		}
 
-		// Otherwise, 5 base 85 digits starting at !.
+		// Otherwise, 5 base 85 digits starting at !.  math.MaxUint32 = 4294967295 < 85^5 = 4437053125
 		for i := 4; i >= 0; i-- {
-			dst[i] = '!' + byte(v%85)
+			dst[i] = '!' + byte(v%85) // 33 + 84 = 117
 			v /= 85
 		}
 
 		// If src was short, discard the low destination bytes.
 		m := 5
 		if len(src) < 4 {
-			m -= 4 - len(src)
-			src = nil
+			m -= 4 - len(src) // 4->3, 3->2, 2->1
+			src = nil         // 已经结束了
 		} else {
 			src = src[4:]
 		}

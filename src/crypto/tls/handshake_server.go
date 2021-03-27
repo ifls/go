@@ -37,7 +37,7 @@ type serverHandshakeState struct {
 
 // serverHandshake performs a TLS handshake as a server.
 func (c *Conn) serverHandshake() error {
-	// 读客户端hello
+	// 第一次 读客户端hello
 	clientHello, err := c.readClientHello()
 	if err != nil {
 		return err
@@ -100,6 +100,7 @@ func (hs *serverHandshakeState) handshake() error {
 		if err := hs.pickCipherSuite(); err != nil {
 			return err
 		}
+		// 发送第二次握手, 并接受客户端第3次发包
 		if err := hs.doFullHandshake(); err != nil {
 			return err
 		}
@@ -117,6 +118,7 @@ func (hs *serverHandshakeState) handshake() error {
 		if err := hs.sendFinished(nil); err != nil {
 			return err
 		}
+		// 第4次, 发送服务器端包
 		if _, err := c.flush(); err != nil {
 			return err
 		}
@@ -437,6 +439,7 @@ func (hs *serverHandshakeState) doResumeHandshake() error {
 	return nil
 }
 
+// 发送第二次握手, 并接受客户端第3次发包
 func (hs *serverHandshakeState) doFullHandshake() error {
 	c := hs.c
 
@@ -521,12 +524,14 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 		return err
 	}
 
+	// 第2次, 发送服务器 hello
 	if _, err := c.flush(); err != nil {
 		return err
 	}
 
 	var pub crypto.PublicKey // public key for client auth, if any
 
+	// 第3次, 读取客户端
 	msg, err := c.readHandshake()
 	if err != nil {
 		return err
