@@ -26,3 +26,4 @@
 //
 //This tool is intended for use only by pprof; its interface may change or it
 //may be deleted entirely in future releases.
+package main
