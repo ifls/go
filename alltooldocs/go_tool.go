@@ -1,0 +1,20 @@
+go tool ...
+addr2line
+api
+asm
+buildid
+cgo
+compile
+cover
+dist
+doc
+fix
+link
+nm
+objdump
+oldlink
+pack
+pprof
+test2json
+trace
+vet
