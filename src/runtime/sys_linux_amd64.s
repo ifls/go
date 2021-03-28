@@ -4,7 +4,7 @@
 
 //
 // System calls and other sys.stuff for AMD64, Linux
-//
+// 实现了内部接口调用的系统调用， 对真实系统调用返回的参数不做任何处理，不会包装成库的形式
 
 #include "go_asm.h"
 #include "go_tls.h"
@@ -13,47 +13,50 @@
 #define AT_FDCWD -100
 
 //优化实现的系统调用
-#define SYS_read		0
-#define SYS_write		1
-#define SYS_close		3
+#define SYS_read		0  //读
+#define SYS_write		1   //写
+// 2 SYS_open 使用 SYS_openat代替
+#define SYS_close		3  //关闭fd
 //mmap 分配内存的系统调用号
-#define SYS_mmap		9
-#define SYS_munmap		11
-#define SYS_brk 		12
-#define SYS_rt_sigaction	13
-#define SYS_rt_sigprocmask	14
+#define SYS_mmap		9  //映射文件或者设备到内存，以便程序访问
+#define SYS_munmap		11 // 解除映射
+#define SYS_brk 		12 // 设置程序数据段结尾地址
+#define SYS_rt_sigaction	13  // 检查或者改变信号处理函数
+#define SYS_rt_sigprocmask	14  // 检查和概念 阻塞的信号
 #define SYS_rt_sigreturn	15
-#define SYS_pipe		22
-#define SYS_sched_yield 	24
-#define SYS_mincore		27
-#define SYS_madvise		28
-#define SYS_nanosleep		35
-#define SYS_setittimer		38
-#define SYS_getpid		39
-#define SYS_socket		41
-#define SYS_connect		42
-#define SYS_clone		56
-#define SYS_exit		60
-#define SYS_kill		62
-#define SYS_uname		63
-#define SYS_fcntl		72
-#define SYS_sigaltstack 	131
-#define SYS_mlock		149
-#define SYS_arch_prctl		158
-#define SYS_gettid		186
-#define SYS_futex		202
-#define SYS_sched_getaffinity	204
-#define SYS_epoll_create	213
-#define SYS_exit_group		231
-#define SYS_epoll_ctl		233
-#define SYS_tgkill		234
-#define SYS_openat		257
-#define SYS_faccessat		269
-#define SYS_epoll_pwait		281
-#define SYS_epoll_create1	291
-#define SYS_pipe2		293
+#define SYS_pipe		22  // create pipe
+#define SYS_sched_yield 	24  // 当前线程让出处理器
+#define SYS_mincore		27  // 查询指定虚拟内存页是不是在物理内存中
+#define SYS_madvise		28  // 给内核设置 内存使用的建议
+#define SYS_nanosleep		35  // 高精度 暂停线程执行，可能会被信号中断唤醒
+#define SYS_setittimer		38  // 设置定时器
+#define SYS_getpid		39  // 获取pid， 和tid有什么区别， 怎么获取tid？？
+#define SYS_socket		41  // 创建 一个 通信终端
+#define SYS_connect		42  // 在 socket上 初始化一个连接
+#define SYS_clone		56  // 创建一个子进程
+#define SYS_exit		60  // 主动 退出调用进程
+#define SYS_kill		62  // 向进程发信号
+#define SYS_uname		63  // 获取内核的名字和信息
+#define SYS_fcntl		72  // 操作 文件描述符 fd 一个不亚于 open的大函数
+#define SYS_sigaltstack 	131 // 设置或者获取 信号栈 上下文
+#define SYS_mlock		149  // 内存锁
+#define SYS_arch_prctl		158  // 设置 架构特定的线程状态
+#define SYS_gettid		186  // 获取线程id， 对应上面的疑问
+#define SYS_futex		202  // 快速 用户空间 锁 fast user-space locking
+#define SYS_sched_getaffinity	204  // set and get a thread's CPU affinity(亲密性) mask
+#define SYS_epoll_create	213  // open an epoll file descriptor
+#define SYS_exit_group		231  // 退出进程的所有线程， 也就是一个进程， 不返回
+#define SYS_epoll_ctl		233  // control interface for an epoll file descriptor
+#define SYS_tgkill		234  // 向一个线程组 发 信号 send a signal to a thread
+#define SYS_openat		257  // open的拓展版
+#define SYS_faccessat		269  // file access at check user's permissions for a file
+#define SYS_epoll_pwait		281  // wait for an I/O event on an epoll file descriptor
+#define SYS_epoll_create1	291 // 打开一个 epoll fd 同上
+#define SYS_pipe2		293  // 同上， 入参多了一个标志参数
 
 //退出进程
+#include <linux/unistd.h>
+void exit_group(int status);
 //func exit(code int32)
 TEXT runtime·exit(SB),NOSPLIT,$0-4
 	MOVL	code+0(FP), DI
@@ -61,6 +64,7 @@ TEXT runtime·exit(SB),NOSPLIT,$0-4
 	SYSCALL
 	RET
 
+// 退出调用线程
 // func exitThread(wait *uint32)
 TEXT runtime·exitThread(SB),NOSPLIT,$0-8
 	MOVQ	wait+0(FP), AX
@@ -120,6 +124,22 @@ TEXT runtime·read(SB),NOSPLIT,$0-28
 	MOVL	AX, ret+24(FP)
 	RET
 
+#include <unistd.h>
+
+/* On Alpha, IA-64, MIPS, SuperH, and SPARC/SPARC64; see NOTES */
+struct fd_pair {
+   long fd[2];
+};
+struct fd_pair pipe();
+
+/* On all other architectures */
+int pipe(int pipefd[2]);
+
+#define _GNU_SOURCE             /* See feature_test_macros(7) */
+#include <fcntl.h>              /* Obtain O_* constant definitions */
+#include <unistd.h>
+
+int pipe2(int pipefd[2], int flags);
 //os_linux.go
 // func pipe() (r, w int32, errno int32)
 TEXT runtime·pipe(SB),NOSPLIT,$0-12
@@ -138,6 +158,12 @@ TEXT runtime·pipe2(SB),NOSPLIT,$0-20
 	MOVL	AX, errno+16(FP)
 	RET
 
+#include <time.h>
+struct timespec {
+   time_t tv_sec;        /* seconds */
+   long   tv_nsec;       /* nanoseconds */
+};
+int nanosleep(const struct timespec *req, struct timespec *rem);
 //func usleep(usec uint32)
 TEXT runtime·usleep(SB),NOSPLIT,$16
 	MOVL	$0, DX
@@ -156,6 +182,9 @@ TEXT runtime·usleep(SB),NOSPLIT,$16
 	SYSCALL
 	RET
 
+#define _GNU_SOURCE
+#include <unistd.h>
+pid_t gettid(void);
 //linux.go
 //func gettid() uint32
 TEXT runtime·gettid(SB),NOSPLIT,$0-4
@@ -164,6 +193,8 @@ TEXT runtime·gettid(SB),NOSPLIT,$0-4
 	MOVL	AX, ret+0(FP)
 	RET
 
+#include <unistd.h>
+pid_t getpid(void);
 // func raise(sig uint32)
 TEXT runtime·raise(SB),NOSPLIT,$0
 	MOVL	$SYS_getpid, AX
@@ -174,10 +205,12 @@ TEXT runtime·raise(SB),NOSPLIT,$0
 	MOVL	AX, SI	// arg 2 tid
 	MOVL	R12, DI	// arg 1 pid
 	MOVL	sig+0(FP), DX	// arg 3
-	MOVL	$SYS_tgkill, AX
+	MOVL	$SYS_tgkill, AX  // getpid 要发信号？？
 	SYSCALL
 	RET
 
+#include <signal.h>
+int kill(pid_t pid, int sig);
 //func raiseproc(sig uint32)
 TEXT runtime·raiseproc(SB),NOSPLIT,$0
 	MOVL	$SYS_getpid, AX
@@ -195,6 +228,8 @@ TEXT ·getpid(SB),NOSPLIT,$0-8
 	MOVQ	AX, ret+0(FP)
 	RET
 
+int tkill(pid_t tid, int sig);
+int tgkill(pid_t tgid, pid_t tid, int sig);
 // func tgkill(tgid, tid, sig int)
 TEXT ·tgkill(SB),NOSPLIT,$0
 	MOVQ	tgid+0(FP), DI
@@ -204,6 +239,18 @@ TEXT ·tgkill(SB),NOSPLIT,$0
 	SYSCALL
 	RET
 
+#include <sys/time.h>
+struct itimerval {
+   struct timeval it_interval; /* 第一次与第二次的间隔 Interval for periodic timer */
+   struct timeval it_value;    /* 第一次的偏移 Time until next expiration */
+};
+
+struct timeval {
+   time_t      tv_sec;         /* seconds */
+   suseconds_t tv_usec;        /* microseconds */
+};
+int getitimer(int which, struct itimerval *curr_value);
+int setitimer(int which, const struct itimerval *restrict new_value, struct itimerval *restrict old_value);
 //func setitimer(mode int32, new, old *itimerval)
 TEXT runtime·setitimer(SB),NOSPLIT,$0-24
 	MOVL	mode+0(FP), DI
@@ -225,6 +272,7 @@ TEXT runtime·mincore(SB),NOSPLIT,$0-28
 
 // func walltime1() (sec int64, nsec int32)
 // non-zero frame-size means bp is saved and restored
+// 获取 墙上时间
 TEXT runtime·walltime1(SB),NOSPLIT,$8-12
 	// We don't know how much stack space the VDSO code will need,
 	// so switch to g0.
@@ -284,6 +332,7 @@ fallback:
 
 // func nanotime1() int64
 // non-zero frame-size means bp is saved and restored
+// 避免syscall指令
 TEXT runtime·nanotime1(SB),NOSPLIT,$8-8
 	// Switch to g0 stack. See comment above in runtime·walltime.
 
@@ -342,6 +391,12 @@ fallback:
 	MOVQ	AX, ret+0(FP)
 	RET
 
+#include <signal.h>
+/* Prototype for the glibc wrapper function */
+int sigprocmask(int how, const sigset_t *restrict set, sigset_t *restrict oldset);
+// 改变调用线程的信号掩码
+// how 参数改变函数的不同行为 -> SIG_BLOCK | SIG_NOBLOCK | SIG_SETMASK
+// sigset_t 实际类型的 uint32
 //func rtsigprocmask(how int32, new, old *sigset, size int32)
 TEXT runtime·rtsigprocmask(SB),NOSPLIT,$0-28
 	MOVL	how+0(FP), DI
@@ -355,7 +410,56 @@ TEXT runtime·rtsigprocmask(SB),NOSPLIT,$0-28
 	MOVL	$0xf1, 0xf1  // crash
 	RET
 
-// func rt_sigaction(sig uintptr, new, old *sigactiont, size uintptr) int32
+// #include <signal.h>
+/*
+siginfo_t {
+   int      si_signo;     /* Signal number */
+   int      si_errno;     /* An errno value */
+   int      si_code;      /* Signal code */
+   int      si_trapno;    /* Trap number that caused
+							 hardware-generated signal
+							 (unused on most architectures) */
+   pid_t    si_pid;       /* Sending process ID */
+   uid_t    si_uid;       /* Real user ID of sending process */
+   int      si_status;    /* Exit value or signal */
+   clock_t  si_utime;     /* User time consumed */
+   clock_t  si_stime;     /* System time consumed */
+   union sigval si_value; /* Signal value */
+   int      si_int;       /* POSIX.1b signal */
+   void    *si_ptr;       /* POSIX.1b signal */
+   int      si_overrun;   /* Timer overrun count;
+							 POSIX.1b timers */
+   int      si_timerid;   /* Timer ID; POSIX.1b timers */
+   void    *si_addr;      /* Memory location which caused fault */
+   long     si_band;      /* Band event (was int in
+							 glibc 2.3.2 and earlier) */
+   int      si_fd;        /* File descriptor */
+   short    si_addr_lsb;  /* Least significant bit of address
+							 (since Linux 2.6.32) */
+   void    *si_lower;     /* Lower bound when address violation
+							 occurred (since Linux 3.19) */
+   void    *si_upper;     /* Upper bound when address violation
+							 occurred (since Linux 3.19) */
+   int      si_pkey;      /* Protection key on PTE that caused
+							 fault (since Linux 4.6) */
+   void    *si_call_addr; /* Address of system call instruction
+							 (since Linux 3.5) */
+   int      si_syscall;   /* Number of attempted system call
+							 (since Linux 3.5) */
+   unsigned int si_arch;  /* Architecture of attempted system call
+							 (since Linux 3.5) */
+}
+struct sigaction {
+   void     (*sa_handler)(int);  // 指定处理函数(处理函数只知道信号数)SIG_DFL, SIG_IGN, 或者一个函数指针，三者之一
+   void     (*sa_sigaction)(int sig, siginfo_t *info, void *ucontext);  // ucontext 实际是一个 ucontext_t* 指针
+   sigset_t   sa_mask;   // 实际类型是uint32 指定会被阻塞的 信号的掩码
+   int        sa_flags;  // SA_NOCLDSTOP | SA_NOCLDWAIT 设置SA_SIGINFO 标记表示, sa_sigaction 代替 sa_handler, 用于获取信号详细再处理
+   void     (*sa_restorer)(void);
+};
+int sigaction(int signum, const struct sigaction *restrict act, struct sigaction *restrict oldact);
+// act 不是NULL，会设置新函数，oldact不失NULL，会返回新的函数
+// signum 是信号量枚举定义，9是SIGKILL
+func rt_sigaction(sig uintptr, new, old *sigactiont, size uintptr) int32
 TEXT runtime·rt_sigaction(SB),NOSPLIT,$0-36
 	MOVQ	sig+0(FP), DI
 	MOVQ	new+8(FP), SI
@@ -504,6 +608,7 @@ sigtrampnog:
 // https://sourceware.org/git/?p=glibc.git;a=blob;f=sysdeps/unix/sysv/linux/x86_64/sigaction.c
 // The code that cares about the precise instructions used is:
 // https://gcc.gnu.org/viewcvs/gcc/trunk/libgcc/config/i386/linux-unwind.h?revision=219188&view=markup
+// 从信号处理器返回，并清除栈帧 return from signal handler and cleanup stack frame
 // func sigreturn()
 TEXT runtime·sigreturn(SB),NOSPLIT,$0
 	MOVQ	$SYS_rt_sigreturn, AX
@@ -577,6 +682,8 @@ TEXT runtime·callCgoMunmap(SB),NOSPLIT,$16-16
 	MOVQ	0(SP), SP
 	RET
 
+#include <sys/mman.h>
+int madvise(void *addr, size_t length, int advice);
 //func madvise(addr unsafe.Pointer, n uintptr, flags int32) int32
 TEXT runtime·madvise(SB),NOSPLIT,$0
 	MOVQ	addr+0(FP), DI
@@ -587,6 +694,10 @@ TEXT runtime·madvise(SB),NOSPLIT,$0
 	MOVL	AX, ret+24(FP)
 	RET
 
+#include <linux/futex.h>
+#include <stdint.h>
+#include <sys/time.h>
+long futex(uint32_t *uaddr, int futex_op, uint32_t val, const struct timespec *timeout,   /* or: uint32_t val2 */uint32_t *uaddr2, uint32_t val3);
 // os_linux.go
 // int64 futex(int32 *uaddr, int32 op, int32 val,
 // struct timespec *timeout, int32 *uaddr2, int32 val2);
@@ -602,6 +713,9 @@ TEXT runtime·futex(SB),NOSPLIT,$0
 	MOVL	AX, ret+40(FP)
 	RET
 
+#include <sched.h>
+// 相比fork 提供更精确的执行上下文共享的控制
+int clone(int (*fn)(void *), void *stack, int flags, void *arg, .../* pid_t *parent_tid, void *tls, pid_t *child_tid */ );
 // int32 clone(int32 flags, void *stk, M *mp, G *gp, void (*fn)(void));
 TEXT runtime·clone(SB),NOSPLIT,$0
 	MOVL	flags+0(FP), DI
@@ -658,6 +772,8 @@ nog:
 	SYSCALL
 	JMP	-3(PC)	// keep exiting
 
+#include <signal.h>
+int sigaltstack(const stack_t *restrict ss, stack_t *restrict old_ss);
 //func sigaltstack(new, old *stackt)
 //os_linux.go
 TEXT runtime·sigaltstack(SB),NOSPLIT,$-8
@@ -670,6 +786,11 @@ TEXT runtime·sigaltstack(SB),NOSPLIT,$-8
 	MOVL	$0xf1, 0xf1  // crash
 	RET
 
+#include <asm/prctl.h>
+#include <sys/prctl.h>
+
+int arch_prctl(int code, unsigned long addr);
+int arch_prctl(int code, unsigned long *addr);
 // set tls base to DI 从Di开始的地址 设置 线程
 // func settls() stubs_amd64.go
 TEXT runtime·settls(SB),NOSPLIT,$32
@@ -688,12 +809,18 @@ TEXT runtime·settls(SB),NOSPLIT,$32
 	MOVL	$0xf1, 0xf1  // crash
 	RET
 
+#include <sched.h>
+int sched_yield(void);
 //os_linux.go func osyield()
 TEXT runtime·osyield(SB),NOSPLIT,$0
 	MOVL	$SYS_sched_yield, AX	//让出cpu
 	SYSCALL
 	RET
 
+#define _GNU_SOURCE             /* See feature_test_macros(7) */
+#include <sched.h>
+int sched_setaffinity(pid_t pid, size_t cpusetsize, const cpu_set_t *mask);
+int sched_getaffinity(pid_t pid, size_t cpusetsize, cpu_set_t *mask);
 //os_linux.go
 //func sched_getaffinity(pid, len uintptr, buf *byte) int32
 TEXT runtime·sched_getaffinity(SB),NOSPLIT,$0
@@ -705,6 +832,9 @@ TEXT runtime·sched_getaffinity(SB),NOSPLIT,$0
 	MOVL	AX, ret+24(FP)
 	RET
 
+#include <sys/epoll.h>
+int epoll_create(int size);
+int epoll_create1(int flags);
 //netpoll_epoll.go
 // int32 runtime·epollcreate(int32 size);
 TEXT runtime·epollcreate(SB),NOSPLIT,$0
@@ -722,6 +852,8 @@ TEXT runtime·epollcreate1(SB),NOSPLIT,$0
 	MOVL	AX, ret+8(FP)
 	RET
 
+#include <sys/epoll.h>
+int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
 // func epollctl(epfd, op, fd int32, ev *epollEvent) int
 TEXT runtime·epollctl(SB),NOSPLIT,$0
 	MOVL	epfd+0(FP), DI
@@ -733,6 +865,11 @@ TEXT runtime·epollctl(SB),NOSPLIT,$0
 	MOVL	AX, ret+24(FP)
 	RET
 
+#include <sys/epoll.h>
+
+int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
+int epoll_pwait(int epfd, struct epoll_event *events, int maxevents, int timeout, const sigset_t *sigmask);
+int epoll_pwait2(int epfd, struct epoll_event *events, int maxevents, const struct timespec *timeout, const sigset_t *sigmask);
 // int32 runtime·epollwait(int32 epfd, EpollEvent *ev, int32 nev, int32 timeout);
 TEXT runtime·epollwait(SB),NOSPLIT,$0
 	// This uses pwait instead of wait, because Android O blocks wait.
@@ -746,6 +883,9 @@ TEXT runtime·epollwait(SB),NOSPLIT,$0
 	MOVL	AX, ret+24(FP)
 	RET
 
+#include <unistd.h>
+#include <fcntl.h>
+int fcntl(int fd, int cmd, ... /* arg */ );
 //  func closeonexec(fd int32) netpoll_epoll.go
 // void runtime·closeonexec(int32 fd);
 TEXT runtime·closeonexec(SB),NOSPLIT,$0
@@ -772,6 +912,18 @@ TEXT runtime·setNonblock(SB),NOSPLIT,$0-4
 	SYSCALL
 	RET
 
+#include <unistd.h>
+
+int access(const char *pathname, int mode);
+
+#include <fcntl.h>           /* Definition of AT_* constants */
+#include <unistd.h>
+
+int faccessat(int dirfd, const char *pathname, int mode, int flags);
+			   /* But see C library/kernel differences, below */
+
+int faccessat2(int dirfd, const char *pathname, int mode, int flags);
+
 //stubs_linux.go
 // int access(const char *name, int mode)
 TEXT runtime·access(SB),NOSPLIT,$0
@@ -785,6 +937,14 @@ TEXT runtime·access(SB),NOSPLIT,$0
 	MOVL	AX, ret+16(FP)
 	RET
 
+#include <sys/socket.h>
+struct sockaddr {
+	__uint8_t       sa_len;         /* total length */
+	sa_family_t     sa_family;      /* [XSI] address family */
+	char            sa_data[14];    /* [XSI] addr value (actually larger) */
+};
+typedef uint32 socklen_t
+int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 // int connect(int fd, const struct sockaddr *addr, socklen_t addrlen)
 TEXT runtime·connect(SB),NOSPLIT,$0-28
 	MOVL	fd+0(FP), DI
@@ -795,6 +955,11 @@ TEXT runtime·connect(SB),NOSPLIT,$0-28
 	MOVL	AX, ret+24(FP)
 	RET
 
+#include <sys/socket.h>
+int socket(int domain, int type, int protocol);
+// domain -> AF_INET | AF_INET6 | AF_UNIX | AF_PACKET | AF_LOCAL
+// type -> SOCK_STREAM | SOCK_DGRAM | SOCK_RAW
+// protocol -> 参考 cat /etc/protocols
 // int socket(int domain, int type, int protocol)
 TEXT runtime·socket(SB),NOSPLIT,$0-20
 	MOVL	domain+0(FP), DI
@@ -805,15 +970,21 @@ TEXT runtime·socket(SB),NOSPLIT,$0-20
 	MOVL	AX, ret+16(FP)
 	RET
 
-// func sbrk0() uintptr
+// brk 的实际含义就是设置新的 数据段结尾地址
+// int brk(void *addr); // 设置断结尾地址，需要自己维护地址加减(c lib形式) 系统调用形式是直接返回 地址指针
+// void *sbrk(intptr_t increment); //(c lib)使用brk系统调用实现， 返回之前的地址，而不是增加后的
+// func sbrk0() uintptr  以0增量调用sbrk（）可用于查找程序中断(program break)的当前位置 参考链接 https://stackoverflow.com/questions/6338162/what-is-program-break-where-does-it-start-from-0x00
+// go 分配内存不使用brk，那使用的是什么??
 TEXT runtime·sbrk0(SB),NOSPLIT,$0-8
 	// Implemented as brk(NULL).
 	MOVQ	$0, DI
 	MOVL	$SYS_brk, AX
 	SYSCALL
-	MOVQ	AX, ret+0(FP)
+	MOVQ	AX, ret+0(FP)  // 返回新的 数据段结尾地址
 	RET
 
+#include <sys/utsname.h>
+int uname(struct utsname *buf);
 //os_linux_x86.go
 // func uname(utsname *new_utsname) int
 TEXT ·uname(SB),NOSPLIT,$0-16
@@ -823,6 +994,14 @@ TEXT ·uname(SB),NOSPLIT,$0-16
 	MOVQ	AX, ret+8(FP)
 	RET
 
+#include <sys/mman.h>
+
+int mlock(const void *addr, size_t len);
+int mlock2(const void *addr, size_t len, unsigned int flags);
+int munlock(const void *addr, size_t len);
+
+int mlockall(int flags);
+int munlockall(void);
 //os_linux_x86.go
 // func mlock(addr, len uintptr) int
 TEXT ·mlock(SB),NOSPLIT,$0-24

@@ -8,7 +8,7 @@ package syscall
 const (
 	SYS_READ           = 0  // 读文件 // File.Read()
 	SYS_WRITE          = 1  // 写文件 // File.Write()
-	SYS_OPEN           = 2  // 打开文件 https://man7.org/linux/man-pages/man2/open.2.html
+	SYS_OPEN           = 2  // 只用了SYS_OPENAT 打开文件 https://man7.org/linux/man-pages/man2/creat.2.html
 	SYS_CLOSE          = 3  // 关闭一个文件描述符, 所有文件描述符都关闭后, 文件才关闭
 	SYS_STAT           = 4  // 获取文件信息 https://man7.org/linux/man-pages/man2/stat.2.html
 	SYS_FSTAT          = 5  // 获取文件信息 // File.Stat()
@@ -283,7 +283,7 @@ const (
 	SYS_MIGRATE_PAGES = 256
 
 	// at 系列函数, 相对dirfd, 针对多线程优化, 避免chdir 工作目录切来切去
-	SYS_OPENAT     = 257 // 打开文件(或者创建文件) os.Open() so.Create() os.OpenFile 这个能创建目录？？
+	SYS_OPENAT     = 257 // 打开文件(或者创建文件) os.Open() so.Create() os.OpenFile 这个能创建目录？？ 不能 https://man7.org/linux/man-pages/man2/creat.2.html
 	SYS_MKDIRAT    = 258 // 创建目录 // File.MkDir()
 	SYS_MKNODAT    = 259
 	SYS_FCHOWNAT   = 260 // 改变文件所有者

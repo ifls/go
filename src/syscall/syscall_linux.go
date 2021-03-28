@@ -135,6 +135,7 @@ func Mknod(path string, mode uint32, dev int) (err error) {
 	return Mknodat(_AT_FDCWD, path, mode, dev)
 }
 
+// 系统调用的封装函数
 func Open(path string, mode int, perm uint32) (fd int, err error) {
 	return openat(_AT_FDCWD, path, mode|O_LARGEFILE, perm)
 }

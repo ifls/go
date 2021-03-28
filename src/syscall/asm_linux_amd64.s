@@ -13,33 +13,33 @@
 // Trap # in AX, args in DI SI DX R10 R8 R9, return in AX DX
 // Note that this differs from "standard" ABI convention, which
 // would pass 4th arg in CX, not R10.
-
+// 参考资料 https://xargin.com/syscall/
 TEXT ·Syscall(SB),NOSPLIT,$0-56
 	CALL	runtime·entersyscall(SB)
-	MOVQ	a1+8(FP), DI
-	MOVQ	a2+16(FP), SI
-	MOVQ	a3+24(FP), DX
+	MOVQ	a1+8(FP), DI   // 第二个参数
+	MOVQ	a2+16(FP), SI  // 第三个参数
+	MOVQ	a3+24(FP), DX  // 第四个参数
 	MOVQ	trap+0(FP), AX	// syscall entry
 	SYSCALL
-	CMPQ	AX, $0xfffffffffffff001
+	CMPQ	AX, $0xfffffffffffff001  // 是 linux MAX_ERRNO 取反 转无符号
 	JLS	ok
-	MOVQ	$-1, r1+32(FP)
+	MOVQ	$-1, r1+32(FP) // 出错，固定返回-1， 由errno 表示出错
 	MOVQ	$0, r2+40(FP)
 	NEGQ	AX
-	MOVQ	AX, err+48(FP)
+	MOVQ	AX, err+48(FP) // 出错时，函数的返回值是错误码
 	CALL	runtime·exitsyscall(SB)
 	RET
 ok:
-	MOVQ	AX, r1+32(FP)
-	MOVQ	DX, r2+40(FP)
-	MOVQ	$0, err+48(FP)
+	MOVQ	AX, r1+32(FP)  // 系统调用的正常返回值
+	MOVQ	DX, r2+40(FP)  //这个参数从来没用过
+	MOVQ	$0, err+48(FP)  // 无处错， errno等于0
 	CALL	runtime·exitsyscall(SB)
 	RET
 
 // func Syscall6(trap, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 TEXT ·Syscall6(SB),NOSPLIT,$0-80
 	CALL	runtime·entersyscall(SB)
-	MOVQ	a1+8(FP), DI
+	MOVQ	a1+8(FP), DI  // DI,SI,DX,R10,R8,R9 是linux系统调用的约定
 	MOVQ	a2+16(FP), SI
 	MOVQ	a3+24(FP), DX
 	MOVQ	a4+32(FP), R10
@@ -107,19 +107,19 @@ ok2:
 
 // func rawVforkSyscall(trap, a1 uintptr) (r1, err uintptr)
 TEXT ·rawVforkSyscall(SB),NOSPLIT,$0-32
-	MOVQ	a1+8(FP), DI
+	MOVQ	a1+8(FP), DI  //只用了一个参数
 	MOVQ	$0, SI
 	MOVQ	$0, DX
 	MOVQ	$0, R10
 	MOVQ	$0, R8
 	MOVQ	$0, R9
 	MOVQ	trap+0(FP), AX	// syscall entry
-	POPQ	R12 // preserve return address
+	POPQ	R12 // preserve return address ？？？
 	SYSCALL
 	PUSHQ	R12
 	CMPQ	AX, $0xfffffffffffff001
 	JLS	ok2
-	MOVQ	$-1, r1+16(FP)
+	MOVQ	$-1, r1+16(FP)  // 只有两个返回值
 	NEGQ	AX
 	MOVQ	AX, err+24(FP)
 	RET
@@ -139,7 +139,7 @@ TEXT ·rawSyscallNoError(SB),NOSPLIT,$0-48
 	MOVQ	DX, r2+40(FP)
 	RET
 
-// func gettimeofday(tv *Timeval) (err uintptr)
+// func gettimeofday(tv *Timeval) (err uintptr) 通过vsdo实现， 避免 syscall指令
 TEXT ·gettimeofday(SB),NOSPLIT,$0-16
 	MOVQ	tv+0(FP), DI
 	MOVQ	$0, SI

@@ -140,7 +140,7 @@ func capToMask(cap uintptr) uint32 { return 1 << uint(cap&31) }
 //
 // This is go:noinline because the point is to keep the stack frames
 // of this and forkAndExecInChild separate.
-//
+// clone的过程很复杂
 //go:noinline
 //go:norace
 func forkAndExecInChild1(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr *ProcAttr, sys *SysProcAttr, pipe int) (r1 uintptr, err1 Errno, p [2]int, locked bool) {
