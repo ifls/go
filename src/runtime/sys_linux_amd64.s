@@ -866,10 +866,22 @@ TEXT runtime·epollctl(SB),NOSPLIT,$0
 	RET
 
 #include <sys/epoll.h>
+typedef union epoll_data {
+   void    *ptr;
+   int      fd;
+   uint32_t u32;
+   uint64_t u64;
+} epoll_data_t;
 
+struct epoll_event {
+   uint32_t     events;    /* Epoll events */
+   epoll_data_t data;      /* User data variable */
+};
 int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
 int epoll_pwait(int epfd, struct epoll_event *events, int maxevents, int timeout, const sigset_t *sigmask);
 int epoll_pwait2(int epfd, struct epoll_event *events, int maxevents, const struct timespec *timeout, const sigset_t *sigmask);
+// maxevents 是 想接受的时间的最大数量, 必须 >0
+// timeout 执行 wait 最多阻塞的
 // int32 runtime·epollwait(int32 epfd, EpollEvent *ev, int32 nev, int32 timeout);
 TEXT runtime·epollwait(SB),NOSPLIT,$0
 	// This uses pwait instead of wait, because Android O blocks wait.
