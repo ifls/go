@@ -40,7 +40,7 @@ const (
 	SYS_SHMCTL         = 31 // not used // System V shared memory control https://www.man7.org/linux/man-pages/man2/shmctl.2.html
 	SYS_DUP            = 32 // 复制文件描述符
 	SYS_DUP2           = 33 // 复制文件描述符
-	SYS_PAUSE          = 34 // 等待信号, 才恢复执行
+	SYS_PAUSE          = 34 // 等待信号, 才恢复执行 https://man7.org/linux/man-pages/man2/pause.2.html
 	SYS_NANOSLEEP      = 35 // 高精度休眠
 	SYS_GETITIMER      = 36 // not used // 定时器 https://man7.org/linux/man-pages/man2/getitimer.2.html
 	SYS_ALARM          = 37 // not used // set an alarm clock for delivery of a signal https://man7.org/linux/man-pages/man2/alarm.2.html
