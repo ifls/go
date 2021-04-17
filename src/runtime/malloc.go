@@ -351,7 +351,7 @@ var (
 // OS memory management abstraction layer
 // 系统内存管理抽象层
 // Regions of the address space managed by the runtime may be in one of four
-// states at any given time: 内存区域4中状态
+// states at any given time: 系统内存区域4种状态
 // 1) None - Unreserved and unmapped, the default state of any region. 初始状态，什么都没有
 // 2) Reserved - Owned by the runtime, but accessing it would cause a fault. 持有但是无法访问，还未分配物理内存
 //               Does not count against the process' memory footprint足迹.

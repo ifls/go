@@ -156,7 +156,7 @@ type MemStats struct {
 	// This is the same as HeapAlloc (see below).
 	Alloc uint64
 
-	// TotalAlloc is cumulative bytes allocated for heap objects.
+	// TotalAlloc is cumulative累积 bytes allocated for heap objects.
 	//
 	// TotalAlloc increases as heap objects are allocated, but
 	// unlike Alloc and HeapAlloc, it does not decrease when
@@ -179,11 +179,11 @@ type MemStats struct {
 	// This is primarily useful for debugging runtime internals.
 	Lookups uint64
 
-	// Mallocs is the cumulative count of heap objects allocated.
+	// Mallocs is the cumulative累积 count of heap objects allocated.
 	// The number of live objects is Mallocs - Frees.
 	Mallocs uint64
 
-	// Frees is the cumulative count of heap objects freed.
+	// Frees is the cumulative累积 count of heap objects freed.
 	Frees uint64
 
 	// Heap memory statistics.
@@ -261,7 +261,7 @@ type MemStats struct {
 	// efficiently.
 	HeapInuse uint64
 
-	// HeapReleased is bytes of physical memory returned to the OS.
+	// HeapReleased is bytes of physical memory returned to the OS. 不是累计值??
 	//
 	// This counts heap memory from idle spans that was returned
 	// to the OS and has not yet been reacquired for the heap.
@@ -295,7 +295,7 @@ type MemStats struct {
 	// from the OS for OS thread stacks (which should be minimal).
 	StackSys uint64
 
-	// Off-heap memory statistics.
+	// Off-heap memory statistics. 堆外内存统计
 	//
 	// The following statistics measure runtime-internal
 	// structures that are not allocated from heap memory (usually
@@ -344,7 +344,7 @@ type MemStats struct {
 	// nanoseconds since 1970 (the UNIX epoch).
 	LastGC uint64
 
-	// PauseTotalNs is the cumulative nanoseconds in GC
+	// PauseTotalNs is the cumulative累积 nanoseconds in GC
 	// stop-the-world pauses since the program started.
 	//
 	// During a stop-the-world pause, all goroutines are paused
