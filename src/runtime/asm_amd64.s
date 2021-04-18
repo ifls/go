@@ -454,17 +454,17 @@ TEXT runtime·morestack(SB),NOSPLIT,$0-0
 	LEAQ	8(SP), AX // f's SP
 	MOVQ	AX, (g_sched+gobuf_sp)(SI)
 	MOVQ	BP, (g_sched+gobuf_bp)(SI)
-	MOVQ	DX, (g_sched+gobuf_ctxt)(SI)
+	MOVQ	DX, (g_sched+gobuf_ctxt)(SI)  // 如果 dx 置为0，就是 清空 gobuf_ctxt
 
 	// Call newstack on m->g0's stack.	//在g0栈上 调用newstack函数
 	MOVQ	m_g0(BX), BX
 	MOVQ	BX, g(CX)
 	MOVQ	(g_sched+gobuf_sp)(BX), SP
-	CALL	runtime·newstack(SB)
+	CALL	runtime·newstack(SB)  // 绝不返回
 	CALL	runtime·abort(SB)	// crash if newstack returns
 	RET
 
-// morestack but not preserving ctxt.
+// morestack but not preserving ctxt. dx置为0
 TEXT runtime·morestack_noctxt(SB),NOSPLIT,$0
 	MOVL	$0, DX
 	JMP	runtime·morestack(SB)

@@ -396,11 +396,11 @@ type wincallbackcontext struct {
 }
 
 // Stack describes a Go execution stack.
-// The bounds of the stack are exactly [lo, hi),
+// The bounds of the stack are exactly [lo, hi), 左开右闭
 // with no implicit隐藏的 data structures on either side.
 type stack struct {
 	lo uintptr // 栈顶指针在下
-	hi uintptr
+	hi uintptr // 栈底在高地址
 }
 
 // heldLockInfo gives info on a held lock and the rank of that lock
@@ -442,7 +442,7 @@ type g struct {
 
 	preempt       bool // 抢占信号 preemption signal, duplicates stackguard0 = stackpreempt
 	preemptStop   bool // transition to _Gpreempted on preemption; otherwise, just deschedule
-	preemptShrink bool // 表示是否在一个安全点缩栈 shrink stack at synchronous safe point
+	preemptShrink bool // gc过程中会标记此值 表示是否要在一个安全点缩栈 shrink stack at synchronous safe point
 
 	// asyncSafePoint is set if g is stopped at an asynchronous
 	// safe point. This means there are frames on the stack

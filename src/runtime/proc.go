@@ -135,7 +135,7 @@ func main() {
 	// they look nicer in the stack overflow failure message.
 	// 最大栈大小
 	if sys.PtrSize == 8 {
-		maxstacksize = 1000000000
+		maxstacksize = 1000000000  //0.93G
 	} else {
 		maxstacksize = 250000000
 	}
@@ -3789,7 +3789,7 @@ func syscall_runtime_AfterExec() {
 	execLock.unlock()
 }
 
-// 分配g和栈
+// 分配g和栈  stacksize < 0 表示不分配栈空间，传size=0， 实际会round up 为1
 // Allocate a new g, with a stack big enough for stacksize bytes.
 func malg(stacksize int32) *g {
 	newg := new(g)
@@ -3801,11 +3801,11 @@ func malg(stacksize int32) *g {
 		})
 
 		// 计算栈相关大小
-		newg.stackguard0 = newg.stack.lo + _StackGuard
+		newg.stackguard0 = newg.stack.lo + _StackGuard  // [hi, guard, lo] 一个界限，用于 <= 比较
 		newg.stackguard1 = ^uintptr(0)
 		// Clear the bottom word of the stack. We record g
 		// there on gsignal stack during VDSO on ARM and ARM64.
-		*(*uintptr)(unsafe.Pointer(newg.stack.lo)) = 0
+		*(*uintptr)(unsafe.Pointer(newg.stack.lo)) = 0  // *l0 所指向的第一个8B 要置为0， 不能用，要放*g
 	}
 	return newg
 }

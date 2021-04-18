@@ -43,7 +43,7 @@ type mcache struct {
 	// 数组保存，不用双向链表
 	alloc [numSpanClasses]*mspan // spans to allocate from, indexed by spanClass
 
-	stackcache [_NumStackOrders]stackfreelist
+	stackcache [_NumStackOrders]stackfreelist  // 线程局部 栈内存缓存， stackfreelist 会从 全局的stackpool里拿？？
 
 	// Local allocator stats, flushed during GC.
 	local_largefree  uintptr                  // 释放的大对象字节数 bytes freed for large objects (>maxsmallsize)
