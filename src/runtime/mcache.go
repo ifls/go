@@ -33,7 +33,7 @@ type mcache struct {
 	// termination.
 	// tiny 对象分配器， 没有封装成独立的struct
 	// 只管理 16B以下的对象，只分配非指针类型的内存
-	tiny             uintptr // 基址
+	tiny             uintptr // 基址， 指向的是maxTinySize大小的多个块
 	tinyoffset       uintptr // 下一个空闲对象 的偏移量
 	local_tinyallocs uintptr // 分配对象个数 number of tiny allocs not counted in other stats
 

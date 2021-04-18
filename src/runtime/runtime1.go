@@ -301,7 +301,7 @@ type dbgVar struct {
 // except for "memprofilerate" since there is an
 // existing int var for that value, which may
 // already have an initial value.
-// 全局变量, 保存GODEBUG
+// 全局变量, 根据GODEBUG 字符串里对应的key 去赋值这里的值
 var debug struct {
 	allocfreetrace     int32
 	cgocheck           int32
@@ -314,7 +314,7 @@ var debug struct {
 	gctrace            int32
 	invalidptr         int32
 	madvdontneed       int32 // for Linux; issue 28466
-	sbrk               int32
+	sbrk               int32 // 开这个用于调试内存分配，不会释放内存 设置sbrk=1会使用一个碎片回收器代替内存分配器和垃圾回收器。它从操作系统获取内存，并且永远也不会回收任何内存
 	scavenge           int32
 	scavtrace          int32
 	scheddetail        int32

@@ -584,7 +584,7 @@ const (
 	// 134
 	numSpanClasses = _NumSizeClasses << 1
 	// 5
-	tinySpanClass = spanClass(tinySizeClass<<1 | 1)
+	tinySpanClass = spanClass(tinySizeClass<<1 | 1)  // | 1表示是noscan
 )
 
 // 储存大小和noscan标记，noscan 表示是否包含指针
@@ -1401,9 +1401,10 @@ HaveSpan:
 // returning whether it worked.
 //
 // h must be locked.
-// 分配多页空间，加入到pageAlloc 然后从其中分配mspan
+// 分配多页空间，加入到pageAlloc
 func (h *mheap) grow(npage uintptr) bool {
 	// We must grow the heap in whole palloc chunks.
+	// pallocChunkPages =512  一次至少 512的整数倍个 page 512 * 8K = 4M
 	ask := alignUp(npage, pallocChunkPages) * pageSize
 
 	totalGrowth := uintptr(0)
@@ -1430,6 +1431,7 @@ func (h *mheap) grow(npage uintptr) bool {
 			// remains of the current space and switch to
 			// the new space. This should be rare.
 			if size := h.curArena.end - h.curArena.base; size != 0 {
+				//放到页分配器里
 				h.pages.grow(h.curArena.base, size)
 				totalGrowth += size
 			}
@@ -1456,6 +1458,7 @@ func (h *mheap) grow(npage uintptr) bool {
 
 	// Grow into the current arena.
 	v := h.curArena.base
+	//
 	h.curArena.base = nBase
 	// 内存增长到pageAlloc
 	h.pages.grow(v, nBase-v)
@@ -1470,7 +1473,7 @@ func (h *mheap) grow(npage uintptr) bool {
 		if overage := uintptr(retained + uint64(totalGrowth) - h.scavengeGoal); todo > overage {
 			todo = overage
 		}
-		// 回收不再使用的内存
+		// 回收不再使用的内存空闲页
 		h.pages.scavenge(todo, false)
 	}
 	return true
