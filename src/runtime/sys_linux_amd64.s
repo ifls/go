@@ -34,8 +34,8 @@
 #define SYS_socket		41  // 创建 一个 通信终端
 #define SYS_connect		42  // 在 socket上 初始化一个连接
 #define SYS_clone		56  // 创建一个子进程
-#define SYS_exit		60  // 主动 退出调用进程
-#define SYS_kill		62  // 向进程发信号
+#define SYS_exit		60  // 主动 退出一个线程
+#define SYS_kill		62  // 向进程发信号, 会交付到任意一个线程
 #define SYS_uname		63  // 获取内核的名字和信息
 #define SYS_fcntl		72  // 操作 文件描述符 fd 一个不亚于 open的大函数
 #define SYS_sigaltstack 	131 // 设置或者获取 信号栈 上下文
@@ -80,14 +80,14 @@ TEXT runtime·exitThread(SB),NOSPLIT,$0-8
 // func open(name *byte, mode, perm int32) int32
 TEXT runtime·open(SB),NOSPLIT,$0-20
 	// This uses openat instead of open, because Android O blocks open.
-	MOVL	$AT_FDCWD, DI // AT_FDCWD, so this acts like open
+	MOVL	$AT_FDCWD, DI // AT_FDCWD=-100 非法fd, so this acts like open
 	MOVQ	name+0(FP), SI
 	MOVL	mode+8(FP), DX
 	MOVL	perm+12(FP), R10
 	MOVL	$SYS_openat, AX
 	SYSCALL
 	CMPQ	AX, $0xfffffffffffff001
-	JLS	2(PC)
+	JLS	2(PC)     // JLS $number  比较上一行的比较结果，如果是小于等于，则跳过下面这行
 	MOVL	$-1, AX
 	MOVL	AX, ret+16(FP)
 	RET
@@ -139,7 +139,7 @@ int pipe(int pipefd[2]);
 #include <fcntl.h>              /* Obtain O_* constant definitions */
 #include <unistd.h>
 
-int pipe2(int pipefd[2], int flags);
+int pipe2(int pipefd[2], int flags);  //比pipe 多了flags参数
 //os_linux.go
 // func pipe() (r, w int32, errno int32)
 TEXT runtime·pipe(SB),NOSPLIT,$0-12
@@ -150,6 +150,7 @@ TEXT runtime·pipe(SB),NOSPLIT,$0-12
 	RET
 
 // func pipe2(flags int32) (r, w int32, errno int32)
+// O_CLOEXEC | O_DIRECT | O_NONBLOCK
 TEXT runtime·pipe2(SB),NOSPLIT,$0-20
 	LEAQ	r+8(FP), DI
 	MOVL	flags+0(FP), SI
@@ -169,9 +170,9 @@ TEXT runtime·usleep(SB),NOSPLIT,$16
 	MOVL	$0, DX
 	MOVL	usec+0(FP), AX
 	MOVL	$1000000, CX
-	DIVL	CX
-	MOVQ	AX, 0(SP)
-	MOVL	$1000, AX	// usec to nsec
+	DIVL	CX  //微妙 / 1000 000 算出秒
+	MOVQ	AX, 0(SP)  //放到tv_sec
+	MOVL	$1000, AX	// usec to nsec  微秒到纳秒
 	MULL	DX
 	MOVQ	AX, 8(SP)
 
@@ -184,7 +185,7 @@ TEXT runtime·usleep(SB),NOSPLIT,$16
 
 #define _GNU_SOURCE
 #include <unistd.h>
-pid_t gettid(void);
+pid_t gettid(void);  // the term "thread" is used to refer to the processes within a thread group.
 //linux.go
 //func gettid() uint32
 TEXT runtime·gettid(SB),NOSPLIT,$0-4
@@ -195,7 +196,11 @@ TEXT runtime·gettid(SB),NOSPLIT,$0-4
 
 #include <unistd.h>
 pid_t getpid(void);
-// func raise(sig uint32)
+// https://man7.org/linux/man-pages/man2/tkill.2.html
+// tkill tgkill 向线程发送一个信号, 对于kill(只能发给一个进程或者线程组，信号会被递交给任意一个线程)
+int tkill(pid_t tid, int sig);  // 线程id会被复用， 可能出现误杀
+int tgkill(pid_t tgid, pid_t tid, int sig); // glibc 2.30以后有包装函数
+// func raise(sig uint32)  // 给自己的线程发信号
 TEXT runtime·raise(SB),NOSPLIT,$0
 	MOVL	$SYS_getpid, AX
 	SYSCALL
@@ -205,13 +210,13 @@ TEXT runtime·raise(SB),NOSPLIT,$0
 	MOVL	AX, SI	// arg 2 tid
 	MOVL	R12, DI	// arg 1 pid
 	MOVL	sig+0(FP), DX	// arg 3
-	MOVL	$SYS_tgkill, AX  // getpid 要发信号？？
+	MOVL	$SYS_tgkill, AX
 	SYSCALL
 	RET
 
 #include <signal.h>
 int kill(pid_t pid, int sig);
-//func raiseproc(sig uint32)
+//func raiseproc(sig uint32)  给自己的tgid发信号
 TEXT runtime·raiseproc(SB),NOSPLIT,$0
 	MOVL	$SYS_getpid, AX
 	SYSCALL
@@ -221,6 +226,7 @@ TEXT runtime·raiseproc(SB),NOSPLIT,$0
 	SYSCALL
 	RET
 
+// 返回所在线程组 的 tgid
 //func getpid() int
 TEXT ·getpid(SB),NOSPLIT,$0-8
 	MOVL	$SYS_getpid, AX
@@ -853,6 +859,33 @@ TEXT runtime·epollcreate1(SB),NOSPLIT,$0
 	RET
 
 #include <sys/epoll.h>
+typedef union epoll_data {  // 8B
+   void        *ptr;
+   int          fd;
+   uint32_t     u32;
+   uint64_t     u64;
+} epoll_data_t;
+
+struct epoll_event {
+   uint32_t     events;      事件类型/* Epoll events */
+   epoll_data_t data;        用户自带的数据/* User data variable */
+};
+// epfd 是 epoll fd
+// op 是 EPOLL_CTL_ADD | EPOLL_CTL_MOD | EPOLL_CTL_DEL  增删改，不需要查,
+如果add重复的fd会怎么样？？ 答案：会返回 EEXIST 错误码
+修改的fd不存在会怎么样？？答案：会返回 ENOENT 错误码
+删除的fd不存在会怎么样？？ 答案：会返回 ENOENT 错误码
+epoll 不支持 普通文件和目录 会返回 EPERM 错误码
+//       删除操作时，event 不需要 置为 NULL
+// fd 是要操作的 socket fd
+// 类型 mask EPOLLIN(可读) | EPOLLOUT(可写) |
+			 EPOLLRDHUP(对端已经关闭写，？？) |
+			 EPOLLPRI(fd 上有例外情况发生，比如有带外数据传输) |
+             EPOLLERR(fd 上有错误发生，不需要设置事件监听，也会触发) | EPOLLHUP(发生挂起信号，不需要要epoll_add此事件的监听，表示对端已经关闭，读不到新的数据) |
+			 EPOLLET(请求设置fd 为边缘触发通知模式，只用于设置，不会从epoll_wait里带出来)
+			 EPOLLONESHOT(设置fd，为一次通知模式，之后会被禁用，需要再次 EPOLL_CTL_MOD设置才有新的事件被触发，只用于设置，不会从epoll_wait里带出来)
+			 EPOLLWAKEUP (since Linux 3.5)
+			 EPOLLEXCLUSIVE (since Linux 4.5)
 int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
 // func epollctl(epfd, op, fd int32, ev *epollEvent) int
 TEXT runtime·epollctl(SB),NOSPLIT,$0
