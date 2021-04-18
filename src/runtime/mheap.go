@@ -181,11 +181,11 @@ type mheap struct {
 	// effectively a single-level map. In this case, arenas[0]
 	// will never be nil.
 	// 二维切片指针，分2层
-	// linux上第一维是1  第二维是0x400000 2^22
+	// linux上第一维是1  第二维是0x40 00 00 2^22 4,194,304
 	// 2^22 * 2^3() = 2^10 * 2^10 * 32 = 32MB  指针占8字节
 	// 4M * 64M = 2^22 * 2^26 = 2^48 = 256 * 2^40 = 256TB
 	// 48位虚拟内存地址
-	arenas [1 << arenaL1Bits]*[1 << arenaL2Bits]*heapArena
+	arenas [1 << arenaL1Bits]*[1 << arenaL2Bits]*heapArena  // 4,194,304 4M * 8B = 32MB
 
 	// heapArenaAlloc is pre-reserved space for allocating heapArena
 	// objects. This is only used on 32-bit, where we pre-reserve
@@ -255,13 +255,13 @@ var mheap_ mheap
 
 // A heapArena stores metadata for a heap arena. heapArenas are stored
 // outside of the Go heap and accessed via the mheap_.arenas index.
-// 管理64MB内存
+// 一个负责管理64MB内存, 由二维heapArena 共同管理 所有的虚拟内存
 //go:notinheap
 type heapArena struct {
 	// bitmap stores the pointer/scalar bitmap for the words in
 	// this arena. See mbitmap.go for a description. Use the
 	// heapBits type to access this.
-	bitmap [heapArenaBitmapBytes]byte
+	bitmap [heapArenaBitmapBytes]byte  // 表示 指定字节是否已经使用
 
 	// spans maps from virtual address page ID within this arena to *mspan.
 	// For allocated spans, their pages map to the span itself.
@@ -274,7 +274,7 @@ type heapArena struct {
 	// known to contain in-use or stack spans. This means there
 	// must not be a safe-point between establishing that an
 	// address is live and looking it up in the spans array.
-	spans [pagesPerArena]*mspan // 一个arena中所有的mspan
+	spans [pagesPerArena]*mspan // 用于查找对应的 mspan 8K个
 
 	// pageInUse is a bitmap位图 that indicates which spans are in
 	// state mSpanInUse. This bitmap is indexed by page number,
@@ -319,7 +319,7 @@ type heapArena struct {
 	// address-ordered first-fit policy.
 	//
 	// Read atomically and written with an atomic CAS.
-	// 内存基址
+	// 管理的64M内存 的基址
 	zeroedBase uintptr
 }
 
