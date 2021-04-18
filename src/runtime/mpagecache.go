@@ -11,7 +11,7 @@ import (
 	"unsafe"
 )
 
-// 64
+// 运行程序 计算， 确实是64
 const pageCachePages = 8 * unsafe.Sizeof(pageCache{}.cache)
 
 // pageCache represents a per-p cache of pages the allocator can

@@ -349,6 +349,7 @@ func (m *markBits) advance() {
 //go:nosplit
 func heapBitsForAddr(addr uintptr) (h heapBits) {
 	// 2 bits per word, 4 pairs per byte, and a mask is hard coded.
+	// 根据地址反查 所在的 arena索引
 	arena := arenaIndex(addr)
 	ha := mheap_.arenas[arena.l1()][arena.l2()]
 	// The compiler uses a load for nil checking ha, but in this
@@ -807,7 +808,7 @@ func typeBitsBulkBarrier(typ *_type, dst, src, size uintptr) {
 //
 // TODO(rsc): Perhaps introduce a different heapBitsSpan type.
 
-// initSpan initializes the heap bitmap for a span.
+// initSpan initializes the heap bitmap for a span. 初始化 mspan的位图
 // It clears all checkmark bits.
 // If this is a span of pointer-sized objects, it initializes all
 // words to pointer/scan.

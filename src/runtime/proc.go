@@ -83,9 +83,10 @@ var modinfo string
 // for nmspinning manipulation.
 
 var (
+	// 全局内存， 不需要堆或栈分配
 	m0      m // 主线程 第一个线程
 	g0      g // m0.g0
-	mcache0 *mcache
+	mcache0 *mcache  // 会赋值到 p0.mcache
 	// 竞争检测初始虎，返回的参数
 	raceprocctx0 uintptr
 )
@@ -581,7 +582,7 @@ func cpuinit() {
 }
 
 // The bootstrap sequence is:
-//
+//  runtime/asm_amd64.s 里的 runtime·rt0_go 函数调用的
 //	call osinit
 //	call schedinit
 //	make & queue new G

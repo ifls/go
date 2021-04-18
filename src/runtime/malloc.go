@@ -299,7 +299,7 @@ const (
 	//
 	// On amd64, the address space is 48 bits, sign extended to 64
 	// bits. This offset lets us handle "negative" addresses (or
-	// high addresses if viewed as unsigned).
+	// high addresses if viewed as unsigned). 有符号拓展， 可以允许
 	//
 	// On aix/ppc64, this offset allows to keep the heapAddrBits to
 	// 48. Otherwize, it would be 60 in order to handle mmap addresses
@@ -456,7 +456,7 @@ func mallocinit() {
 		throw("bad system page size")
 	}
 
-	// 物理大页
+	// 物理大页大小 检查必须是 2的幂
 	if physHugePageSize&(physHugePageSize-1) != 0 {
 		print("system huge page size (", physHugePageSize, ") must be a power of 2\n")
 		throw("bad system huge page size")
@@ -559,11 +559,12 @@ func mallocinit() {
 				// 0b 0000 0000 1100 0000 0000 0000 0000 0000 0000 0000 0000 0000
 				p = uintptr(i)<<40 | uintptrMask&(0x00c0<<32)
 			}
-			// 堆外对象
 
+			// 堆外对象
 			hint := (*arenaHint)(mheap_.arenaHintAlloc.alloc())
 			// 指向堆内地址
 			hint.addr = p
+			// 交换
 			hint.next, mheap_.arenaHints = mheap_.arenaHints, hint
 		}
 	} else {

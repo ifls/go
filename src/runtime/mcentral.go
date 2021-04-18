@@ -18,12 +18,12 @@ import "runtime/internal/atomic"
 //
 //go:notinheap
 type mcentral struct {
-	lock      mutex
-	spanclass spanClass // uint8
+	lock      mutex  //中心缓存， 访问必须加锁
+	spanclass spanClass // uint8 只管理一个尺寸的对象
 
 	// For !go115NewMCentralImpl.
-	nonempty mSpanList // 非空闲span列表 list of spans with a free object, ie a nonempty free list
-	empty    mSpanList // 非空闲span列表 list of spans with no free objects (or cached in an mcache)
+	nonempty mSpanList // 有空间可用的 span 链表 list of spans with a free object, ie a nonempty free list
+	empty    mSpanList // 无空间可用的 span 链表 list of spans with no free objects (or cached in an mcache)
 
 	// partial and full contain two mspan sets: one of swept in-use
 	// spans, and one of unswept in-use spans. These two trade
@@ -43,8 +43,8 @@ type mcentral struct {
 	// to the appropriate swept list. As a result, the parts of the
 	// sweeper and mcentral that do consume from the unswept list may
 	// encounter swept spans, and these should be ignored.
-	partial [2]spanSet // 部分空 list of spans with a free object
-	full    [2]spanSet // 全满 list of spans with no free objects
+	partial [2]spanSet // 部分空， 有空闲对象 list of spans with a free object
+	full    [2]spanSet // 全满，无空闲对象 list of spans with no free objects
 
 	// nmalloc is the cumulative累积 count of objects allocated from
 	// this mcentral, assuming all spans in mcaches are
@@ -94,7 +94,7 @@ func (c *mcentral) fullSwept(sweepgen uint32) *spanSet {
 	return &c.full[sweepgen/2%2]
 }
 
-// 分配一个mspan给到mcache
+// 分配一个mspan return 给 mcache对象
 // Allocate a span to use in an mcache.
 func (c *mcentral) cacheSpan() *mspan {
 	if !go115NewMCentralImpl {
@@ -124,25 +124,25 @@ func (c *mcentral) cacheSpan() *mspan {
 	// still has very poor throughput. We could instead keep a
 	// running free-to-used budget and switch to fresh span
 	// allocation if the budget runs low.
-	spanBudget := 100
+	spanBudget := 100  // 总查找次数
 
 	var s *mspan
 
-	// 1. 部分空的mspan Try partial swept spans first.
+	// 1. 先从清理过的，有空闲对象的mspan中找 Try partial swept spans first.
 	if s = c.partialSwept(sg).pop(); s != nil {
 		goto havespan
 	}
 
 	// Now try partial unswept spans.
 	for ; spanBudget >= 0; spanBudget-- {
-		// 部分满
+		// 2. 先从未清理过的，有空闲对象的mspan中找
 		s = c.partialUnswept(sg).pop()
 		if s == nil {
 			break
 		}
 		if atomic.Load(&s.sweepgen) == sg-2 && atomic.Cas(&s.sweepgen, sg-2, sg-1) {
 			// We got ownership of the span, so let's sweep it and use it.
-			s.sweep(true) // 清扫了，就直接重用
+			s.sweep(true) // 清理，然后就return重用
 			goto havespan
 		}
 		// We failed to get ownership of the span, which means it's being or
@@ -155,16 +155,18 @@ func (c *mcentral) cacheSpan() *mspan {
 	// Now try full unswept spans, sweeping them and putting them into the
 	// right list if we fail to get a span.
 	for ; spanBudget >= 0; spanBudget-- {
+		// 3. 先从未清理过的，没有空闲对象(清理一下应该就有空闲的了)的mspan中找
 		s = c.fullUnswept(sg).pop()
 		if s == nil {
 			break
 		}
 		if atomic.Load(&s.sweepgen) == sg-2 && atomic.Cas(&s.sweepgen, sg-2, sg-1) {
 			// We got ownership of the span, so let's sweep it.
+			// 清理
 			s.sweep(true)
 
 			// Check if there's any free space.
-			// 检查是否确实有空闲空间
+			// 清理后需要检查，检查是否确实有空闲空间
 			freeIndex := s.nextFreeIndex()
 			if freeIndex != s.nelems {
 				s.freeindex = freeIndex
@@ -182,7 +184,7 @@ func (c *mcentral) cacheSpan() *mspan {
 	}
 
 	// We failed to get a span from the mcentral so get one from mheap.
-	// 从堆mheap申请新的一块span
+	// 4. 从堆mheap申请新的一块span
 	s = c.grow()
 	if s == nil {
 		return nil
@@ -216,6 +218,7 @@ havespan:
 	freeByteBase := s.freeindex &^ (64 - 1)
 	whichByte := freeByteBase / 8
 	// Init alloc bits cache.
+	// 使用allocBits更新 allocCache
 	s.refillAllocCache(whichByte)
 	// Adjust the allocCache so that s.freeindex corresponds to the low bit in s.allocCache.
 	// 更新占用信息
@@ -521,12 +524,13 @@ func (c *mcentral) grow() *mspan {
 		return nil
 	}
 
-	// Use division by multiplication and shifts to quickly compute:
+	// Use division by multiplication and shifts to quickly compute: 使用乘法和位移 快速计算除法
 	// n := (npages << _PageShift) / size
+	// 对象数
 	n := (npages << _PageShift) >> s.divShift * uintptr(s.divMul) >> s.divShift2
-	// 初始化界限
+	// 初始化 右界限
 	s.limit = s.base() + size*n
-	// 初始化
+	// 找到地址对应的arena 的 位信息， 初始化 mspan的位图
 	heapBitsForAddr(s.base()).initSpan(s)
 	return s
 }

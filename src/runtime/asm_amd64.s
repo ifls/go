@@ -13,6 +13,7 @@
 // _rt0_amd64 is common startup code for most amd64 systems when using internal linking内部连接.
 // This is the entry point for the program from the kernel for an ordinary -buildmode=exe program. 普通可执行程序的内核跳转入口
 // The stack holds the number of arguments and the C-style argv. //栈上已经有c风格的输入参数
+// rt0_linux_amd64.s 里的_rt0_amd64_linux函数(elf 的启动跳转地)  jmp过来的，
 TEXT _rt0_amd64(SB),NOSPLIT,$-8
 	MOVQ	0(SP), DI	// argc 8B大小 DI = sp
 	LEAQ	8(SP), SI	// argv DI = sp + 8

@@ -594,7 +594,9 @@ type p struct {
 	syscalltick uint32     // 系统调用次数 incremented on every system call
 	sysmontick  sysmontick // 上一次被监控观察的计数 last tick observed by sysmon
 	m           muintptr   // *m back-link to associated m (nil if idle)
-	mcache      *mcache    // Per-P 缓存
+
+	//
+	mcache      *mcache    // Per-P 只能一个线程在某一时刻使用的缓存
 	pcache      pageCache  // 页缓存
 	raceprocctx uintptr
 
