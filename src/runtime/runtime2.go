@@ -1068,8 +1068,10 @@ var (
 	// Information about what cpu features are available.
 	// Packages outside the runtime should not use these
 	// as they are not an external api. 只限runtime包内部使用
-	// Set on startup in asm_{386,amd64}.s _rt0_go 哈数
+	// Set on startup in asm_{386,amd64}.s _rt0_go 函数里赋值的
 	processorVersionInfo uint32 // cpu功能特性
+
+	// 赋值为1，表示true
 	isIntel              bool
 	lfenceBeforeRdtsc    bool // 汇编里cputicks使用
 

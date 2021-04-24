@@ -109,7 +109,7 @@ var main_init_done chan bool
 func main_main()
 
 // mainStarted indicates that the main M has started.
-// 允许启动其他M
+// 允许启动或创建其他Mm去执行g
 var mainStarted bool
 
 // runtimeInitTime is the nanotime() at which the runtime started.
@@ -3810,7 +3810,7 @@ func malg(stacksize int32) *g {
 	return newg
 }
 
-// Create a new g running fn 执行函数fn，使用siz长的函数with siz bytes of arguments.
+// Create a new g running fn 执行函数fn，使用siz长的函数with siz bytes of arguments. 没有返回值，不需要计算返回值所占的空间
 // Put it on the queue of g's waiting to run. 放到等待队列
 // The compiler turns a go statement into a call to this. 编译器把go func() 转为对此函数的调用
 //
@@ -3827,9 +3827,9 @@ func malg(stacksize int32) *g {
 // go func  会调用此函数创建协程结构体
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
-	// 函数指针之上就是调用参数
+	// 函数指针更高的地址 就是调用参数
 	argp := add(unsafe.Pointer(&fn), sys.PtrSize)
-	// g0
+	// 不一定是g0
 	gp := getg()
 
 	// go语句生成的汇编指令会将go pc 放入ax寄存器
@@ -3840,13 +3840,14 @@ func newproc(siz int32, fn *funcval) {
 	systemstack(func() {
 		newg := newproc1(fn, argp, siz, gp, pc)
 
-		_p_ := getg().m.p.ptr()
+		// g0
+		_p_ := getg().m.p.ptr()  // 最开始的m0 在mstart函数前有 p != nil??
 		// 放到p的运行时队列中
 		runqput(_p_, newg, true)
 
 		// main初始化之后才，所以m0的g0没有p，跳过，直接mstart
 		if mainStarted {
-			// 创建m去执行协程
+			// 创建m去执行g
 			wakep()
 		}
 	})
