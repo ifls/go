@@ -619,7 +619,7 @@ func schedinit() {
 	tracebackinit()
 	// 初始化模块 symtab.go 一些校验
 	moduledataverify()
-	// 栈缓存初始化 stack.go stackpoll stackLarge
+	// 栈内存缓存初始化 stack.go stackpoll stackLarge
 	stackinit()
 	// 内存分配初始化 malloc.go
 	mallocinit()
@@ -661,7 +661,7 @@ func schedinit() {
 		procs = n
 	}
 
-	// 更改P的数量
+	// 更改P的数量， 初始化化新的p
 	if procresize(procs) != nil {
 		// panic.go
 		throw("unknown runnable goroutine during bootstrap")
@@ -1219,14 +1219,14 @@ func startTheWorldWithSema(emitTraceEvent bool) int64 {
 //
 // May run during STW (because it doesn't have a P yet), so write
 // barriers are not allowed.
-// //新建线程，入口函数 called from newm1
+// 新建线程的入口函数 called from newm1
 //go:nosplit
 //go:nowritebarrierrec
 func mstart() {
 	// 在g0栈上执行
 	_g_ := getg()
 
-	// == 0 表示未分配栈, 使用的是系统栈, 例如m0.g0就是系统线程栈
+	// == 0 表示未分配栈, 使用的是系统栈, 例如m0.g0就是系统线程栈 ？？ g0.stack.lo 在启动的时候，被赋值为 0了,
 	osStack := _g_.stack.lo == 0
 	if osStack {
 		// Initialize stack bounds from system stack.
@@ -1283,7 +1283,8 @@ func mstart1() {
 	// Install signal handlers; after minit so that minit can
 	// prepare the thread to be able to handle the signals.
 	if _g_.m == &m0 {
-		// m0的特殊初始化，设置信号处理函数
+		// 只有m0才有的的特殊初始化，设置信号处理函数
+		// m0才能捕捉进程级别的信号？
 		mstartm0()
 	}
 
