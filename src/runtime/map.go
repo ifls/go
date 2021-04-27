@@ -326,16 +326,16 @@ func makemap_small() *hmap {
 
 // makemap implements Go map creation for make(map[k]v, hint).
 // If the compiler has determined that the map or the first bucket
-// can be created on the stack 栈上创建, h and/or bucket may be non-nil.
+// can be created on the stack 栈上创建, h and/or bucket may be non-nil. h可以被复用
 
 // If h != nil, the map can be created directly in h.
 // If h.buckets != nil, bucket pointed to can be used as the first bucket.
+// t = type.map[string]int(SB)
 func makemap(t *maptype, hint int, h *hmap) *hmap {
 	// hint 数量， size尺寸
-	mem, overflow := math.MulUintptr(uintptr(hint), t.bucket.size)
-	// maxAlloc 一次内存分配的最大尺寸
+	mem, overflow := math.MulUintptr(uintptr(hint), t.bucket.size) // 这个size是什么size？
 	if overflow || mem > maxAlloc {
-		hint = 0
+		hint = 0 // 溢出了，直接按需分配
 	}
 	// 计算预先需要分配多少entry空间
 
@@ -350,7 +350,7 @@ func makemap(t *maptype, hint int, h *hmap) *hmap {
 	// For hint < 0 overLoadFactor returns false since hint < bucketCnt.
 	B := uint8(0)
 	// 根据负载因子，计算需要的桶数量
-	// count/8 > 2^B
+	// hint/8 > 2^B
 	for overLoadFactor(hint, B) {
 		B++
 	}
