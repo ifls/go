@@ -593,11 +593,11 @@ func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool)
 			raceacquire(qp)
 			racerelease(qp)
 		}
-		// 拷贝
+		// 拷贝 到队列上
 		if ep != nil {
-			typedmemmove(c.elemtype, ep, qp) // qp ->ep
+			typedmemmove(c.elemtype, ep, qp) // qp -> ep
 		}
-		typedmemclr(c.elemtype, qp)
+		typedmemclr(c.elemtype, qp)  // 置零队列上的数据
 
 		// 发送
 		c.recvx++
@@ -794,9 +794,10 @@ func selectnbrecv2(elem unsafe.Pointer, received *bool, c *hchan) (selected bool
 	return
 }
 
+
 //go:linkname reflect_chansend reflect.chansend
 func reflect_chansend(c *hchan, elem unsafe.Pointer, nb bool) (selected bool) {
-	return chansend(c, elem, !nb, getcallerpc())
+	return chansend(c, elem, !nb, getcallerpc())  // 为什么取反nb？？
 }
 
 //go:linkname reflect_chanrecv reflect.chanrecv
@@ -852,7 +853,7 @@ func (q *waitq) enqueue(sgp *sudog) {
 
 func (q *waitq) dequeue() *sudog {
 	for {
-		sgp := q.first
+		sgp := q.first  // first就是 第一个节点
 		if sgp == nil {
 			return nil
 		}
