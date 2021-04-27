@@ -30,7 +30,7 @@ func concatstrings(buf *tmpBuf, a []string) string {
 		if n == 0 {
 			continue
 		}
-		if l+n < l {
+		if l+n < l {  // 溢出变负
 			throw("string concatenation too long")
 		}
 		l += n
@@ -115,7 +115,7 @@ func slicebytetostring(buf *tmpBuf, ptr *byte, n int) (str string) {
 }
 
 // stringDataOnStack reports whether the string's data is stored on the current goroutine's stack.
-// 判断 string底层数据 在当前g栈上
+// 判断 string底层数据指针地址 在当前g的栈内存块之内
 func stringDataOnStack(s string) bool {
 	ptr := uintptr(stringStructOf(&s).str)
 	stk := getg().stack
@@ -164,8 +164,8 @@ func slicebytetostringtmp(ptr *byte, n int) (str string) {
 // string -> []byte
 func stringtoslicebyte(buf *tmpBuf, s string) []byte {
 	var b []byte
-	if buf != nil && len(s) <= len(buf) {
-		*buf = tmpBuf{}
+	if buf != nil && len(s) <= len(buf) {  // 优化小于32B的 转换,
+		*buf = tmpBuf{}  // 清空数组
 		b = buf[:len(s)]
 	} else {
 		b = rawbyteslice(len(s))
@@ -177,7 +177,7 @@ func stringtoslicebyte(buf *tmpBuf, s string) []byte {
 // string -> []rune
 func stringtoslicerune(buf *[tmpStringBufSize]rune, s string) []rune {
 	// two passes.
-	// unlike slicerunetostring, no race because strings are immutable.
+	// unlike slicerunetostring, no race because strings are immutable. 字符串不可变, 必须要考虑竞争情况
 	n := 0
 	for range s {
 		n++
@@ -233,7 +233,7 @@ type stringStruct struct {
 	len int
 }
 
-// Variant with *byte pointer type for DWARF debugging.
+// Variant with *byte pointer type for DWARF一种调试信息格式 debugging.
 type stringStructDWARF struct {
 	str *byte
 	len int
@@ -392,7 +392,7 @@ func atoi(s string) (int, bool) {
 		}
 		un *= 10
 		un1 := un + uint(c) - '0'
-		if un1 < un {
+		if un1 < un {  // un1 变成 负数了
 			// overflow
 			return 0, false
 		}
@@ -422,6 +422,7 @@ func atoi32(s string) (int32, bool) {
 	return 0, false
 }
 
+// 查找字符串里的 '\0', 一页一页4KB的找
 //go:nosplit
 func findnull(s *byte) int {
 	if s == nil {
