@@ -126,7 +126,7 @@ func makeslice64(et *_type, len64, cap64 int64) unsafe.Pointer {
 // to calculate where to write new values during an append.
 // TODO: When the old backend is gone, reconsider this decision.
 // The SSA backend might prefer the new length or to return only ptr/cap and save stack space.
-// append 扩容
+// append([]byte, 1) 会调用这个函数, 扩容 et 指向的是 type.uint8 类型, 不是 []uint8类型
 func growslice(et *_type, old slice, cap int) slice {
 	if raceenabled {
 		callerpc := getcallerpc()
@@ -233,7 +233,7 @@ func growslice(et *_type, old slice, cap int) slice {
 
 	var p unsafe.Pointer
 	if et.ptrdata == 0 {
-		// 分配内存，下面再清空
+		// 分配不置零的内存, 下面再清空
 		p = mallocgc(capmem, nil, false)
 		// The append() that calls growslice is going to overwrite from old.len to cap (which will be the new length).
 		// Only clear the part that will not be overwritten.
@@ -247,7 +247,7 @@ func growslice(et *_type, old slice, cap int) slice {
 			bulkBarrierPreWriteSrcOnly(uintptr(p), uintptr(old.array), lenmem-et.size+et.ptrdata)
 		}
 	}
-	// 内存拷贝
+	// 旧内存 拷贝到新的内存
 	memmove(p, old.array, lenmem)
 
 	return slice{p, old.len, newcap}
