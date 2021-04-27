@@ -97,7 +97,7 @@ func makeslice(et *_type, len, cap int) unsafe.Pointer {
 		}
 		panicmakeslicecap()
 	}
-	// 返回指定大小的数组地址，构建slice，之前是由这里完成，现在改成编译器处理了
+	// 返回指定大小的数组地址，构建slice，之前是由这里完成, 现在改成编译器处理了, 其实就是栈上连续三个变量
 	return mallocgc(mem, et, true)
 }
 
@@ -126,7 +126,7 @@ func makeslice64(et *_type, len64, cap64 int64) unsafe.Pointer {
 // to calculate where to write new values during an append.
 // TODO: When the old backend is gone, reconsider this decision.
 // The SSA backend might prefer the new length or to return only ptr/cap and save stack space.
-// append 扩容
+// append([]byte, 1) 会调用这个函数扩容底层数组, 而et指向的是 type.uint8 类型, 不是 []uint8类型
 func growslice(et *_type, old slice, cap int) slice {
 	if raceenabled {
 		callerpc := getcallerpc()
@@ -141,7 +141,7 @@ func growslice(et *_type, old slice, cap int) slice {
 		panic(errorString("growslice: cap out of range"))
 	}
 
-	if et.size == 0 {
+	if et.size == 0 { // 不需要分配内存
 		// append should not create a slice with nil pointer but non-zero len.
 		// We assume that append doesn't need to preserve old.array in this case.
 		return slice{unsafe.Pointer(&zerobase), old.len, cap}
@@ -150,9 +150,9 @@ func growslice(et *_type, old slice, cap int) slice {
 	newcap := old.cap
 	doublecap := newcap + newcap
 	if cap > doublecap {
-		// 超过2倍则使用指定传入的长度
+		// 超过2倍, 则使用指定传入的长度
 		newcap = cap
-	} else {
+	} else { // cap <= doublecap
 		// cap <= doublecap
 		if old.len < 1024 {
 			// 1024以下用2倍
@@ -160,13 +160,13 @@ func growslice(et *_type, old slice, cap int) slice {
 		} else {
 			// Check 0 < newcap to detect overflow
 			// and prevent an infinite loop.
-			// 1/4递增，直到超过cap
+			// 1/4递增, 直到 >= cap, 略微超过doublecap, 少于1/4
 			for 0 < newcap && newcap < cap {
 				newcap += newcap / 4
 			}
 			// Set newcap to the requested cap when
 			// the newcap calculation overflowed.
-			// 考虑溢出为负数的情况
+			// 1/4倍递增, 考虑溢出为负数的情况
 			if newcap <= 0 {
 				newcap = cap
 			}
@@ -174,11 +174,12 @@ func growslice(et *_type, old slice, cap int) slice {
 	}
 
 	var overflow bool
+	// 原有切片所占的内存字节数, 老数据的结尾
 	var lenmem, newlenmem, capmem uintptr
 	// Specialize for common values of et.size.
-	// For 1 we don't need any division/multiplication.
-	// For sys.PtrSize, compiler will optimize division/multiplication into a shift by a constant.
-	// For powers of 2, use a variable shift.
+	// For 1 we don't need any division/multiplication. size为1, 不需要 * 或者 /
+	// For sys.PtrSize, compiler will optimize division/multiplication into a shift by a constant. 靠编译器优化
+	// For powers of 2, use a variable shift. 手动优化
 	switch {
 	case et.size == 1:
 		lenmem = uintptr(old.len)
@@ -192,7 +193,7 @@ func growslice(et *_type, old slice, cap int) slice {
 		capmem = roundupsize(uintptr(newcap) * sys.PtrSize)
 		overflow = uintptr(newcap) > maxAlloc/sys.PtrSize
 		newcap = int(capmem / sys.PtrSize)
-	case isPowerOfTwo(et.size):
+	case isPowerOfTwo(et.size):  // 仅仅是避免乘法
 		var shift uintptr
 		if sys.PtrSize == 8 {
 			// Mask shift for better code generation.
@@ -226,18 +227,18 @@ func growslice(et *_type, old slice, cap int) slice {
 	//   s = append(s, d, d, d, d)
 	//   print(len(s), "\n")
 	// }
-	// 要分配的总内存
+	// 要分配的总内存 超过 2^48
 	if overflow || capmem > maxAlloc {
 		panic(errorString("growslice: cap out of range"))
 	}
 
 	var p unsafe.Pointer
 	if et.ptrdata == 0 {
-		// 分配内存，下面再清空
+		// 分配不置零的内存, 下面再清空
 		p = mallocgc(capmem, nil, false)
 		// The append() that calls growslice is going to overwrite from old.len to cap (which will be the new length).
 		// Only clear the part that will not be overwritten.
-		memclrNoHeapPointers(add(p, newlenmem), capmem-newlenmem)
+		memclrNoHeapPointers(add(p, newlenmem), capmem-newlenmem) // [0, newlenmem) 会拷贝旧数据过来覆盖, 不需要置0
 	} else {
 		// Note: can't use rawmem (which avoids zeroing of memory), because then GC can scan uninitialized memory.
 		p = mallocgc(capmem, et, true)
@@ -247,7 +248,7 @@ func growslice(et *_type, old slice, cap int) slice {
 			bulkBarrierPreWriteSrcOnly(uintptr(p), uintptr(old.array), lenmem-et.size+et.ptrdata)
 		}
 	}
-	// 内存拷贝
+	// 旧内存 拷贝到新的内存
 	memmove(p, old.array, lenmem)
 
 	return slice{p, old.len, newcap}
@@ -257,12 +258,13 @@ func isPowerOfTwo(x uintptr) bool {
 	return x&(x-1) == 0
 }
 
-// copy(a, b) 拷贝切片
+// copy(a, b) 拷贝切片  // 如果src和dst 指向同一块内存怎么办?? width 是多少??
 func slicecopy(toPtr unsafe.Pointer, toLen int, fmPtr unsafe.Pointer, fmLen int, width uintptr) int {
 	if fmLen == 0 || toLen == 0 {
 		return 0
 	}
 
+	// min(toLen, fmLen)
 	n := fmLen
 	if toLen < n {
 		n = toLen
@@ -297,7 +299,7 @@ func slicecopy(toPtr unsafe.Pointer, toLen int, fmPtr unsafe.Pointer, fmLen int,
 	return n
 }
 
-// 针对 string 拷贝
+// 针对 copy string 的特别优化版本
 func slicestringcopy(toPtr *byte, toLen int, fm string) int {
 	if len(fm) == 0 || toLen == 0 {
 		return 0

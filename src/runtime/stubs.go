@@ -88,12 +88,12 @@ func reflect_memclrNoHeapPointers(ptr unsafe.Pointer, n uintptr) {
 }
 
 // memmove copies拷贝 n bytes from "from" to "to".
-//
+// 需要调用方保证, 内存不越界
 // memmove ensures保证 that any pointer in "from" is written to "to" with
 // an indivisible不可分割 write, so that racy reads竞争读 cannot observe a
-// half-written pointer 观察不到写一半.
+// half-written pointer 观察不到写一半. 保证原子性
 // This is necessary to prevent the garbage collector from observing invalid pointers, and differs from memmove
-// in unmanaged languages.
+// in unmanaged languages. 和其他语言的memmove 可能不同
 // However, memmove is only required to do this if "from" and "to" may contain pointers, which can only be the
 // case if "from", "to", and "n" are all be word-aligned 字对齐.
 //
@@ -224,7 +224,7 @@ func publicationBarrier()
 
 // getcallerpc returns the program counter (PC) of its caller's caller.
 // getcallersp returns the stack pointer (SP) of its caller's caller.
-// The implementation may be a compiler intrinsic; there is not
+// The implementation may be a compiler intrinsic 可能是一个编译器特性; there is not
 // necessarily code implementing this on every platform.
 //
 // For example:

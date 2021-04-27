@@ -404,7 +404,7 @@ type arraytype struct {
 type chantype struct {
 	typ  _type
 	elem *_type // 元素类型
-	dir  uintptr
+	dir  uintptr // chan 的方向
 }
 
 type slicetype struct {

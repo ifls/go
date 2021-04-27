@@ -267,7 +267,7 @@ var gcphase uint32
 // If you change it, you must change builtin/runtime.go, too.
 // If you change the first four bytes, you must also change the write
 // barrier insertion code.
-// 全局变量
+// 全局变量 垃圾回收写屏障 相关的信息
 var writeBarrier struct {
 	enabled bool    // 开关 compiler emits a check of this before calling write barrier
 	pad     [3]byte // compiler uses 32-bit load for "enabled" field
