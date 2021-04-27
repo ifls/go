@@ -151,7 +151,7 @@ fail:
 var oneptrmask = [...]uint8{1}
 
 // markroot scans the i'th root.
-//
+// 将内存标记为 root 对象, 第一个用于扫描
 // Preemption must be disabled (because this uses a gcWork).
 //
 // nowritebarrier is only advisory here.

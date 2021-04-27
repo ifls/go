@@ -28,7 +28,7 @@
 #include "go_asm.h"
 #include "textflag.h"
 
-// See memmove Go doc for important implementation constraints.
+// See memmove Go doc for important implementation constraints. 参考: https://mzh.io/writing-go-memmove-asm/
 // 内存移动，考虑 区间有覆盖的情况，最好是从后复制，这汇编函数好复杂
 // func memmove(to, from unsafe.Pointer, n uintptr)
 TEXT runtime·memmove(SB), NOSPLIT, $0-24
@@ -212,7 +212,7 @@ move_65through128:
 	MOVOU	X7, -16(DI)(BX*1)
 	RET
 move_129through256:
-	MOVOU	(SI), X0
+	MOVOU	(SI), X0  // MOVOU 是 MOVDQU 指令, copy 128bit, 16B
 	MOVOU	16(SI), X1
 	MOVOU	32(SI), X2
 	MOVOU	48(SI), X3

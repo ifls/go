@@ -1576,7 +1576,7 @@ func (l *linearAlloc) alloc(size, align uintptr, sysStat *uint64) unsafe.Pointer
 
 // notInHeap is off-heap memory allocated by a lower-level allocator like sysAlloc or persistentAlloc.
 // 不受 mheap 分配管理的内存
-// In general, it's better to use real types marked as go:notinheap, 一般使用 go:notinheap就可以达到非堆分配的目的
+// In general, it's better to use real types marked as go:notinheap, 一般使用 go:notinheap就可以达到非堆分配的目的, 避免被垃圾回收
 // but this serves as a generic type for situations where that isn't 这作用于通用类型的场景,
 // possible (like in the allocators).
 //

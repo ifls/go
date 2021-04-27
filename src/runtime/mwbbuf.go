@@ -156,6 +156,7 @@ func (b *wbBuf) putFast(old, new uintptr) bool {
 	return b.next != b.end
 }
 
+// 写屏障 缓冲区(性能优化) 刷新
 // wbBufFlush flushes the current P's write barrier buffer to the GC
 // workbufs. It is passed the slot and value of the write barrier that
 // caused the flush so that it can implement cgocheck.
