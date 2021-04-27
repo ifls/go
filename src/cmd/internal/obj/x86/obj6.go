@@ -67,7 +67,7 @@ func CanUse1InsnTLS(ctxt *obj.Link) bool {
 }
 
 func progedit(ctxt *obj.Link, p *obj.Prog, newprog obj.ProgAlloc) {
-	// Thread-local storage references use the TLS pseudo-register.
+	// Thread-local storage references use the TLS pseudo-register. 伪寄存器
 	// As a register, TLS refers to the thread-local storage base, and it
 	// can only be loaded into another register:
 	//

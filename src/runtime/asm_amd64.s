@@ -10,17 +10,17 @@
 //定义宏常量
 #include "textflag.h"
 
-// _rt0_amd64 is common startup code for most amd64 systems when using internal linking内部连接.
-// This is the entry point for the program from the kernel for an ordinary -buildmode=exe program. 普通可执行程序的内核跳转入口
+// _rt0_amd64 is common startup code for most amd64 systems when using internal linking 内部链接.
+// This is the entry point for the program from the kernel for an ordinary平常的 -buildmode=exe program. go build 普通可执行程序的从内核跳转的入口
 // The stack holds the number of arguments and the C-style argv. //栈上已经有c风格的输入参数
 // rt0_linux_amd64.s 里的_rt0_amd64_linux函数(elf 的启动跳转地)  jmp过来的，
-TEXT _rt0_amd64(SB),NOSPLIT,$-8
-	MOVQ	0(SP), DI	// argc 8B大小 DI = sp
-	LEAQ	8(SP), SI	// argv DI = sp + 8
+TEXT _rt0_amd64(SB),NOSPLIT,$-8  // 为什么是8 ？？
+	MOVQ	0(SP), DI	// argc int 8B大小 DI = sp+0
+	LEAQ	8(SP), SI	// *argv int SI = sp+8
 	JMP	runtime·rt0_go(SB)
 
-// main is common startup code for most amd64 systems when using 外部链接入口
-// external linking. The C startup code will call the symbol "main"
+// main is common startup code for most amd64 systems when using external linking. 外部链接入口
+// The C startup code will call the symbol "main"   c调go会使用这个函数， c会吧 栈上的 放在 DI和SI寄存器
 // passing argc and argv in the usual C ABI registers DI and SI.
 TEXT main(SB),NOSPLIT,$-8
 	JMP	runtime·rt0_go(SB)
@@ -93,17 +93,17 @@ TEXT runtime·rt0_go(SB),NOSPLIT,$0
 	// copy arguments forward on an even stack 拷贝输入参数到 even stack 偶数对齐栈
 	MOVQ	DI, AX		// argc
 	MOVQ	SI, BX		// argv
-	SUBQ	$(4*8+7), SP // 栈 2args 2auto
-	ANDQ	$~15, SP	//再减 清除后4位b，对齐8字节
-	MOVQ	AX, 16(SP)
-	MOVQ	BX, 24(SP)
+	SUBQ	$(4*8+7), SP // 39 栈 2args 2auto 假如 101 - 39 = 62  0x 0011 1110
+	ANDQ	$~15, SP	//再减 清除后4位bit，对齐16字节 0x00 11 00 00  = 48
+	MOVQ	AX, 16(SP)  // argc -> sp+16
+	MOVQ	BX, 24(SP) // *argv -> sp+24
 
 	// create istack out of the given (operating system) stack.
 	// _cgo_init may update stackguard.
 	MOVQ	$runtime·g0(SB), DI		//DI = &g0    g0是全局变量
-	LEAQ	(-64*1024+104)(SP), BX	//将地址放在BX
-	MOVQ	BX, g_stackguard0(DI)	//g.stackguard0
-	MOVQ	BX, g_stackguard1(DI)
+	LEAQ	(-64*1024+104)(SP), BX	//BX = (sp-64MB)地址
+	MOVQ	BX, g_stackguard0(DI)	//g.stackguard0 = bx
+	MOVQ	BX, g_stackguard1(DI)  //
 	MOVQ	BX, (g_stack+stack_lo)(DI)	//栈顶 < 栈底
 	MOVQ	SP, (g_stack+stack_hi)(DI)  //栈底
 
@@ -117,26 +117,27 @@ TEXT runtime·rt0_go(SB),NOSPLIT,$0
 	// Figure out how to serialize RDTSC.
 	// On Intel processors LFENCE is enough. AMD requires MFENCE.
 	// Don't know about the rest, so let's do MFENCE.
+	// 参考 https://blog.csdn.net/razor87/article/details/8711712
 	CMPL	BX, $0x756E6547  // "Genu"
 	JNE	notintel
 	CMPL	DX, $0x49656E69  // "ineI"
 	JNE	notintel
 	CMPL	CX, $0x6C65746E  // "ntel"
 	JNE	notintel
-	MOVB	$1, runtime·isIntel(SB)
-	MOVB	$1, runtime·lfenceBeforeRdtsc(SB)
+	MOVB	$1, runtime·isIntel(SB)  // do代码里定义的 runtime.isIntel = 1
+	MOVB	$1, runtime·lfenceBeforeRdtsc(SB)  // runtime·lfenceBeforeRdtsc = 1
 notintel:
 
 	// Load EAX=1 cpuid flags
 	MOVL	$1, AX
-	CPUID
-	MOVL	AX, runtime·processorVersionInfo(SB)
+	CPUID    // 执行此命令后， 会返回 cpu 签名
+	MOVL	AX, runtime·processorVersionInfo(SB)  // 赋值 runtime·processorVersionInfo
 
 nocpuinfo:
 	// if there is an _cgo_init, call it.
 	MOVQ	_cgo_init(SB), AX
-	TESTQ	AX, AX
-	JZ	needtls
+	TESTQ	AX, AX  // TEST 指令在两个操作数的对应位之间进行 AND 操作，并根据运算结果设置符号标志位、零标志位和奇偶标志位。
+	JZ	needtls  // 结果全为0， zero flag 会置为1， 就跳转 说明AX 本身就是0
 	// arg 1: g0, already in DI
 	MOVQ	$setg_gcc<>(SB), SI // arg 2: setg_gcc
 #ifdef GOOS_android
@@ -146,7 +147,7 @@ nocpuinfo:
 	MOVQ	-16(TLS), CX
 #else
 	MOVQ	$0, DX	// arg 3, 4: not used when using platform's TLS
-	MOVQ	$0, CX
+	MOVQ	$0, CX  // linux 不需要这两个寄存器
 #endif
 #ifdef GOOS_windows
 	// Adjust for the Win64 calling convention.
@@ -157,7 +158,7 @@ nocpuinfo:
 #endif
 	CALL	AX
 
-	// update stackguard after _cgo_init
+	// update stackguard after _cgo_init cgo初始化 需要调整 g0栈
 	MOVQ	$runtime·g0(SB), CX
 	MOVQ	(g_stack+stack_lo)(CX), AX
 	ADDQ	$const__StackGuard, AX
@@ -184,14 +185,17 @@ needtls:
 	// skip TLS setup on Darwin
 	JMP ok
 #endif
-
-	LEAQ	runtime·m0+m_tls(SB), DI	// DI = &runtime.m0.tls
+	// linux
+	LEAQ	runtime·m0+m_tls(SB), DI	// DI = &runtime.m0.tls  // [6]uintptr
 	CALL	runtime·settls(SB)			//设置m.tls 关联 线程的状态
 
 	// store through it, to make sure it works
 	//验证tls
-	get_tls(BX)		//bx = m.tls
-	MOVQ	$0x123, g(BX)				// *tls.g = 0x123
+	// TLS 是一个伪寄存器， 指向 tls 基址 // Thread-local storage references use the TLS pseudo-register. 伪寄存器
+       	// As a register, TLS refers to the thread-local storage base, and it
+       	// can only be loaded into another register:
+	get_tls(BX)		// MOVQ TLS, r // bx = TLS 伪寄存器 和 m0.tls指向的是一样的内存
+	MOVQ	$0x123, g(BX)				// TLS.g = 0x123
 	MOVQ	runtime·m0+m_tls(SB), AX	//ax = runtime.m0.tls
 	CMPQ	AX, $0x123					//  比较 m0.tls 存放的就是 &g
 	JEQ 2(PC)	// jmp if equal 跳过下面
@@ -200,24 +204,25 @@ ok:
 	// set the per-goroutine and per-mach机器 "registers"
 	get_tls(BX)		// bx = m.tls
 	LEAQ	runtime·g0(SB), CX		//cx = runtime.g0
-	MOVQ	CX, g(BX)				//tls.g = g0
-	LEAQ	runtime·m0(SB), AX		//ax = &runtime.g0
-
-
+	MOVQ	CX, g(BX)				//m0.tls.g = g0
+	LEAQ	runtime·m0(SB), AX		//ax = &runtime.m0
 	//g0与m0绑定
 	// save m->g0 = g0
 	MOVQ	CX, m_g0(AX)  	//m0.g0 = cx = runtime.g0
 	// save m0 to g0->m
 	MOVQ	AX, g_m(CX)     //g0.m = runtime.m0
 
+	// CLD指令功能： 将标志寄存器Flag的方向标志位DF清零
 	CLD				// convention惯例 is D is always left cleared
+
+	// 在runtime1.go里 func check() 类型检查以及其他检查, 原子操作验证
 	CALL	runtime·check(SB)		//检查类型和其他
 
-	//移动argc参数和argv参数指针
+	//还原argc参数和argv参数指针到一开始的位置， 方便调用 func args(argc int, argv **int)
 	MOVL	16(SP), AX		// copy argc
-	MOVL	AX, 0(SP)		// *sp = *(sp+8)
+	MOVL	AX, 0(SP)		// argc *sp = *(sp+8)
 	MOVQ	24(SP), AX		// copy argv
-	MOVQ	AX, 8(SP)		// *(sp+8) = *(sp+24)
+	MOVQ	AX, 8(SP)		// argv *(sp+8) = *(sp+24)
 	CALL	runtime·args(SB)	//解析命令行参数
 
 	CALL	runtime·osinit(SB)	//ncpu 赋值, 获取物理页大小, 和主机名
@@ -225,11 +230,14 @@ ok:
 
 	// create a new goroutine to start program
 	MOVQ	$runtime·mainPC(SB), AX		// ax = runtime.mainPC entry 就是runtime.main 参考下方DATA
-	PUSHQ	AX			// 第2个参数压到栈上 参数fn 表示的函数指针，结构体地址也是函数第一个字段的地址
-	PUSHQ	$0			// 第1个参数压到栈上 参数siz arg size 0表示 没有参数
-	CALL	runtime·newproc(SB)		//启动新的g结构 放入队列 执行的函数是runtime.main
-	POPQ	AX			//退栈
-	POPQ	AX			// 保存runtime.mainPC
+
+	// 类似 ADD $16, SP
+	PUSHQ	AX			// sp-=8, sp=main func addr 第2个参数压到栈上 参数fn 表示的函数指针，结构体地址也是函数第一个字段的地址
+	PUSHQ	$0			// sp-=8, sp=main func argument size 第1个参数压到栈上 参数siz arg size 0表示 没有参数
+	CALL	runtime·newproc(SB)	// 第一个用户g	//创建新的g结构 放入队列 执行的函数是函数指针 runtime.main
+	//
+	POPQ	AX			//退栈 AX = sp sp+=8
+	POPQ	AX			// 保存AX = runtime.mainPC, sp+=8
 
 	// start this M
 	CALL	runtime·mstart(SB)		//mstart是每个m或者说线程的入口函数, 会进入调度循环, 不会返回
@@ -239,7 +247,7 @@ ok:
 
 	// Prevent dead-code elimination of debugCallV1, which is
 	// intended to be called by debuggers.
-	MOVQ	$runtime·debugCallV1(SB), AX
+	MOVQ	$runtime·debugCallV1(SB), AX // 调试器用的
 	RET
 // 全局变量 格式是 symbol+offset(SB)/width, value    symbol+offset(SB) 定义内存位置
 DATA	runtime·mainPC+0(SB)/8,$runtime·main(SB)  // runtime.mainPC = runtime.main
@@ -1556,7 +1564,7 @@ GLOBL	debugCallFrameTooLarge<>(SB), RODATA, $20	// Size duplicated below
 // debugCallV1 is the entry point for debugger-injected function
 // calls on running goroutines. It informs the runtime that a
 // debug call has been injected and creates a call frame for the
-// debugger to fill in.
+// debugger to fill in. 创建一个栈帧给调试器用
 //
 // To inject a function call, a debugger should:
 // 1. Check that the goroutine is in state _Grunning and that

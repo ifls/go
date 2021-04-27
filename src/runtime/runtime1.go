@@ -46,7 +46,7 @@ func gotraceback() (level int32, all, crash bool) {
 	return
 }
 
-var (
+var (  // 全局保存命令行参数
 	argc int32
 	argv **byte
 )
@@ -135,7 +135,7 @@ func testAtomic64() {
 	}
 }
 
-// 类型检查以及其他检查
+// rt0_go() 启动时 类型检查以及其他检查, 原子操作验证
 func check() {
 	var (
 		a     int8

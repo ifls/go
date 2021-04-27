@@ -109,7 +109,7 @@ var main_init_done chan bool
 func main_main()
 
 // mainStarted indicates that the main M has started.
-// 允许启动其他M
+// 允许启动或创建其他Mm去执行g
 var mainStarted bool
 
 // runtimeInitTime is the nanotime() at which the runtime started.
@@ -619,7 +619,7 @@ func schedinit() {
 	tracebackinit()
 	// 初始化模块 symtab.go 一些校验
 	moduledataverify()
-	// 栈缓存初始化 stack.go stackpoll stackLarge
+	// 栈内存缓存初始化 stack.go stackpoll stackLarge
 	stackinit()
 	// 内存分配初始化 malloc.go
 	mallocinit()
@@ -661,7 +661,7 @@ func schedinit() {
 		procs = n
 	}
 
-	// 更改P的数量
+	// 更改P的数量， 初始化化新的p
 	if procresize(procs) != nil {
 		// panic.go
 		throw("unknown runnable goroutine during bootstrap")
@@ -1219,14 +1219,14 @@ func startTheWorldWithSema(emitTraceEvent bool) int64 {
 //
 // May run during STW (because it doesn't have a P yet), so write
 // barriers are not allowed.
-// //新建线程，入口函数 called from newm1
+// 新建线程的入口函数 called from newm1
 //go:nosplit
 //go:nowritebarrierrec
 func mstart() {
 	// 在g0栈上执行
 	_g_ := getg()
 
-	// == 0 表示未分配栈, 使用的是系统栈, 例如m0.g0就是系统线程栈
+	// == 0 表示未分配栈, 使用的是系统栈, 例如m0.g0就是系统线程栈 ？？ g0.stack.lo 在启动的时候，被赋值为 0了,
 	osStack := _g_.stack.lo == 0
 	if osStack {
 		// Initialize stack bounds from system stack.
@@ -1283,7 +1283,8 @@ func mstart1() {
 	// Install signal handlers; after minit so that minit can
 	// prepare the thread to be able to handle the signals.
 	if _g_.m == &m0 {
-		// m0的特殊初始化，设置信号处理函数
+		// 只有m0才有的的特殊初始化，设置信号处理函数
+		// m0才能捕捉进程级别的信号？
 		mstartm0()
 	}
 
@@ -3810,7 +3811,7 @@ func malg(stacksize int32) *g {
 	return newg
 }
 
-// Create a new g running fn 执行函数fn，使用siz长的函数with siz bytes of arguments.
+// Create a new g running fn 执行函数fn，使用siz长的函数with siz bytes of arguments. 没有返回值，不需要计算返回值所占的空间
 // Put it on the queue of g's waiting to run. 放到等待队列
 // The compiler turns a go statement into a call to this. 编译器把go func() 转为对此函数的调用
 //
@@ -3827,9 +3828,9 @@ func malg(stacksize int32) *g {
 // go func  会调用此函数创建协程结构体
 //go:nosplit
 func newproc(siz int32, fn *funcval) {
-	// 函数指针之上就是调用参数
+	// 函数指针更高的地址 就是调用参数
 	argp := add(unsafe.Pointer(&fn), sys.PtrSize)
-	// g0
+	// 不一定是g0
 	gp := getg()
 
 	// go语句生成的汇编指令会将go pc 放入ax寄存器
@@ -3840,13 +3841,14 @@ func newproc(siz int32, fn *funcval) {
 	systemstack(func() {
 		newg := newproc1(fn, argp, siz, gp, pc)
 
-		_p_ := getg().m.p.ptr()
+		// g0
+		_p_ := getg().m.p.ptr()  // 最开始的m0 在mstart函数前有 p != nil??
 		// 放到p的运行时队列中
 		runqput(_p_, newg, true)
 
 		// main初始化之后才，所以m0的g0没有p，跳过，直接mstart
 		if mainStarted {
-			// 创建m去执行协程
+			// 创建m去执行g
 			wakep()
 		}
 	})

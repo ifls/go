@@ -189,6 +189,7 @@ const (
 	_AT_HWCAP2 = 26 // hardware capability bit vector 2
 )
 
+// 包含ELF解析信息 参考 https://luoguochun.cn/post/2014-07-28-process-information-pseduo-file-system/
 var procAuxv = []byte("/proc/self/auxv\x00")
 
 var addrspace_vec [1]byte
@@ -198,6 +199,7 @@ func mincore(addr unsafe.Pointer, n uintptr, dst *byte) int32
 func sysargs(argc int32, argv **byte) {
 	n := argc + 1
 
+	// 启动时， 不光有 argv 字符串数组，还有 环境变量env数组，
 	// skip over argv, envp to get to auxv
 	for argv_index(argv, n) != nil {
 		n++
@@ -206,8 +208,10 @@ func sysargs(argc int32, argv **byte) {
 	// skip NULL separator
 	n++
 
+	// 跳过环境变量，之后就是auxv 字符串数组
 	// now argv+n is auxv
 	auxv := (*[1 << 28]uintptr)(add(unsafe.Pointer(argv), uintptr(n)*sys.PtrSize))
+	// 处理
 	if sysauxv(auxv[:]) != 0 {
 		return
 	}

@@ -807,16 +807,16 @@ TEXT runtime·settls(SB),NOSPLIT,$32
 	ADDQ	$8, DI	// ELF wants to use -8(FS)
 #endif
 	MOVQ	DI, SI
-	MOVQ	$0x1002, DI	// ARCH_SET_FS
-	MOVQ	$SYS_arch_prctl, AX		//设置线程状态
+	MOVQ	$0x1002, DI	// ARCH_SET_FS -> Set the 64-bit base for the FS register to addr. FS寄存器指向当前活动线程的TEB结构（线程结构）通过FS+偏移， 可以获取tid和pid
+	MOVQ	$SYS_arch_prctl, AX		// set architecture-specific thread state 设置线程状态
 	SYSCALL
 	CMPQ	AX, $0xfffffffffffff001
 	JLS	2(PC)
 	MOVL	$0xf1, 0xf1  // crash
 	RET
 
-#include <sched.h>
-int sched_yield(void);
+// #include <sched.h>
+// int sched_yield(void);
 //os_linux.go func osyield()
 TEXT runtime·osyield(SB),NOSPLIT,$0
 	MOVL	$SYS_sched_yield, AX	//让出cpu
