@@ -338,7 +338,7 @@ type gobuf struct {
 	bp  uintptr     // basepointer for GOEXPERIMENT=framepointer 还是实验特性 只是调整了下偏移
 }
 
-// sudog represents a g in a wait list 等待链表, such as for sending/receiving
+// sudog represents a g in a wait list 等待链表node, such as for sending/receiving
 // on a channel.
 //
 // sudog is necessary because the g ↔ synchronization object relation
@@ -357,7 +357,7 @@ type sudog struct {
 
 	next *sudog
 	prev *sudog
-	elem unsafe.Pointer // data element (may point to stack)
+	elem unsafe.Pointer // data element (may point to stack) 指向放数据的内存块的地址, 也许就在栈上
 
 	// The following fields are never accessed concurrently. 下面的字段不会被并发访问
 	// For channels, waitlink is only accessed by g.
@@ -431,7 +431,7 @@ type g struct {
 	syscallpc uintptr // if status==Gsyscall, syscallpc = sched.pc to use during gc
 
 	stktopsp uintptr        // 期望sp在栈顶，用户回溯检查 expected sp at top of stack, to check in traceback
-	param    unsafe.Pointer // passed parameter on wakeup	chan send/recv = sudog 唤醒时,被其他地方传递来的参数
+	param    unsafe.Pointer // 放 *sudog 遍历 passed parameter on wakeup	chan send/recv = sudog 唤醒时,被其他地方传递来的参数
 
 	atomicstatus uint32     // g的状态, 原子性访问
 	stackLock    uint32     // 全局都搜不到 sigprof/scang lock; TODO: fold in to atomicstatus
@@ -457,7 +457,7 @@ type g struct {
 	// pointing into this goroutine's stack. If true, stack
 	// copying needs to acquire channel locks to protect these
 	// areas of the stack.
-	activeStackChans bool
+	activeStackChans bool  // 在chan的等待队列, 且 chan 间接指向了g的栈内存
 
 	raceignore     int8     // ignore race detection events
 	sysblocktraced bool     // StartTrace has emitted发出 EvGoInSyscall about this goroutine
@@ -480,7 +480,7 @@ type g struct {
 
 	startpc    uintptr        // 函数起始执行地址 pc of goroutine function
 	racectx    uintptr        // race 竞争检测相关
-	waiting    *sudog         // 执行等待链表里的sudug，相互反指 sudog structures this g is waiting on (that have a valid elem ptr); in lock order
+	waiting    *sudog         // 存放执行等待链表里的sudug，相互反指 sudog structures this g is waiting on (that have a valid elem ptr); in lock order
 	cgoCtxt    []uintptr      // cgo traceback context
 	labels     unsafe.Pointer // profiler labels
 	timer      *timer         // sleep 当前协程， sleep时 使用时才获取/创建 cached timer for time.Sleep

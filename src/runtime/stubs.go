@@ -224,7 +224,7 @@ func publicationBarrier()
 
 // getcallerpc returns the program counter (PC) of its caller's caller.
 // getcallersp returns the stack pointer (SP) of its caller's caller.
-// The implementation may be a compiler intrinsic; there is not
+// The implementation may be a compiler intrinsic 可能是一个编译器特性; there is not
 // necessarily code implementing this on every platform.
 //
 // For example:
