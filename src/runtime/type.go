@@ -364,32 +364,44 @@ type interfacetype struct {
 }
 
 type maptype struct {
-	typ    _type
-	key    *_type
-	elem   *_type
-	bucket *_type // internal type representing a hash bucket
+	typ    _type // 本身的类型信息
+	key    *_type // key 的 类型信息
+	elem   *_type // value的 类型信息
+	bucket *_type // 桶 类型信息, internal type representing a hash bucket
 	// function for hashing keys (ptr to key, seed) -> hash
 	hasher     func(unsafe.Pointer, uintptr) uintptr
+
+	// 当 map 的 key 和 value 都不是指针, 并且 size 都小于 128 字节的情况下，会把 bmap 标记为不含指针，这样可以避免 gc 时扫描整个 hmap
 	keysize    uint8  // size of key slot
 	elemsize   uint8  // size of elem slot
-	bucketsize uint16 // size of bucket
-	flags      uint32
+	bucketsize uint16 // 单个桶的大小, size of bucket 8B tophash + 8*keysize + 8*elemsize + 8B overflow指针
+	flags      uint32 // 参考下的的函数  12 == 8 + 4 == reflexive _
 }
 
 // Note: flag values must match those used in the TMAP case
 // in ../cmd/compile/internal/gc/reflect.go:dtypesym.
+
+// 是否保存 指向key的 指针 而不是拷贝 key的值
 func (mt *maptype) indirectkey() bool { // store ptr to key instead of key itself
 	return mt.flags&1 != 0
 }
+
+// 是否保存 指向value的 指针 而不是拷贝 value的值
 func (mt *maptype) indirectelem() bool { // store ptr to elem instead of elem itself
 	return mt.flags&2 != 0
 }
+
+// key 是自反性的
 func (mt *maptype) reflexivekey() bool { // true if k==k for all keys
 	return mt.flags&4 != 0
 }
+
+// 覆盖key对应的value的时候, key要不要也更新??
 func (mt *maptype) needkeyupdate() bool { // true if we need to update key on an overwrite
 	return mt.flags&8 != 0
 }
+
+// 表示 hash函数会导致 panic ??
 func (mt *maptype) hashMightPanic() bool { // true if hash function might panic
 	return mt.flags&16 != 0
 }

@@ -11,14 +11,15 @@ package runtime
 
 // Returns size of the memory block that mallocgc will allocate if you ask for the size.
 func roundupsize(size uintptr) uintptr {
-	if size < _MaxSmallSize {
-		if size <= smallSizeMax-8 {
+	if size < _MaxSmallSize {  // < 32K
+		if size <= smallSizeMax-8 { // <= 1024-8
 			return uintptr(class_to_size[size_to_class8[divRoundUp(size, smallSizeDiv)]])
 		} else {
 			return uintptr(class_to_size[size_to_class128[divRoundUp(size-smallSizeMax, largeSizeDiv)]])
 		}
 	}
-	if size+_PageSize < size {
+
+	if size+_PageSize < size { // 溢出为负数
 		return size
 	}
 	return alignUp(size, _PageSize)

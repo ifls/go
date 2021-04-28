@@ -30,7 +30,7 @@ const (
 	kindChan      // chan int
 	kindFunc      // func name()
 	kindInterface // interface{}  20
-	kindMap       // map
+	kindMap       // map 21 or 53
 	kindPtr       // 22 指针
 
 	kindSlice         // []int
