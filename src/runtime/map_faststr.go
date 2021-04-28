@@ -199,6 +199,7 @@ dohash:
 	return unsafe.Pointer(&zeroVal[0]), false
 }
 
+// map[string]any 会使用此优化版本
 func mapassign_faststr(t *maptype, h *hmap, s string) unsafe.Pointer {
 	if h == nil {
 		panic(plainError("assignment to entry in nil map"))
