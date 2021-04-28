@@ -117,7 +117,7 @@ const (
 	maxObjsPerSpan = pageSize / 8
 	// true
 	concurrentSweep = _ConcurrentSweep
-
+	// 8092
 	_PageSize = 1 << _PageShift // 2^13 8K
 	_PageMask = _PageSize - 1   // 8K-1 0b 0111 1111 1111
 
@@ -1317,7 +1317,7 @@ func reflectlite_unsafe_New(typ *_type) unsafe.Pointer {
 
 // newarray allocates an array of n elements of type typ.
 func newarray(typ *_type, n int) unsafe.Pointer {
-	if n == 1 {
+	if n == 1 { // 针对 1, 小map的 的特别优化
 		return mallocgc(typ.size, typ, true)
 	}
 	mem, overflow := math.MulUintptr(typ.size, uintptr(n))
