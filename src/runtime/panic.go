@@ -1140,6 +1140,7 @@ func sync_throw(s string) {
 	throw(s)
 }
 
+// throw 和 panic 为什么能带出堆栈信息？？
 //go:nosplit
 func throw(s string) {
 	// Everything throw does should be recursively nosplit so it
