@@ -77,7 +77,7 @@ func concatstring5(buf *tmpBuf, a [5]string) string {
 // Buf is a fixed-size buffer for the result, it is not nil if the result does not escape.
 // []byte -> string
 func slicebytetostring(buf *tmpBuf, ptr *byte, n int) (str string) {
-	if n == 0 {
+	if n == 0 { // 处理 0 的特殊情况
 		// Turns out to be a relatively common case.
 		// Consider that you want to parse out data between parens in "foo()bar",
 		// you find the indices and convert the subslice to string.
@@ -92,7 +92,8 @@ func slicebytetostring(buf *tmpBuf, ptr *byte, n int) (str string) {
 	if msanenabled {
 		msanread(unsafe.Pointer(ptr), uintptr(n))
 	}
-	if n == 1 {
+
+	if n == 1 { // 处理1的特殊情况
 		p := unsafe.Pointer(&staticuint64s[*ptr])
 		if sys.BigEndian {
 			p = add(p, 7)
