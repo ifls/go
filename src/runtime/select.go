@@ -25,6 +25,8 @@ const (
 // Select case descriptor.
 // Known to compiler.
 // Changes here must also be made in src/cmd/internal/gc/select.go's scasetype.
+// select 在 go 里没有对应的结构体表示，但是基本等价于 selectgo 函数
+// 这个 表示 select的 每个 case:
 type scase struct {
 	c           *hchan         // chan
 	elem        unsafe.Pointer // data element
@@ -101,6 +103,7 @@ func selparkcommit(gp *g, _ unsafe.Pointer) bool {
 	return true
 }
 
+// select{} 会被直接转换为此函数
 func block() {
 	gopark(nil, nil, waitReasonSelectNoCases, traceEvGoStop, 1) // forever
 }
@@ -116,6 +119,9 @@ func block() {
 // ordinal position of its respective select{recv,send,default} call.
 // Also, if the chosen scase was a receive operation, it reports whether
 // a value was received.
+// 对于接收多个chan的select， 编译器不会特殊优化
+// 每个case 都会被转换为 scase 结构体
+// 此函数就是在多个就绪的scase里选择一个可用的
 func selectgo(cas0 *scase, order0 *uint16, ncases int) (int, bool) {
 	if debugSelect {
 		print("select: cas0=", cas0, "\n")
@@ -127,8 +133,8 @@ func selectgo(cas0 *scase, order0 *uint16, ncases int) (int, bool) {
 	order1 := (*[1 << 17]uint16)(unsafe.Pointer(order0))
 
 	scases := cas1[:ncases:ncases]
-	pollorder := order1[:ncases:ncases]
-	lockorder := order1[ncases:][:ncases:ncases]
+	pollorder := order1[:ncases:ncases]  //轮询顺序
+	lockorder := order1[ncases:][:ncases:ncases] // 加锁顺序 而根据 Channel 的地址顺序确定加锁顺序能够避免死锁的发生。
 
 	// Replace send/receive cases involving nil channels with
 	// caseNil so logic below can assume non-nil channel.
@@ -157,7 +163,7 @@ func selectgo(cas0 *scase, order0 *uint16, ncases int) (int, bool) {
 
 	// generate permuted order
 	for i := 1; i < ncases; i++ {
-		j := fastrandn(uint32(i + 1))
+		j := fastrandn(uint32(i + 1))  //引入随机性
 		pollorder[i] = pollorder[j]
 		pollorder[j] = uint16(i)
 	}
@@ -222,7 +228,7 @@ func selectgo(cas0 *scase, order0 *uint16, ncases int) (int, bool) {
 	)
 
 loop:
-	// pass 1 - look for something already waiting
+	// 第一部分 pass 1 - look for something already waiting
 	var dfli int
 	var dfl *scase
 	var casi int
@@ -277,7 +283,7 @@ loop:
 		goto retc
 	}
 
-	// pass 2 - enqueue on all chans
+	// 第二部分 pass 2 - enqueue on all chans
 	gp = getg()
 	if gp.waiting != nil {
 		throw("gp.waiting != nil")
@@ -306,7 +312,7 @@ loop:
 		nextp = &sg.waitlink
 
 		switch cas.kind {
-		case caseRecv:
+		case caseRecv:   //让所有chan都把当前g，加入到队列，有可用数据的时候，唤醒此g
 			c.recvq.enqueue(sg)
 
 		case caseSend:
@@ -316,22 +322,25 @@ loop:
 
 	// wait for someone to wake us up
 	gp.param = nil
+	// 没有
 	gopark(selparkcommit, nil, waitReasonSelect, traceEvGoBlockSelect, 1)
+
+
 	gp.activeStackChans = false
 
 	sellock(scases, lockorder)
 
 	gp.selectDone = 0
-	sg = (*sudog)(gp.param)
+	sg = (*sudog)(gp.param)  // 参数1
 	gp.param = nil
 
-	// pass 3 - dequeue from unsuccessful chans
+	// 第三部分 pass 3 - dequeue from unsuccessful chans
 	// otherwise they stack up on quiet channels
 	// record the successful case, if any.
 	// We singly-linked up the SudoGs in lock order.
 	casi = -1
 	cas = nil
-	sglist = gp.waiting
+	sglist = gp.waiting   // 参数2
 	// Clear all elem before unlinking from gp.waiting.
 	for sg1 := gp.waiting; sg1 != nil; sg1 = sg1.waitlink {
 		sg1.isSelect = false
