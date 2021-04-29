@@ -104,7 +104,8 @@ const (
 	iterator     = 1 // 有迭代器在使用当前的bucket there may be an iterator using buckets
 	oldIterator  = 2 // there may be an iterator using oldbuckets
 	hashWriting  = 4 // a goroutine is writing to the map
-	sameSizeGrow = 8 // 不扩容迁移, 有什么用呢?? the current map growth is to a new map of the same size
+	// 不扩容迁移, 因为map不断的put和delete，出现了很多空格，这些空格会导致bmap很长，但是中间有很多空的地方，扫描时间变长。所以第一种扩容实际是一种整理，将数据整理到前面一起
+	sameSizeGrow = 8 //  the current map growth is to a new map of the same size  什么情况会触发原地整理??
 
 	// sentinel哨兵 bucket ID for iterator checkss
 	noCheck = 1<<(8*sys.PtrSize) - 1 // 2^64-1 0x ff ff ff ff ff ff ff ff
@@ -173,20 +174,21 @@ type bmap struct {
 // A hash iteration structure.
 // If you modify hiter, also change cmd/compile/internal/gc/reflect.go to indicate
 // the layout of this structure.
-type hiter struct { // todo 迭代逻辑之后看
+// 结构体大小是 96 = 8 * 9 + 4 + 4 + 8 * 2
+type hiter struct {
 	key         unsafe.Pointer // Must be in first position.  Write nil to indicate iteration end nil表示迭代器结束 (see cmd/internal/gc/range.go).
 	elem        unsafe.Pointer // Must be in second position (see cmd/internal/gc/range.go).
-	t           *maptype
-	h           *hmap
+	t           *maptype // map的类型
+	h           *hmap   // map的指针
 	buckets     unsafe.Pointer // bucket ptr at hash_iter initialization time
 	bptr        *bmap          // current bucket
-	overflow    *[]*bmap       // keeps overflow buckets of hmap.buckets alive
+	overflow    *[]*bmap       // keeps overflow buckets of hmap.buckets alive 防止gc回收
 	oldoverflow *[]*bmap       // keeps overflow buckets of hmap.oldbuckets alive
 	startBucket uintptr        // bucket iteration started at
-	offset      uint8          // intra-bucket offset to start from during iteration (should be big enough to hold bucketCnt-1)
+	offset      uint8          // 桶内的固定起始偏移, 引入随机性 intra-bucket offset to start from during iteration (should be big enough to hold bucketCnt-1)  bmap内的偏移
 	wrapped     bool           // already wrapped around from end of bucket array to beginning
 	B           uint8
-	i           uint8
+	i           uint8          // 桶内偏移, offset+i是真正的第一个起始偏移
 	bucket      uintptr
 	checkBucket uintptr
 }
@@ -710,7 +712,7 @@ again:
 	// 桶idx
 	bucket := hash & bucketMask(h.B)
 	if h.growing() {
-		// 对当前桶迁移，下面再写入
+		// 对当前桶迁移，下面再写入, 这样只需要写入新桶就可以
 		growWork(t, h, bucket)  // 一个bmap的数据，要么在新桶，要么在老桶，不会有中间状态
 	}
 	// 桶指针
@@ -959,7 +961,7 @@ search:
 // The hiter struct pointed to by 'it' is allocated on the stack
 // by the compilers order pass or on the heap by reflect_mapiterinit.
 // Both need to have zeroed hiter since the struct contains pointers.
-// 初始化 mao迭代器结构，开始一次迭代
+// 初始化 map迭代器结构，开始一次迭代
 func mapiterinit(t *maptype, h *hmap, it *hiter) {
 	if raceenabled && h != nil {
 		callerpc := getcallerpc()
@@ -971,6 +973,7 @@ func mapiterinit(t *maptype, h *hmap, it *hiter) {
 		return
 	}
 
+	// 96B
 	if unsafe.Sizeof(hiter{})/sys.PtrSize != 12 {
 		throw("hash_iter size incorrect") // see cmd/compile/internal/gc/reflect.go
 	}
@@ -994,13 +997,15 @@ func mapiterinit(t *maptype, h *hmap, it *hiter) {
 		it.oldoverflow = h.extra.oldoverflow
 	}
 
-	// decide where to start 引入随机性
-	r := uintptr(fastrand())
+	// decide where to start
+	r := uintptr(fastrand()) // 引入随机性
 	if h.B > 31-bucketCntBits {
 		r += uintptr(fastrand()) << 31
 	}
 	// 起始桶
 	it.startBucket = r & bucketMask(h.B)
+
+	// 不是从0开始, 起始偏移也引入了随机性  位移的优先级更高
 	it.offset = uint8(r >> h.B & (bucketCnt - 1))
 
 	// iterator state
@@ -1009,10 +1014,10 @@ func mapiterinit(t *maptype, h *hmap, it *hiter) {
 	// Remember we have an iterator.
 	// Can run concurrently并发 with another mapiterinit().
 	if old := h.flags; old&(iterator|oldIterator) != iterator|oldIterator {
-		atomic.Or8(&h.flags, iterator|oldIterator)
+		atomic.Or8(&h.flags, iterator|oldIterator) // 加上迭代器标记
 	}
 
-	mapiternext(it)
+	mapiternext(it) // 初始化就迭代一次
 }
 
 func mapiternext(it *hiter) {
@@ -1027,22 +1032,23 @@ func mapiternext(it *hiter) {
 
 	t := it.t
 	bucket := it.bucket
-	b := it.bptr
+	b := it.bptr  // 这个字段初始化的时候没有赋值
 	i := it.i
 	checkBucket := it.checkBucket
 
-next:
+next:  // 上一个已经 迭代完毕, 需要寻找新的通来迭代
 	if b == nil {
 		// 迭代完毕
 		if bucket == it.startBucket && it.wrapped {
 			// end of iteration
 			it.key = nil
 			it.elem = nil
-			return
+			return  // key 和 elum == nil, 表示迭代结束
 		}
 
+		// 扩容中,
 		if h.growing() && it.B == h.B {
-			// 扩容过程中迭代，在老桶中迭代
+			// 扩容过程中迭代, 先判断是否在老桶中迭代, 再判断新
 			// Iterator was started in the middle of a grow, and the grow isn't done yet.
 			// If the bucket we're looking at hasn't been filled in yet (i.e. the old
 			// bucket hasn't been evacuated) then we need to iterate through the old
@@ -1059,6 +1065,7 @@ next:
 				checkBucket = noCheck
 			}
 		} else {
+			// 直接迭代新桶
 			b = (*bmap)(add(it.buckets, bucket*uintptr(t.bucketsize)))
 			checkBucket = noCheck
 		}
@@ -1076,7 +1083,7 @@ next:
 
 	//
 	for ; i < bucketCnt; i++ {
-		offi := (i + it.offset) & (bucketCnt - 1)
+		offi := (i + it.offset) & (bucketCnt - 1) // 取模, 回绕
 		if isEmpty(b.tophash[offi]) || b.tophash[offi] == evacuatedEmpty {
 			// TODO: emptyRest is hard to use here, as we start iterating
 			// in the middle of a bucket. It's feasible, just tricky.
@@ -1091,7 +1098,7 @@ next:
 		// value
 		e := add(unsafe.Pointer(b), dataOffset+bucketCnt*uintptr(t.keysize)+uintptr(offi)*uintptr(t.elemsize))
 
-		if checkBucket != noCheck && !h.sameSizeGrow() {
+		if checkBucket != noCheck && !h.sameSizeGrow() {  // 这两个条件, 说明在扩容中, 需要在旧桶中迭代
 			// Special case: iterator was started during a grow to a larger size
 			// and the grow is not done yet. We're working on a bucket whose
 			// oldbucket has not been evacuated yet. Or at least, it wasn't
@@ -1120,9 +1127,8 @@ next:
 			}
 		}
 
-		//
 		if (b.tophash[offi] != evacuatedX && b.tophash[offi] != evacuatedY) ||
-			!(t.reflexivekey() || t.key.equal(k, k)) {
+			!(t.reflexivekey() || t.key.equal(k, k)) { // 还在老桶里
 			// This is the golden data, we can return it.
 			// OR
 			// key!=key, so the entry can't be deleted or updated, so we can just return it.
@@ -1140,7 +1146,7 @@ next:
 			// has been deleted, updated, or deleted and reinserted.
 			// NOTE: we need to regrab the key as it has potentially been
 			// updated to an equal() but not identical key (e.g. +0.0 vs -0.0).
-			// 已经被删除
+			// 已经被疏散到新 map内存空间, 直接去新桶找
 			rk, re := mapaccessK(t, h, k)
 			if rk == nil {
 				continue // key has been deleted
@@ -1151,11 +1157,11 @@ next:
 		// 更新迭代器
 		it.bucket = bucket
 		if it.bptr != b { // avoid unnecessary write barrier; see issue 14921
-			it.bptr = b
+			it.bptr = b  // 记录当前在查找的*bmap
 		}
 		it.i = i + 1
 		it.checkBucket = checkBucket
-		return
+		return // 除了迭代结束, 就只有这里return了
 	}
 	// 上一个桶没找到，根据overflow指针，得到下一个桶
 	b = b.overflow(t)
@@ -1367,7 +1373,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 			y.e = add(y.k, bucketCnt*uintptr(t.keysize))
 		}
 
-		for ; b != nil; b = b.overflow(t) {
+		for ; b != nil; b = b.overflow(t) { // 整个链表上的, 都会一次迁移过去
 			k := add(unsafe.Pointer(b), dataOffset)
 			e := add(k, bucketCnt*uintptr(t.keysize))
 			for i := 0; i < bucketCnt; i, k, e = i+1, add(k, uintptr(t.keysize)), add(e, uintptr(t.elemsize)) {
@@ -1418,7 +1424,7 @@ func evacuate(t *maptype, h *hmap, oldbucket uintptr) {
 				b.tophash[i] = evacuatedX + useY // evacuatedX + 1 == evacuatedY
 				dst := &xy[useY]                 // evacuation destination
 
-				if dst.i == bucketCnt { // 缩容 会出现这种场景??
+				if dst.i == bucketCnt { // 整个链表上. 会超过 8个slot, 需要reset 起始 index
 					// 满了，需要扩容新桶
 					dst.b = h.newoverflow(t, dst.b)
 					dst.i = 0
