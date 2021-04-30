@@ -504,7 +504,7 @@ func chanrecv2(c *hchan, elem unsafe.Pointer) (received bool) {
 // Otherwise, if c is closed, zeros *ep and returns (true, false).
 // Otherwise, fills in *ep with an element and returns (true, true).
 // A non-nil ep must point to the heap or the caller's stack.
-//  selected  用于 select 语句
+//  返回值 selected  用于 select 语句
 func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool) {
 	// raceenabled: don't need to check ep, as it is always on the stack
 	// or is new memory allocated by reflect.
@@ -726,7 +726,7 @@ func chanparkcommit(gp *g, chanLock unsafe.Pointer) bool {
 	return true
 }
 
-// compiler implements
+// compiler implements  这里是单chan+default的情况
 //
 //	select {
 //	case c <- v:
@@ -748,7 +748,7 @@ func selectnbsend(c *hchan, elem unsafe.Pointer) (selected bool) {
 	return chansend(c, elem, false, getcallerpc())
 }
 
-// compiler implements
+// compiler implements  这里是单chan+default的情况
 //
 //	select {
 //	case v = <-c:
@@ -774,7 +774,7 @@ func selectnbrecv(elem unsafe.Pointer, c *hchan) (selected bool) {
 // compiler implements
 //
 //	select {
-//	case v, ok = <-c:
+//	case v, ok = <-c:  //接收返回两个值的情况
 //		... foo
 //	default:
 //		... bar
