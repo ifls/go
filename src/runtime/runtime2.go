@@ -904,17 +904,27 @@ func extendRandom(r []byte, n int) {
 // initialize them are not required. All defers must be manually scanned,
 // and for heap defers, marked.
 type _defer struct {
-	siz     int32 // 函数参数大小 includes both arguments and results
+	siz     int32 // 函数参数和返回值的内存大小 includes both arguments and results
 	started bool  // defer是否已经开始
 	heap    bool  // 堆上分配的，需要手动释放
+
+	// 开放编码只会在满足以下的条件时启用：
+	//
+	// 1. 函数的 defer 数量少于或者等于 8 个；
+	// 2. 函数的 defer 关键字不能在循环中执行；
+	// 3. 函数的 return 语句与 defer 语句的乘积小于或者等于 15 个；
+
+	// 该设计使用代码内联优化 defer 关键的额外开销并引入函数数据 funcdata 管理 panic 的调用3，该优化可以将 defer 的调用开销从 1.13 版本的 ~35ns 降低至 ~6ns 左右：
+	// 只比不加defer， 多1ns而已
+
 	// openDefer indicates that this _defer is for a frame with open-coded
 	// defers. We have only one defer record for the entire frame (which may
 	// currently have 0, 1, or more defers active).
-	openDefer bool
-	sp        uintptr  // 储存代用defer的函数的栈顶 sp at time of defer
-	pc        uintptr  // pc at time of defer
-	fn        *funcval // 闭包 can be nil for open-coded defers
-	_panic    *_panic  // 正在执行defer的panic panic that is running defer
+	openDefer bool  // 表示当前defer 是否已经过开放编码优化
+	sp        uintptr  // 储存 调用defer的函数的栈顶 sp at time of defer
+	pc        uintptr  // 保存调用defer 的 函数的 pc计数器， pc at time of defer
+	fn        *funcval // 闭包,函数，保存defer中的函数 can be nil for open-coded defers
+	_panic    *_panic  // 触发defer执行的 panic信息 panic that is running defer
 	link      *_defer  // 链表
 
 	// If openDefer is true, the fields below record values about the stack
