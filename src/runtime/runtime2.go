@@ -470,6 +470,7 @@ type g struct {
 	writebuf []byte // 输出缓冲, local, 用于 print, println 内置函数,
 
 	// panic 时保存sp和pc, 收到信号时保存信号码和错误码
+	// 也可以用来临时保存要recover()恢复后的之后的代码执行点
 	sigcode0 uintptr // 信号代码
 	sigcode1 uintptr
 	sig      uint32
@@ -517,7 +518,7 @@ type m struct {
 	oldp        puintptr     // 上一个P, 进入系统调用时释放的p the p that was attached before executing a syscall
 	id          int64        // M id
 	mallocing   int32        // 标记正在分配内存，防未完成分配的重入
-	throwing    int32
+	throwing    int32        // 表示当前时抛出了异常的状态
 	preemptoff  string // 关闭抢占 if != "", keep curg running on this m
 	locks       int32
 	dying       int32
@@ -949,16 +950,20 @@ type _defer struct {
 // handling during stack growth: because they are pointer-typed and
 // _panic values only live on the stack, regular stack pointer
 // adjustment takes care of them.
-//
+// 多次且内嵌到defer的panic，不会引用多个defer的按序完成
 //go:notinheap
 type _panic struct {
-	argp      unsafe.Pointer // 执行参数的指针 pointer to arguments of deferred call run during panic; cannot move - known to liblink
-	arg       interface{}    // argument to panic
+	argp      unsafe.Pointer // 是指向 defer 调用时参数的指针 pointer to arguments of deferred call run during panic; cannot move - known to liblink
+	arg       interface{}    // 是调用panic时传入的参数，argument to panic
 	link      *_panic        // 链表 link to earlier panic
+
+	// 结构体中的 pc、sp 和 goexit 三个字段都是为了修复 runtime.Goexit 带来的问题引入的1。
+	// runtime.Goexit 能够只结束调用该函数的 Goroutine 而不影响其他的 Goroutine，
+	// 但是该函数会被 defer 中的 panic 和 recover 取消2，引入这三个字段就是为了保证该函数的一定会生效。
 	pc        uintptr        // where to return to in runtime if this panic is bypassed
 	sp        unsafe.Pointer // where to return to in runtime if this panic is bypassed
-	recovered bool           // whether this panic is over
-	aborted   bool           // the panic was aborted
+	recovered bool           // 前 runtime._panic 是否被 recover 恢复； whether this panic is over
+	aborted   bool           // 表示当前panic是否被强行终止 the panic was aborted
 	goexit    bool
 }
 

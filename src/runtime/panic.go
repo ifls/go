@@ -919,6 +919,7 @@ func reflectcallSave(p *_panic, fn, arg unsafe.Pointer, argsize uint32) {
 	}
 }
 
+// panic 关键字 会被编译器转换为 gopanic函数的调用
 // The implementation of the predeclared function panic.
 func gopanic(e interface{}) {
 	// 获取当前g 必须是用户g, 否则抛出异常退出
@@ -962,7 +963,8 @@ func gopanic(e interface{}) {
 	// 赋值
 	p.arg = e
 	p.link = gp._panic
-	// noescape？？？
+	// noescape 保证p在栈上，不逃逸？
+	// 放在对头
 	gp._panic = (*_panic)(noescape(unsafe.Pointer(&p)))
 
 	// 统计
@@ -977,10 +979,11 @@ func gopanic(e interface{}) {
 			break
 		}
 
+		// panic() 唯一的任务就是处理所有defer
 		// If defer was started by earlier panic or Goexit (and, since we're back here, that triggered a new panic),
 		// take defer off list. An earlier panic will not continue running, but we will make sure below that an
 		// earlier Goexit does continue running.
-		if d.started {
+		if d.started {  //干掉此defer和defer上的panic？
 			if d._panic != nil {
 				d._panic.aborted = true
 			}
@@ -1016,8 +1019,10 @@ func gopanic(e interface{}) {
 			}
 		} else {
 			p.argp = unsafe.Pointer(getargp(0))
+			// 调用 defer的函数， 这里panic可能倍标记为恢复
 			reflectcall(nil, unsafe.Pointer(d.fn), deferArgs(d), uint32(d.siz), uint32(d.siz))
 		}
+		// panic的参数用完了
 		p.argp = nil
 
 		// reflectcall did not panic. Remove d.
@@ -1034,20 +1039,23 @@ func gopanic(e interface{}) {
 		sp := unsafe.Pointer(d.sp) // must be pointer so it gets adjusted during stack copy
 		if done {
 			d.fn = nil
-			gp._defer = d.link
+			gp._defer = d.link //下一个defer
 			freedefer(d)
 		}
 
 		// 执行recover函数会设置为true
 		if p.recovered {
+			// recover()里拿到了_panic结构体，这里不需要了
+			// 直接移动到下一个
 			gp._panic = p.link
+			//针对goexit的特殊处理
 			if gp._panic != nil && gp._panic.goexit && gp._panic.aborted {
 				// A normal recover would bypass/abort the Goexit.  Instead,
 				// we return to the processing loop of the Goexit.
-				// pc是 call deferproc 的下一条指令
+				// Goexit只会被终止一次，不会被嵌套的defer/panic 终止
 				gp.sigcode0 = uintptr(gp._panic.sp)
 				gp.sigcode1 = uintptr(gp._panic.pc)
-				mcall(recovery)
+				mcall(recovery) // gogo() 不会返回
 				throw("bypassed recovery failed") // mcall should not return
 			}
 			atomic.Xadd(&runningPanicDefers, -1)
@@ -1061,6 +1069,7 @@ func gopanic(e interface{}) {
 				// the associated stack frame.
 				d := gp._defer
 				var prev *_defer
+				// 只是针对defer的开放编码优化的特殊处理
 				for d != nil {
 					if d.openDefer {
 						if d.started {
@@ -1096,6 +1105,7 @@ func gopanic(e interface{}) {
 				gp.sig = 0
 			}
 
+			//正常的recover()恢复执行的逻辑
 			// 传递pc和sp用于恢复，
 			// Pass information about recovering frame to recovery.
 			gp.sigcode0 = uintptr(sp)
@@ -1111,6 +1121,8 @@ func gopanic(e interface{}) {
 	// and String methods to prepare the panic strings before startpanic.
 	preprintpanics(gp._panic)
 
+	// 当 所有defer 函数都处理完，还没有recover，就退出进程
+	//调用 exit 退出
 	fatalpanic(gp._panic) // should not return
 	*(*int)(nil) = 0      // not reached
 }
@@ -1130,6 +1142,7 @@ func getargp(x int) uintptr {
 //
 // TODO(rsc): Once we commit to CopyStackAlways,
 // this doesn't need to be nosplit.
+// recover 会被编译器转换为此函数
 //go:nosplit
 func gorecover(argp uintptr) interface{} {
 	// Must be in a function running as part of a deferred call during the panic.
@@ -1143,9 +1156,14 @@ func gorecover(argp uintptr) interface{} {
 	if p != nil && !p.goexit && !p.recovered && argp == uintptr(p.argp) {
 		// 就是改标记
 		p.recovered = true
-		// 拿到顶部panic 的参数
+		// 拿到第一个panic 的参数 返回
 		return p.arg
 	}
+
+	// panic为nil， 直接返回空
+	// 调用了Goexit， panic不会被恢复
+	// 不会被重复recover() 捕获
+	// panic的参数，地址必须和recover的参数地址 强制匹配
 	return nil
 }
 
@@ -1154,19 +1172,19 @@ func sync_throw(s string) {
 	throw(s)
 }
 
-// throw 和 panic 为什么能带出堆栈信息？？
+// throw 和 panic 为什么能带出堆栈信息??
 //go:nosplit
 func throw(s string) {
 	// Everything throw does should be recursively nosplit so it
 	// can be called even when it's unsafe to grow the stack.
 	systemstack(func() {
-		print("fatal error: ", s, "\n")
+		print("fatal error: ", s, "\n")  // 一些打印只会到标准输出
 	})
 	gp := getg()
 	if gp.m.throwing == 0 {
 		gp.m.throwing = 1
 	}
-	fatalthrow()
+	fatalthrow()  // 会退出程序， 无法recover
 	*(*int)(nil) = 0 // not reached
 }
 
@@ -1206,6 +1224,10 @@ func recovery(gp *g) {
 
 	gp.sched.pc = pc
 	gp.sched.lr = 0
+
+	// 在调度过程中会将函数的返回值设置成 1。从 runtime.deferproc 的注释中我们会发现，
+	// 当 runtime.deferproc 函数的返回值是 1 时，编译器生成的代码会直接跳转到调用方函数返回之前并执行 runtime.deferreturn：
+	// 会恢复到正常的函数return，处理recover的逻辑
 	gp.sched.ret = 1
 	gogo(&gp.sched) // move ret -> ax
 }
