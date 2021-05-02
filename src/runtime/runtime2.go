@@ -505,7 +505,7 @@ type m struct {
 	divmod  uint32 // div/mod denominator分母 for arm - known to liblink
 
 	// Fields not known to debuggers.
-	procid      uint64       // 线程id for debuggers, but offset not hard-coded
+	procid      uint64       // 线程id 在 调用clone函数时，里面赋值的 for debuggers, but offset not hard-coded
 	gsignal     *g           // 负责信号处理的g signal-handling g
 	goSigStack  gsignalStack // 信号处理栈 Go-allocated signal handling stack
 	sigmask     sigset       // 信号掩码 storage for saved signal mask

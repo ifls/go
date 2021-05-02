@@ -182,7 +182,7 @@ retry:
 				// nonblocking poll. Only read the byte
 				// if blocking.
 				var tmp [16]byte
-				// 读等待
+				// 阻塞读
 				read(int32(netpollBreakRd), noescape(unsafe.Pointer(&tmp[0])), int32(len(tmp)))
 				// 读完允许调用netpollBreak， 也就是下一次写
 				atomic.Store(&netpollWakeSig, 0)
@@ -191,7 +191,7 @@ retry:
 		}
 
 		var mode int32
-		// 套接字对端关闭
+		// 套接字对端关闭，有输入
 		if ev.events&(_EPOLLIN|_EPOLLRDHUP|_EPOLLHUP|_EPOLLERR) != 0 {
 			mode += 'r'
 		}

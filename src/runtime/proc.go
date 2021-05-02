@@ -5020,7 +5020,7 @@ var forcegcperiod int64 = 2 * 60 * 1e9
 func sysmon() {
 	lock(&sched.lock)
 	sched.nmsys++
-	// 检测死锁情况
+	// 检测死锁情况, 有就抛出throw， 退出进程
 	checkdead()
 	unlock(&sched.lock)
 
@@ -5036,6 +5036,7 @@ func sysmon() {
 			delay *= 2
 		}
 
+		// 当系统监控在 50 个循环中都没有唤醒 Goroutine 时, 会达到10ms
 		// 不断翻倍最终达到10ms
 		if delay > 10*1000 { // up to 10ms
 			delay = 10 * 1000
@@ -5073,6 +5074,7 @@ func sysmon() {
 					}
 
 					now = nanotime()
+					// 执行计时器函数
 					next, _ = timeSleepUntil()
 					lock(&sched.lock)
 					atomic.Store(&sched.sysmonwait, 0)

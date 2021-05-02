@@ -730,12 +730,12 @@ TEXT runtime·clone(SB),NOSPLIT,$0
 	MOVQ	$0, R10
 
 	// Copy mp, gp, fn off parent stack for use by child.
-	// Careful: Linux system call clobbers CX and R11.
+	// Careful: Linux system call clobbers不保护，会覆盖调 CX and R11.的值，所以不能用这两个
 	MOVQ	mp+16(FP), R8
 	MOVQ	gp+24(FP), R9
 	MOVQ	fn+32(FP), R12
 
-	MOVL	$SYS_clone, AX
+	MOVL	$SYS_clone, AX  //这个系统调用传递参数的 寄存器布局是什么样的？？
 	SYSCALL
 
 	// In parent, return.
@@ -747,7 +747,7 @@ TEXT runtime·clone(SB),NOSPLIT,$0
 	// In child, on new stack.
 	MOVQ	SI, SP
 
-	// If g or m are nil, skip Go-related setup.
+	// If g or m are nil, skip Go-related setup. 跳过g和m相关的变量初始化，直接执行启动函数
 	CMPQ	R8, $0    // m
 	JEQ	nog
 	CMPQ	R9, $0    // g
@@ -756,7 +756,7 @@ TEXT runtime·clone(SB),NOSPLIT,$0
 	// Initialize m->procid to Linux tid
 	MOVL	$SYS_gettid, AX
 	SYSCALL
-	MOVQ	AX, m_procid(R8)
+	MOVQ	AX, m_procid(R8) // m->procid = tid
 
 	// Set FS to point at m->tls.
 	LEAQ	m_tls(R8), DI

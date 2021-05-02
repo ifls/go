@@ -138,6 +138,7 @@ func clone(flags int32, stk, mp, gp, fn unsafe.Pointer) int32
 // create sys thread May run with m.p==nil, so write barriers are not allowed.
 //go:nowritebarrier
 func newosproc(mp *m) {
+	// 栈高地址
 	stk := unsafe.Pointer(mp.g0.stack.hi)
 	/*
 	 * note: strace gets confused if we use CLONE_PTRACE here.
