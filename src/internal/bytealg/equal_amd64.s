@@ -5,6 +5,7 @@
 #include "go_asm.h"
 #include "textflag.h"
 
+// 字符串比较会调用这个函数
 // memequal(a, b unsafe.Pointer, size uintptr) bool
 TEXT runtime·memequal(SB),NOSPLIT,$0-25
 	MOVQ	a+0(FP), SI

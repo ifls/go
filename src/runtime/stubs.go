@@ -139,6 +139,7 @@ func fastrandn(n uint32) uint32 {
 //go:linkname sync_fastrand sync.fastrand
 func sync_fastrand() uint32 { return fastrand() }
 
+// 字符串之间比较, 会先比较长度, 长度不同不相等, 长度相同, 再调用这个函数比较
 // in asm_*.s
 // internal/bytealg/equal_asm.s
 //go:noescape

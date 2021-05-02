@@ -197,7 +197,7 @@ type note struct {
 	key uintptr
 }
 
-// 闭包
+// 闭包, 对象的结构体, 是编译期动态生成的, 参数布局如下
 type funcval struct {
 	fn uintptr // 函数指针
 	// 函数数据跟在下面，通过指针引用
