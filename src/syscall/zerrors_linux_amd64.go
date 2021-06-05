@@ -534,7 +534,7 @@ const (
 	MAP_NORESERVE               = 0x4000
 	MAP_POPULATE                = 0x8000
 	MAP_PRIVATE                 = 0x2
-	MAP_SHARED                  = 0x1
+	MAP_SHARED                  = 0x1  // 共享映射到内存， 更新对其他进程可见
 	MAP_STACK                   = 0x20000
 	MAP_TYPE                    = 0xf
 	MCL_CURRENT                 = 0x1
@@ -682,12 +682,12 @@ const (
 	PRIO_PGRP                        = 0x1
 	PRIO_PROCESS                     = 0x0
 	PRIO_USER                        = 0x2
-	PROT_EXEC                        = 0x4
+	PROT_EXEC                        = 0x4  // 保护模式，可执行
 	PROT_GROWSDOWN                   = 0x1000000
 	PROT_GROWSUP                     = 0x2000000
-	PROT_NONE                        = 0x0
-	PROT_READ                        = 0x1
-	PROT_WRITE                       = 0x2
+	PROT_NONE                        = 0x0  // 无法访问
+	PROT_READ                        = 0x1  // 可读
+	PROT_WRITE                       = 0x2  // 可写
 	PR_CAPBSET_DROP                  = 0x18
 	PR_CAPBSET_READ                  = 0x17
 	PR_ENDIAN_BIG                    = 0x0
